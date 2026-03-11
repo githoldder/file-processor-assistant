@@ -32,6 +32,7 @@ AI Harness/
 - **Feature列表**: `features.json` 记录所有功能及状态
 
 ### 2. Agent分工
+
 | Agent | 职责 |
 |-------|------|
 | Initializer | 创建SPEC.md、生成feature列表、初始化git |

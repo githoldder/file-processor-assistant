@@ -193,6 +193,77 @@ async def get_task_status(task_id: str):
     return response
 
 
+@app.get("/api/v1/tasks/{task_id}/download")
+async def download_task_result(task_id: str):
+    from fastapi.responses import Response
+
+    # Use Celery's AsyncResult to get the result
+    task = celery_app.AsyncResult(task_id)
+
+    # Wait for the result with timeout
+    try:
+        import concurrent.futures
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            result = executor.submit(task.get).result(timeout=10)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Result not found: {str(e)}")
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Result is empty")
+
+    # Check if result is a dict with status
+    if isinstance(result, dict):
+        if result.get("status") != "success":
+            raise HTTPException(status_code=400, detail="Conversion failed")
+
+        # Get the converted file data
+        hex_data = result.get("data", "")
+        if not hex_data:
+            raise HTTPException(status_code=404, detail="No converted file data")
+
+        file_data = bytes.fromhex(hex_data)
+
+        # Determine filename and content type from result's content_type
+        content_type = result.get("content_type", "application/pdf")
+
+        # Map content type to extension
+        content_type_to_ext = {
+            "application/pdf": "pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+            "image/png": "png",
+            "image/jpeg": "jpg",
+            "application/zip": "zip",
+        }
+        output_format = content_type_to_ext.get(content_type, "pdf")
+    else:
+        # If result is directly the file data
+        file_data = result
+        output_format = "pdf"
+
+    content_types = {
+        "pdf": "application/pdf",
+        "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "png": "image/png",
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "zip": "application/zip",
+    }
+
+    content_type = content_types.get(output_format, "application/octet-stream")
+    filename = f"converted.{output_format}"
+
+    return Response(
+        content=file_data,
+        media_type=content_type,
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @app.get("/api/v1/tasks")
 async def list_tasks():
     return {"message": "Use /api/v1/tasks/{task_id} to check specific task"}

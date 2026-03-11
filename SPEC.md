@@ -188,3 +188,4 @@ POST   /api/v1/pdf/extract         # 提取PDF内容
 - [ ] Chrome/Edge/Firefox/Safari
 - [ ] iOS 12+ / Android 6+
 - [ ] Windows 7+ (桌面客户端)
+

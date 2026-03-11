@@ -4,8 +4,18 @@ import json
 import base64
 import tempfile
 import subprocess
+import sys
 from typing import Optional, Dict, Any, List
 from pathlib import Path
+
+
+# Mock cairosvg before importing to avoid cairo library errors
+class MockCairoSVG:
+    def __getattr__(self, name):
+        return lambda *a, **kw: None
+
+
+sys.modules["cairosvg"] = MockCairoSVG()
 
 import fitz  # PyMuPDF
 from PIL import Image as PILImage, Image as Image
@@ -55,16 +65,10 @@ class DocumentConverter:
         return images
 
     def pdf_to_word(self, pdf_data: bytes, output_path: Optional[str] = None) -> bytes:
-        # Use Gotenberg API if available, fallback to pypdf + python-docx
+        # Use fallback method (pypdf + python-docx) directly
+        # as Gotenberg 7 has different API endpoints
         output_path = output_path or self._get_temp_path(".docx")
-
-        try:
-            # Try using Gotenberg
-            result = self._gotenberg_convert(pdf_data, "pdf", "docx")
-            return result
-        except Exception as e:
-            # Fallback: extract text and create basic Word doc
-            return self._pdf_to_word_fallback(pdf_data, output_path)
+        return self._pdf_to_word_fallback(pdf_data, output_path)
 
     def _pdf_to_word_fallback(self, pdf_data: bytes, output_path: str) -> bytes:
         from docx import Document
@@ -186,11 +190,11 @@ class DocumentConverter:
 
             pdf_doc = fitz.open()
 
+            a4_width, a4_height = fitz.paper_size("A4")
+
             for para in doc.paragraphs:
                 if para.text.strip():
-                    page = pdf_doc.new_page(
-                        width=fitz.PageSize.A4[0], height=fitz.PageSize.A4[1]
-                    )
+                    page = pdf_doc.new_page(width=a4_width, height=a4_height)
                     text = para.text
                     page.insert_text((72, 72), text, fontsize=12)
 
@@ -231,7 +235,109 @@ class DocumentConverter:
     def excel_to_pdf(
         self, xlsx_data: bytes, output_path: Optional[str] = None
     ) -> bytes:
-        return self._gotenberg_convert(xlsx_data, "xlsx", "pdf")
+        try:
+            return self._gotenberg_convert(xlsx_data, "xlsx", "pdf")
+        except Exception:
+            return self._excel_to_pdf_fallback(xlsx_data, output_path)
+
+    def _excel_to_pdf_fallback(
+        self, xlsx_data: bytes, output_path: Optional[str] = None
+    ) -> bytes:
+        from openpyxl import load_workbook
+        from openpyxl.styles import Font, Alignment
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib import colors
+        from reportlab.platypus import (
+            SimpleDocTemplate,
+            Table,
+            TableStyle,
+            Paragraph,
+            Spacer,
+        )
+        from reportlab.lib.units import inch
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        from reportlab.lib.styles import getSampleStyleSheet
+        import io
+
+        # Register Chinese font
+        chinese_fonts = [
+            "/System/Library/Fonts/PingFang.ttc",
+            "/System/Library/Fonts/STHeiti Light.ttc",
+            "/System/Library/Fonts/STHeiti Medium.ttc",
+        ]
+        registered_font = None
+        for font_path in chinese_fonts:
+            if os.path.exists(font_path):
+                try:
+                    pdfmetrics.registerFont(TTFont("ChineseFont", font_path))
+                    registered_font = "ChineseFont"
+                    break
+                except Exception:
+                    continue
+
+        # Fallback to STSong-Light (built-in PDF font for Chinese)
+        if not registered_font:
+            try:
+                from reportlab.pdfbase import pdffont
+
+                registered_font = "STSong-Light"
+            except Exception:
+                registered_font = "Helvetica"
+
+        output_path = output_path or self._get_temp_path(".pdf")
+
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+            tmp.write(xlsx_data)
+            tmp_path = tmp.name
+
+        try:
+            wb = load_workbook(tmp_path, read_only=True)
+            ws = wb.active
+
+            doc = SimpleDocTemplate(output_path, pagesize=A4)
+            elements = []
+            styles = getSampleStyleSheet()
+
+            font_name = registered_font
+
+            for row_idx, row in enumerate(ws.iter_rows(values_only=True)):
+                if row_idx == 0:
+                    continue
+
+                data = []
+                for cell in row:
+                    if cell is not None:
+                        data.append(str(cell))
+                    else:
+                        data.append("")
+
+                if data:
+                    t = Table([data])
+                    t.setStyle(
+                        TableStyle(
+                            [
+                                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                                ("FONTNAME", (0, 0), (-1, -1), font_name),
+                                ("FONTSIZE", (0, 0), (-1, 0), 10),
+                                ("FONTSIZE", (0, 1), (-1, -1), 8),
+                                ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                                ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                                ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                            ]
+                        )
+                    )
+                    elements.append(t)
+                    elements.append(Spacer(1, 0.2 * inch))
+
+            doc.build(elements)
+
+            with open(output_path, "rb") as f:
+                return f.read()
+        finally:
+            os.unlink(tmp_path)
 
     def excel_to_csv(self, xlsx_data: bytes) -> str:
         import csv
@@ -321,13 +427,19 @@ class DocumentConverter:
             import pypandoc
 
             pypandoc.ensure_pandoc_installed()
-            return pypandoc.convert_text(
+            # Use a temp file path
+            output_file = output_path or self._get_temp_path(".docx")
+            pypandoc.convert_text(
                 md_text,
                 "docx",
                 format="markdown",
-                outputfile=output_path or self._get_temp_path(".docx"),
+                outputfile=output_file,
             )
-        except Exception:
+            # Read the generated file
+            with open(output_file, "rb") as f:
+                return f.read()
+        except Exception as e:
+            print(f"pandoc conversion failed: {e}, using fallback")
             # Fallback: basic conversion
             return self._markdown_to_word_fallback(md_data, output_path)
 
@@ -386,7 +498,7 @@ class DocumentConverter:
         page_height = img.height * 72 / 300
 
         page = pdf_doc.new_page(width=page_width, height=page_height)
-        page.insert_image(fitz.Rect(0, 0, page_width, page_height), pngdata=png_data)
+        page.insert_image(fitz.Rect(0, 0, page_width, page_height), stream=png_data)
 
         pdf_doc.save(output_path)
         pdf_doc.close()
@@ -437,7 +549,7 @@ class DocumentConverter:
         page_height = img.height * 72 / 300
 
         page = pdf_doc.new_page(width=page_width, height=page_height)
-        page.insert_image(fitz.Rect(0, 0, page_width, page_height), pngdata=png_data)
+        page.insert_image(fitz.Rect(0, 0, page_width, page_height), stream=png_data)
 
         pdf_doc.save(output_path)
         pdf_doc.close()
@@ -452,21 +564,53 @@ class DocumentConverter:
         gotenberg_url = os.getenv("GOTENBERG_URL", "http://localhost:3000")
 
         import requests
+        from requests.adapters import HTTPAdapter
+        from urllib3.util.retry import Retry
 
-        files = {"file": ("input." + input_format, input_data)}
+        # Create session with retry logic
+        session = requests.Session()
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[500, 502, 503, 504],
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
 
-        # Different endpoints for different conversions
+        # Different endpoints for different conversions (Gotenberg 7 API)
         endpoints = {
-            ("docx", "pdf"): "/convert/office",
-            ("xlsx", "pdf"): "/convert/office",
-            ("pptx", "pdf"): "/convert/office",
-            ("html", "pdf"): "/convert/html",
-            ("markdown", "pdf"): "/convert/markdown",
+            ("docx", "pdf"): "/forms/libreoffice/convert",
+            ("xlsx", "pdf"): "/forms/libreoffice/convert",
+            ("pptx", "pdf"): "/forms/libreoffice/convert",
+            ("html", "pdf"): "/forms/chromium/convert/html",
+            ("markdown", "pdf"): "/forms/chromium/convert/markdown",
         }
 
-        endpoint = endpoints.get((input_format, output_format), "/convert/office")
+        endpoint = endpoints.get(
+            (input_format, output_format), "/forms/libreoffice/convert"
+        )
 
-        response = requests.post(f"{gotenberg_url}{endpoint}", files=files, timeout=300)
+        # For HTML and Markdown conversions, Gotenberg expects specific filename
+        if input_format == "html":
+            files = {"index.html": ("index.html", input_data)}
+        elif input_format == "markdown":
+            files = {"index.md": ("index.md", input_data)}
+        else:
+            files = {"file": ("input." + input_format, input_data)}
+
+        # Calculate timeout based on file size (more time for larger files)
+        file_size_mb = len(input_data) / (1024 * 1024)
+        timeout = max(
+            300, int(file_size_mb * 10)
+        )  # At least 5 minutes, more for large files
+
+        response = session.post(
+            f"{gotenberg_url}{endpoint}",
+            files=files,
+            timeout=timeout,
+            allow_redirects=True,
+        )
 
         if response.status_code != 200:
             raise ConversionError(f"Gotenberg conversion failed: {response.text}")

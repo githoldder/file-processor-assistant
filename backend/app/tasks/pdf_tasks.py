@@ -74,14 +74,26 @@ def extract_pdf_text(file_data: str) -> Dict[str, Any]:
 @celery_app.task(name="app.tasks.pdf_tasks.pdf_to_images")
 def pdf_to_images(file_data: str, dpi: int = 300) -> Dict[str, Any]:
     try:
+        import io
+        import zipfile
+
         pdf_data = bytes.fromhex(file_data)
         converter = DocumentConverter()
         images = converter.pdf_to_images(pdf_data, dpi=dpi)
 
+        # Create a ZIP file containing all images
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            for i, img_data in enumerate(images):
+                zf.writestr(f"page_{i + 1:03d}.png", img_data)
+
+        zip_data = zip_buffer.getvalue()
+
         return {
             "status": "success",
+            "data": zip_data.hex(),
+            "content_type": "application/zip",
             "images_count": len(images),
-            "images": [img.hex() for img in images],
         }
     except Exception as e:
         return {"status": "failure", "error": str(e)}

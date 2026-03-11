@@ -23,7 +23,7 @@ COPY . .
 RUN mkdir -p /app/uploads /app/temp
 
 ENV PYTHONUNBUFFERED=1
-ENV REDIS_URL=redis://localhost:6379/0
+ENV REDIS_URL=redis://redis:6379/0
 
 EXPOSE 8000
 

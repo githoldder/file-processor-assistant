@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-03-08T20:46:40.636828",
+  "root": "/Users/caolei/Desktop/文件处理全能助手",
+  "total_files_scanned": 247,
+  "temp_files_found": [],
+  "temp_actions": [],
+  "zero_size_files": [],
+  "zero_actions": [],
+  "duplicate_groups": {
+    "21d3ac685b4e22d21a30f7142aef3a57a99ddd77e576fbb68a2feba67c8214e4": [
+      "test_screenshots/1_homepage.png",
+      "test_screenshots/t1_home.png"
+    ],
+    "71f5a403b81053dd9a41e53c8d6464f75b883e279ec09b9a8917942a6df472a8": [
+      "test_screenshots/multi_03_progress_1.png",
+      "test_screenshots/multi_04_final.png"
+    ],
+    "f31af18d5f986c234ed70cdc23f4cef2f3fad04d9cfd0c1c9ebca4a1f9c03efa": [
+      "test_screenshots/5_completed.png",
+      "test_screenshots/4_converting.png"
+    ]
+  },
+  "duplicate_actions": [
+    {
+      "action": "move_dup",
+      "file": "test_screenshots/1_homepage.png",
+      "moved_to": "99-archive/entropy_guardian/duplicates/test_screenshots__1_homepage.png",
+      "status": "moved",
+      "kept": "test_screenshots/t1_home.png"
+    },
+    {
+      "action": "move_dup",
+      "file": "test_screenshots/multi_03_progress_1.png",
+      "moved_to": "99-archive/entropy_guardian/duplicates/test_screenshots__multi_03_progress_1.png",
+      "status": "moved",
+      "kept": "test_screenshots/multi_04_final.png"
+    },
+    {
+      "action": "move_dup",
+      "file": "test_screenshots/4_converting.png",
+      "moved_to": "99-archive/entropy_guardian/duplicates/test_screenshots__4_converting.png",
+      "status": "moved",
+      "kept": "test_screenshots/5_completed.png"
+    }
+  ],
+  "apply_mode": true
+}
