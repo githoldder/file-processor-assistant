@@ -1,7 +1,7 @@
 # 文件处理全能助手 (File Processing All-in-One Helper)
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-v1.0.0-blue" alt="Version">
+  <img src="https://img.shields.io/badge/version-v1.0.1-blue" alt="Version">
   <img src="https://img.shields.io/badge/Python-3.11+-green" alt="Python">
   <img src="https://img.shields.io/badge/FastAPI-0.100+-green" alt="FastAPI">
   <img src="https://img.shields.io/badge/React-18+-green" alt="React">
@@ -13,7 +13,7 @@
 ## 金字塔结构
 
 ```
-文件处理全能助手 (v1.0.0)
+文件处理全能助手 (v1.0.1)
 ├── 📦 核心应用 (Core Application)
 │   ├── backend/          # FastAPI 后端服务
 │   └── frontend/         # React 前端界面
@@ -35,6 +35,7 @@
 │
 ├── 📚 文档 (Documentation)
 │   ├── README.md         # 本文件
+│   ├── CHANGELOG.md      # 更新日志
 │   ├── SPEC.md          # 技术规格
 │   ├── AGENTS.md        # Agent 配置
 │   ├── 用户操作手册.md   # 用户使用指南
@@ -43,9 +44,9 @@
 │
 └── 🔧 工具 (Tools)
     ├── tools/           # 辅助工具
-    ├── ai_harness/      # AI 测试工具
-    ├── reports/         # 测试报告
-    └── logs/            # 日志目录
+    ├── ai_harness/       # AI 测试工具
+    ├── reports/          # 测试报告
+    └── logs/             # 日志目录
 ```
 
 ## 功能特性

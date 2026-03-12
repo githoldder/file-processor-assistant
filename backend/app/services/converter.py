@@ -381,9 +381,10 @@ class DocumentConverter:
                 # This is a simplified version
                 pass
 
-        finally:
-            os.unlink(tmp_path)
             return images
+        finally:
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
 
     def markdown_to_pdf(
         self, md_data: bytes, output_path: Optional[str] = None
@@ -481,30 +482,31 @@ class DocumentConverter:
     def svg_to_png(
         self, svg_data: bytes, width: Optional[int] = None, height: Optional[int] = None
     ) -> bytes:
-        return cairosvg.svg2png(
-            bytestring=svg_data, output_width=width, output_height=height
-        )
+        # Use Gotenberg to convert SVG to PNG via PDF
+        try:
+            # Convert SVG to PDF first using Gotenberg
+            pdf_data = self._gotenberg_convert(svg_data, "svg", "pdf")
+
+            # Then convert PDF to PNG using PyMuPDF
+            images = self.pdf_to_images(pdf_data, dpi=300, fmt="PNG")
+            if images:
+                return images[0]
+            raise ConversionError("No images generated from PDF")
+        except Exception as e:
+            raise ConversionError(f"SVG to PNG conversion failed: {e}")
 
     def svg_to_pdf(self, svg_data: bytes, output_path: Optional[str] = None) -> bytes:
         output_path = output_path or self._get_temp_path(".pdf")
-        png_data = self.svg_to_png(svg_data)
 
-        # Convert PNG to PDF
-        pdf_doc = fitz.open()
-        img = PILImage.open(io.BytesIO(png_data))
+        try:
+            pdf_data = self._gotenberg_convert(svg_data, "svg", "pdf")
 
-        # Create PDF page matching image size
-        page_width = img.width * 72 / 300  # Convert pixels to PDF points
-        page_height = img.height * 72 / 300
+            with open(output_path, "wb") as f:
+                f.write(pdf_data)
 
-        page = pdf_doc.new_page(width=page_width, height=page_height)
-        page.insert_image(fitz.Rect(0, 0, page_width, page_height), stream=png_data)
-
-        pdf_doc.save(output_path)
-        pdf_doc.close()
-
-        with open(output_path, "rb") as f:
-            return f.read()
+            return pdf_data
+        except Exception as e:
+            raise ConversionError(f"SVG to PDF conversion failed: {e}")
 
     def png_to_svg(self, png_data: bytes) -> bytes:
         # Use potrace for raster to vector conversion
