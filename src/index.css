@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+
+  --color-surface: #f9f9ff;
+  --color-surface-dim: #d3daea;
+  --color-surface-bright: #f9f9ff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f0f3ff;
+  --color-surface-container: #e7eefe;
+  --color-surface-container-high: #e2e8f8;
+  --color-surface-container-highest: #dce2f3;
+  --color-on-surface: #151c27;
+  --color-on-surface-variant: #424656;
+  --color-outline: #737687;
+  --color-outline-variant: #c2c6d9;
+
+  --color-primary: #004bca;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #0061ff;
+  --color-on-primary-container: #f1f2ff;
+
+  --color-secondary: #5e5e5e;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #e2e2e2;
+  --color-on-secondary-container: #646464;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+}
+
+@layer base {
+  body {
+    @apply bg-surface font-sans text-on-surface antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+.ambient-shadow {
+  box-shadow: 0 4px 12px rgba(0, 97, 255, 0.04);
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
