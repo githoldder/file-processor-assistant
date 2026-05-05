@@ -12,17 +12,19 @@
 1. 资源清理 → 2. Hadoop镜像优化 → 3. 实验三（3节点集群）→ 4. 实验四（WebHDFS）→ 5. MVP验证 → 6. 前端集成 → 7. 生成报告
 
 ## 当前环境
-- Docker镜像占用：15.61GB（可回收14.75GB）
+- Docker镜像占用：~8.5GB（PRD 1已清理）
 - 运行中容器：k8s-hadoop-1, k8s-api-1, k8s-celery-worker-1等
 - Hadoop镜像：myubuntu:hadoop-yarn-v1 (4.31GB)
+- 已删除：file-processor-api, hadoop-template, 6.66GB构建缓存
 - Playwright版本：1.59.1
 - 终端操作：所有实验操作需在终端执行并截图
 
 ## 待执行任务
-- [ ] PRD 1：资源清理
-- [ ] PRD 2：Hadoop镜像优化
-- [ ] PRD 3：实验三 - Hadoop分布式集群
-- [ ] PRD 4：实验四 - WebHDFS编程
+- [x] PRD 1：资源清理 ✅ 已完成（2026-05-06）
+- [x] PRD 2：Hadoop镜像优化 ✅ 已完成（2026-05-06）
+- [ ] PRD 3：实验三（3节点集群）
+- [ ] PRD 3：实验三（3节点集群）
+- [ ] PRD 4：实验四（WebHDFS）
 - [ ] PRD 5：MVP验证（Playwright有头测试）
 - [ ] PRD 6：前端集成
 
