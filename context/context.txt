@@ -24,7 +24,8 @@
 - [x] PRD 2：Hadoop镜像优化 ✅ 已完成（2026-05-06）
 - [x] PRD 3：实验三（3节点集群）✅ 已完成（2026-05-06）
 - [x] PRD 4：实验四（WebHDFS）✅ 已完成（2026-05-06）
-- [ ] PRD 5：MVP验证（Playwright有头测试）
+- [x] PRD 5：MVP验证 ✅ 已完成（2026-05-06）
+- [ ] PRD 6：前端集成
 - [ ] PRD 3：实验三（3节点集群）
 - [ ] PRD 4：实验四（WebHDFS）
 - [ ] PRD 5：MVP验证（Playwright有头测试）
