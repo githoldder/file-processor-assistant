@@ -1,0 +1,29 @@
+{
+  "phase": "04-experiment4-webhdfs",
+  "objective": "开启WebHDFS，Node.js操作HDFS，终端执行并截图",
+  "priority": "high",
+  "estimated_time": "10分钟",
+  "terminal_operations": true,
+  "terminal_display": true,
+  "screenshot_required": [
+    "hdfs-site.xml配置内容",
+    "HDFS重启过程",
+    "curl测试WebHDFS API返回JSON",
+    "full-test.js脚本内容",
+    "node full-test.js执行输出",
+    "HDFS文件列表验证"
+  ],
+  "success_criteria": [
+    "hdfs-site.xml配置dfs.webhdfs.enabled=true",
+    "重启HDFS使配置生效",
+    "curl测试WebHDFS API正常响应",
+    "Node.js脚本实现文件上传、下载、删除、重命名",
+    "验证HDFS文件操作成功"
+  ],
+  "scripts": [],
+  "verification": [
+    "WebHDFS API返回JSON格式响应",
+    "Node.js脚本成功执行所有操作",
+    "HDFS文件系统操作均成功"
+  ]
+}

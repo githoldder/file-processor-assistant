@@ -1,0 +1,29 @@
+{
+  "phase": "02-hadoop-optimize",
+  "objective": "精简myubuntu:hadoop-yarn-v1镜像至≤3GB，保留实验最小集",
+  "priority": "medium",
+  "estimated_time": "10分钟",
+  "terminal_operations": true,
+  "screenshot_required": [
+    "container cleanup commands",
+    "docker commit new image",
+    "jps output after optimization",
+    "WebUI access success",
+    "final image size comparison"
+  ],
+  "success_criteria": [
+    "镜像大小从4.31GB降至≤3GB",
+    "保留：Hadoop HDFS+YARN, JDK8, SSH, 免密登录",
+    "清理：apt缓存、文档、手册、临时文件",
+    "验证：jps显示5个进程"
+  ],
+  "scripts": [
+    "scripts/optimize-hadoop-image.sh"
+  ],
+  "verification": [
+    "jps显示5个Hadoop进程",
+    "curl http://localhost:9870 访问HDFS WebUI",
+    "curl http://localhost:8088 访问YARN WebUI",
+    "SSH免密登录正常"
+  ]
+}
