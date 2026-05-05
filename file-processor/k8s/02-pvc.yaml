@@ -1,0 +1,2 @@
+# 使用 emptyDir 替代 PVC (开发环境)
+# 如需持久化存储，请使用 hostPath 或 NFS

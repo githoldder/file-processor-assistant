@@ -1,0 +1,5 @@
+{
+  "name": "文件处理全能助手",
+  "description": "创建一个分布式文档处理Web应用系统，功能包括：\n\n后端功能：\n1. PDF文件读取、编辑、导出\n2. 支持PDF/Word/Excel/PPTX/MD/SVG/PNG之间的格式转换\n3. 使用FastAPI + Celery + Redis实现分布式任务队列\n4. 支持批量处理和高并发\n5. 高保真SVG矢量图处理\n\n前端功能：\n1. 现代化Web界面（React + TypeScript）\n2. 拖拽文件上传\n3. 实时转换进度显示\n4. 响应式设计支持手机和电脑\n5. 暗色主题\n\n部署配置：\n1. Docker Compose分布式部署\n2. GitHub Actions CI/CD\n3. 支持多Worker横向扩展\n\n技术栈：\n- 后端: Python FastAPI, Celery, Redis, PostgreSQL\n- 文档转换: Gotenberg, Pandoc, LibreOffice, PyMuPDF\n- 前端: React, TypeScript, TailwindCSS, Vite\n- 部署: Docker, Nginx",
+  "priority": 1
+}

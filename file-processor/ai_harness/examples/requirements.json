@@ -1,0 +1,12 @@
+[
+  {
+    "name": "文件处理全能助手 Web版",
+    "description": "创建一个现代化的文件处理Web应用，功能包括：\n1. PDF文件上传和预览\n2. PDF转Word/Excel/PPT\n3. 图片格式转换(SVG/PNG/JPG)\n4. 批量文件处理\n5. 用户友好的拖拽界面\n6. 响应式设计支持手机和电脑",
+    "priority": 1
+  },
+  {
+    "name": "AI聊天助手",
+    "description": "创建一个AI聊天机器人：\n1. 支持多轮对话\n2. 可以保存对话历史\n3. 支持代码高亮显示\n4. 黑暗模式主题切换\n5. 支持markdown渲染",
+    "priority": 2
+  }
+]
