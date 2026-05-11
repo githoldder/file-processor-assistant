@@ -22,7 +22,7 @@ description: "AI-driven development standards focusing on Git SOP, Skill distill
 - **原子化拆分**：将 User Story 拆分为单轮迭代（最多 25 轮循环）可完成的小任务。
 - **三件套记忆**：
   - `prd.json`: 结构化任务清单，跟踪进度。
-  - `progress.txt`: 经验日志，记录踩坑及解决方案。
+  - `context/context.txt`: 结构化记忆（ST-Memory），记录每次修改及踩坑经验。
   - **Git 提交**: 每轮迭代的物理成果记录。
 - **验收标准**：任务验收标准必须量化且明确，减少 AI 钻空子的空间。
 - **全新上下文**：每轮迭代应尽量保持上下文清醒，完成任务后标记 `done`。

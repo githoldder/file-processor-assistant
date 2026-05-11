@@ -1,0 +1,46 @@
+{
+  "id": "07-minio-s3-integration",
+  "title": "MinIO S3 API 集成",
+  "tasks": [
+    {
+      "id": "T1",
+      "description": "后端 MinIO Client 重构（标准 S3 协议与初始化逻辑）",
+      "status": "pending"
+    },
+    {
+      "id": "T2",
+      "description": "实现 /upload 文件流式上传接口",
+      "status": "pending"
+    },
+    {
+      "id": "T3",
+      "description": "实现 /list 及 /download 文件列表与下载接口",
+      "status": "pending"
+    },
+    {
+      "id": "T4",
+      "description": "实现 /delete 物理删除接口",
+      "status": "pending"
+    },
+    {
+      "id": "T5",
+      "description": "前端 Mock 数据清理（Service 层对齐 API）",
+      "status": "pending"
+    },
+    {
+      "id": "T6",
+      "description": "前端 MyFiles 视图集成真实上传/下载/删除交互",
+      "status": "pending"
+    },
+    {
+      "id": "T7",
+      "description": "前端 Dashboard 视图 Mock 注入清理与基础指标对接",
+      "status": "pending"
+    },
+    {
+      "id": "T8",
+      "description": "全链路 Playwright E2E 自动化测试验证",
+      "status": "pending"
+    }
+  ]
+}

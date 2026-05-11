@@ -41,18 +41,49 @@
 - 每个阶段完成后更新此文件
 
 ---
-# CulCloud Platform MVP-v2 重构
+---
+# CulCloud Platform: MinIO S3 Integration
 ## 当前状态
-- 分支：refactor/mvp-v2
-- 阶段：KR1 (基础设施与架构搭建) - 已完成
+- 分支：refactor/minio-s3
+- 阶段：T1 (后端 MinIO Client 重构)
 - 最近修改：
-  - 创建了精简版 docker-compose.yml
-  - 搭建了 backend/app 基础目录树与 FastAPI 骨架
-  - 配置了 .env 环境变量
-  - 配置了 CORS 和 MinIO/Redis 生命周期
-  - 抽离核心 converter.py，精简 schemas.py
-  - 完成了 files/convert/tasks 的 API 路由与业务逻辑实现
-  - 改造并连通了 frontend API 与主要视图组件
-  - 归档旧代码至 99-archive 并更新了 README 目录树
-  - 建立了完善的单元/集成/黑盒测试 (Pytest) 及 Playwright E2E 自动化测试体系
-- 整体进度：MVP-v2 重构与测试体系全面闭环完成！
+  - 合并了 progress.txt 与 context.txt
+  - 更新了 Vibe-Coding 规范与 .cursorrules
+  - 在 prds/07-minio-s3-integration 下创建了 prd.md/json
+- 整体进度：1/8 原子任务开始执行
+
+## 关键经验 (Lessons Learned)
+- [2026-05-11] 宿主机 Docker Socket 权限问题可通过 `sudo chown $USER /var/run/docker.sock` 解决。
+- [2026-05-11] 进程 Kill 失败通常因权限限制，需在宿主机执行 `sudo kill -9`。
+- [2026-05-11] 合并记忆文件至 `context/context.txt` 以减少冗余。
+
+## 待执行任务 (Harness PRD)
+- [ ] T1: 后端 MinIO Client 重构 (标准 S3 协议)
+- [ ] T2: 实现 /upload 上传接口
+- [ ] T3: 实现 /list 及 /download 接口
+- [ ] T4: 实现 /delete 删除接口
+- [ ] T5: 前端服务层 Mock 数据清理
+- [ ] T6: 前端上传功能 UI 对接
+- [ ] T7: 前端文件列表、下载、删除 UI 对接
+- [ ] T8: 全链路 E2E 自动化测试验证
+# Progress Log - MinIO S3 Integration
+
+## Session Start: 2026-05-11
+
+### Initial Context
+- Project structure refactored to lightweight FastAPI + React.
+- Docker infrastructure (MinIO, Redis) is confirmed running locally.
+- Standards (Git SOP, Harness) have been distilled into `skills/` and `.cursorrules`.
+
+### Task Status Tracking
+- [ ] T1: Backend MinIO Client Refactor
+- [ ] T2: Backend Upload Endpoint
+- [ ] T3: Backend List/Download Endpoints
+- [ ] T4: Backend Delete Endpoint
+- [ ] T5: Frontend Mock Cleanup
+- [ ] T6: Frontend Upload Integration
+- [ ] T7: Frontend List/Download/Delete Integration
+- [ ] T8: E2E Verification
+
+### Lessons Learned & Anti-patterns
+- (Pending execution)

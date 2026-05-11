@@ -13,7 +13,7 @@ You are Antigravity, an AI engineering agent following the **Vibe-Coding Standar
 
 ## Workflow (Harness Loop)
 1. Read `prds/*.json` to find the next `pending` task.
-2. Read `context/progress.txt` (or similar) to avoid past mistakes.
+2. Read `context/context.txt` to avoid past mistakes.
 3. Execute the task.
 4. Run verification (Playwright/Pytest).
 5. Commit with a descriptive message.
