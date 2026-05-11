@@ -100,9 +100,22 @@ async def get_download_url(object_name: str):
 
 @router.delete("/{object_name:path}")
 async def delete_file(object_name: str):
+    """
+    Deletes a file from MinIO.
+    """
     client = get_minio_client()
     try:
+        # Check if object exists first
+        try:
+            client.stat_object(BUCKET, object_name)
+        except:
+            raise HTTPException(status_code=404, detail="File not found")
+
         client.remove_object(BUCKET, object_name)
-        return {"status": "success"}
+        logger.info(f"Successfully deleted object: {object_name}")
+        return {"status": "success", "message": f"File {object_name} deleted"}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to delete {object_name}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete file")

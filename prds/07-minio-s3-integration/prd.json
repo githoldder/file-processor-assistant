@@ -15,7 +15,7 @@
     {
       "id": "T3",
       "description": "实现 /list 及 /download 文件列表与下载接口",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "T4",

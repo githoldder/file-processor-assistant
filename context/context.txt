@@ -60,7 +60,7 @@
 ## 待执行任务 (Harness PRD)
 - [x] T1: 后端 MinIO Client 重构 (标准 S3 协议) ✅ 已完成
 - [x] T2: 实现 /upload 上传接口 ✅ 已完成
-- [ ] T3: 实现 /list 及 /download 接口
+- [x] T3: 实现 /list 及 /download 接口 ✅ 已完成
 - [ ] T4: 实现 /delete 删除接口
 - [ ] T5: 前端服务层 Mock 数据清理
 - [ ] T6: 前端上传功能 UI 对接
