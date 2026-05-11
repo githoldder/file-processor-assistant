@@ -10,7 +10,7 @@
     {
       "id": "T2",
       "description": "实现 /upload 文件流式上传接口",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "T3",

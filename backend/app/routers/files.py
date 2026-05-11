@@ -42,28 +42,61 @@ async def upload_file(file: UploadFile = File(...)):
 
 @router.get("")
 async def list_files():
+    """
+    Lists all files in the MinIO bucket with metadata.
+    """
     client = get_minio_client()
     try:
-        objects = client.list_objects(BUCKET)
-        files = []
+        # Standard recursive list
+        objects = client.list_objects(BUCKET, recursive=True)
+        files_list = []
         for obj in objects:
-            files.append({
+            # Skip directories (MinIO simulated dirs end with /)
+            if obj.object_name.endswith('/'):
+                continue
+                
+            files_list.append({
                 "object_name": obj.object_name,
+                "filename": obj.object_name.split('_', 1)[-1] if '_' in obj.object_name else obj.object_name,
                 "size": obj.size,
-                "last_modified": obj.last_modified
+                "last_modified": obj.last_modified.isoformat() if obj.last_modified else None,
+                "content_type": obj.content_type if hasattr(obj, 'content_type') else "application/octet-stream"
             })
-        return {"files": files}
+        
+        # Sort by last modified descending
+        files_list.sort(key=lambda x: x['last_modified'] or "", reverse=True)
+        return {"status": "success", "files": files_list}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to list files: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch file list")
 
 @router.get("/{object_name:path}/download")
 async def get_download_url(object_name: str):
+    """
+    Generates a presigned URL for downloading a file.
+    """
     client = get_minio_client()
     try:
-        url = client.presigned_get_object(BUCKET, object_name, expires=timedelta(hours=1))
-        return {"download_url": url}
+        # Check if object exists first
+        try:
+            client.stat_object(BUCKET, object_name)
+        except:
+            raise HTTPException(status_code=404, detail="File not found")
+
+        url = client.presigned_get_object(
+            BUCKET, 
+            object_name, 
+            expires=timedelta(hours=1),
+            response_headers={
+                'response-content-disposition': f'attachment; filename="{object_name.split("_", 1)[-1]}"'
+            }
+        )
+        return {"status": "success", "download_url": url}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to generate download URL for {object_name}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate download link")
 
 @router.delete("/{object_name:path}")
 async def delete_file(object_name: str):
