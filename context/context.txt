@@ -39,3 +39,20 @@
 - 能用脚本自动化的不直接手动解决（节省token）
 - Playwright测试使用有头模式：npx playwright test --headed
 - 每个阶段完成后更新此文件
+
+---
+# CulCloud Platform MVP-v2 重构
+## 当前状态
+- 分支：refactor/mvp-v2
+- 阶段：KR1 (基础设施与架构搭建) - 已完成
+- 最近修改：
+  - 创建了精简版 docker-compose.yml
+  - 搭建了 backend/app 基础目录树与 FastAPI 骨架
+  - 配置了 .env 环境变量
+  - 配置了 CORS 和 MinIO/Redis 生命周期
+  - 抽离核心 converter.py，精简 schemas.py
+  - 完成了 files/convert/tasks 的 API 路由与业务逻辑实现
+  - 改造并连通了 frontend API 与主要视图组件
+  - 归档旧代码至 99-archive 并更新了 README 目录树
+  - 建立了完善的单元/集成/黑盒测试 (Pytest) 及 Playwright E2E 自动化测试体系
+- 整体进度：MVP-v2 重构与测试体系全面闭环完成！

@@ -1,0 +1,33 @@
+# CulCloud Platform Agent Rules
+
+You are Antigravity, an AI engineering agent following the **Vibe-Coding Standard**.
+
+## Core Principles
+1. **Atomic Execution**: Work on ONE task from `prd.json` at a time.
+2. **Git First**: Commit after every successful atomic task. Branch out for features.
+3. **Skill Distillation**: If you repeat a task 3+ times, create a skill in `skills/`.
+4. **Harness Standards**:
+   - Update `progress.txt` with lessons learned.
+   - Run tests before marking a task as done.
+   - NO placeholders (//TODO). Implement it or split it.
+
+## Workflow (Harness Loop)
+1. Read `prds/*.json` to find the next `pending` task.
+2. Read `context/progress.txt` (or similar) to avoid past mistakes.
+3. Execute the task.
+4. Run verification (Playwright/Pytest).
+5. Commit with a descriptive message.
+6. Update `prd.json` status to `done`.
+
+## Code Standards
+- **Backend**: FastAPI, Pydantic, MinIO (S3 API), Redis.
+- **Frontend**: React, Vite, TailwindCSS.
+- **Testing**: Playwright for E2E, Pytest for backend.
+- **Design**: Premium aesthetics, no placeholders.
+
+## Git Commit Convention
+`<type>(<scope>): <subject>`
+Types: `feat`, `fix`, `chore`, `docs`, `test`, `refactor`.
+
+---
+*Always maintain the project's vibe and efficiency.*

@@ -2,11 +2,11 @@ import { FileItem } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
-export async function uploadFile(file: File): Promise<FileItem> {
+export async function uploadFile(file: File): Promise<any> {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/upload`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/files/upload`, {
     method: 'POST',
     body: formData,
   });
@@ -15,13 +15,59 @@ export async function uploadFile(file: File): Promise<FileItem> {
   return response.json();
 }
 
-export async function getFileInfo(fileId: string): Promise<FileItem> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/files/${fileId}`);
-  if (!response.ok) throw new Error('File not found');
+export async function listFiles(): Promise<{ files: any[] }> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/files`);
+  if (!response.ok) throw new Error('Failed to list files');
+  return response.json();
+}
+
+export async function deleteFile(objectId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/files/${encodeURIComponent(objectId)}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) throw new Error('Failed to delete file');
+}
+
+export async function getDownloadUrl(objectId: string): Promise<{ download_url: string }> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/files/${encodeURIComponent(objectId)}/download`);
+  if (!response.ok) throw new Error('Failed to get download URL');
+  return response.json();
+}
+
+export async function convertFile(file: File, targetFormat: string): Promise<{ task_id: string, status: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('target_format', targetFormat);
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/convert`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) throw new Error('Convert failed');
+  return response.json();
+}
+
+export async function getTaskStatus(taskId: string): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/tasks/${taskId}`);
+  if (!response.ok) throw new Error('Task not found');
   return response.json();
 }
 
 export async function getHealth(): Promise<{ status: string }> {
   const response = await fetch(`${API_BASE_URL}/health`);
+  return response.json();
+}
+export async function convertExistingFile(objectName: string, targetFormat: string): Promise<{ task_id: string, status: string }> {
+  const formData = new FormData();
+  formData.append('object_name', objectName);
+  formData.append('target_format', targetFormat);
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/convert/existing`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) throw new Error('Convert failed');
   return response.json();
 }
