@@ -63,7 +63,7 @@
 - [x] T3: 实现 /list 及 /download 接口 ✅ 已完成
 - [x] T4: 实现 /delete 删除接口 ✅ 已完成
 - [x] T5: 前端服务层 Mock 数据清理 ✅ 已完成
-- [ ] T6: 前端 MyFiles 视图集成真实上传/下载/删除交互
+- [x] T6: 前端 MyFiles 视图集成真实上传/下载/删除交互 ✅ 已完成
 - [ ] T7: 前端 Dashboard 视图 Mock 注入清理与基础指标对接
 - [ ] T8: 全链路 E2E 自动化测试验证
 # Progress Log - MinIO S3 Integration
