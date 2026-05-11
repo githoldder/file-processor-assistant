@@ -61,10 +61,10 @@
 - [x] T1: 后端 MinIO Client 重构 (标准 S3 协议) ✅ 已完成
 - [x] T2: 实现 /upload 上传接口 ✅ 已完成
 - [x] T3: 实现 /list 及 /download 接口 ✅ 已完成
-- [ ] T4: 实现 /delete 删除接口
+- [x] T4: 实现 /delete 删除接口 ✅ 已完成
 - [ ] T5: 前端服务层 Mock 数据清理
-- [ ] T6: 前端上传功能 UI 对接
-- [ ] T7: 前端文件列表、下载、删除 UI 对接
+- [ ] T6: 前端 MyFiles 视图集成真实上传/下载/删除交互
+- [ ] T7: 前端 Dashboard 视图 Mock 注入清理与基础指标对接
 - [ ] T8: 全链路 E2E 自动化测试验证
 # Progress Log - MinIO S3 Integration
 
@@ -76,14 +76,8 @@
 - Standards (Git SOP, Harness) have been distilled into `skills/` and `.cursorrules`.
 
 ### Task Status Tracking
-- [ ] T1: Backend MinIO Client Refactor
-- [ ] T2: Backend Upload Endpoint
-- [ ] T3: Backend List/Download Endpoints
-- [ ] T4: Backend Delete Endpoint
-- [ ] T5: Frontend Mock Cleanup
-- [ ] T6: Frontend Upload Integration
-- [ ] T7: Frontend List/Download/Delete Integration
-- [ ] T8: E2E Verification
+- [x] T1-T4: Backend S3 operations (Upload/List/Download/Delete) completed.
+- [ ] T5-T7: Frontend integration pending.
 
 ### Lessons Learned & Anti-patterns
 - (Pending execution)

@@ -20,7 +20,7 @@
     {
       "id": "T4",
       "description": "实现 /delete 物理删除接口",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "T5",
