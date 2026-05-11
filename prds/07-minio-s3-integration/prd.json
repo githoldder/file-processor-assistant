@@ -5,7 +5,7 @@
     {
       "id": "T1",
       "description": "后端 MinIO Client 重构（标准 S3 协议与初始化逻辑）",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "T2",

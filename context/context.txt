@@ -58,7 +58,7 @@
 - [2026-05-11] 合并记忆文件至 `context/context.txt` 以减少冗余。
 
 ## 待执行任务 (Harness PRD)
-- [ ] T1: 后端 MinIO Client 重构 (标准 S3 协议)
+- [x] T1: 后端 MinIO Client 重构 (标准 S3 协议) ✅ 已完成
 - [ ] T2: 实现 /upload 上传接口
 - [ ] T3: 实现 /list 及 /download 接口
 - [ ] T4: 实现 /delete 删除接口
