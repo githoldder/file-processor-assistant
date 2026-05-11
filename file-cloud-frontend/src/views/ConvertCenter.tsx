@@ -3,7 +3,8 @@ import {
   convertFile, 
   getTaskStatus, 
   listFiles, 
-  convertExistingFile 
+  convertExistingFile,
+  uploadFile
 } from '../services/api';
 import { 
   FileUp, 
@@ -80,7 +81,10 @@ export default function ConvertCenter() {
       if (selectedFile?.isCloud) {
         res = await convertExistingFile(selectedFile.name, targetFormat);
       } else if (actualFile) {
-        res = await convertFile(actualFile, targetFormat);
+        // Upload the file to S3 API first so it appears in "My Files"
+        const uploadRes = await uploadFile(actualFile);
+        // Assuming uploadRes has an object_name property based on standard response
+        res = await convertExistingFile(uploadRes.object_name || uploadRes.filename || actualFile.name, targetFormat);
       } else {
         return;
       }

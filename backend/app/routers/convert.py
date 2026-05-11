@@ -36,9 +36,9 @@ async def async_convert_task(task_id: str, file_bytes: bytes, target_format: Con
             raise Exception(f"Unsupported MVP conversion format: {target_format}")
             
         client = get_minio_client()
-        object_name = f"{task_id}.{output_ext}"
-        client.put_object("culcloud-temp", object_name, io.BytesIO(result_bytes), len(result_bytes))
-        url = client.presigned_get_object("culcloud-temp", object_name, expires=timedelta(hours=24))
+        object_name = f"converted_{task_id}.{output_ext}"
+        client.put_object("culcloud-files", object_name, io.BytesIO(result_bytes), len(result_bytes))
+        url = client.presigned_get_object("culcloud-files", object_name, expires=timedelta(hours=24))
         
         await set_task_status(task_id, TaskStatus.SUCCESS, result_url=url)
     except Exception as e:
