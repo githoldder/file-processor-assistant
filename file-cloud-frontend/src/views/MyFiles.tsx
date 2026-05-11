@@ -138,7 +138,7 @@ export default function MyFiles() {
                 <Loader2 className="w-12 h-12 text-primary animate-spin" />
                 <p className="text-xs font-black text-outline uppercase tracking-widest">{t.zh ? '正在读取云端文件...' : 'Loading cloud files...'}</p>
              </div>
-          ) : files.length > 0 ? (
+          ) : files && files.length > 0 ? (
             <div className="grid grid-cols-1 gap-4">
               {files.map((file, idx) => (
                 <div key={idx} className="flex items-center justify-between p-6 bg-surface-container-low/50 rounded-[1.5rem] border border-outline-variant/30 hover:bg-surface-container-low transition-all group">
@@ -147,18 +147,15 @@ export default function MyFiles() {
                       <FileText className="text-primary w-6 h-6" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-black tracking-tight text-on-surface">{file.object_name}</h4>
+                      <h4 className="text-sm font-black tracking-tight text-on-surface">{file.filename || file.object_name}</h4>
                       <p className="text-[10px] font-black text-outline uppercase tracking-widest mt-1">
-                        {(file.size / 1024 / 1024).toFixed(2)} MB • {new Date(file.last_modified).toLocaleDateString()}
+                        {file.size ? (file.size / 1024 / 1024).toFixed(2) : "0.00"} MB • {file.last_modified ? new Date(file.last_modified).toLocaleDateString() : "--"}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={() => setPreviewFile(file)} className="p-3 hover:bg-primary/10 text-primary rounded-xl transition-all" title="Preview">
                       <Eye size={18} />
-                    </button>
-                    <button onClick={() => { setRenamingFile(file); setNewName(file.object_name); }} className="p-3 hover:bg-primary/10 text-primary rounded-xl transition-all" title="Rename">
-                      <Edit2 size={18} />
                     </button>
                     <button onClick={() => handleDownload(file.object_name)} className="p-3 hover:bg-primary/10 text-primary rounded-xl transition-all" title="Download">
                       <Download size={18} />
