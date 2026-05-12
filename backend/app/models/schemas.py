@@ -32,6 +32,8 @@ class ConversionType(str, Enum):
     PNG_TO_SVG = "png_to_svg"
     PNG_TO_ICO = "png_to_ico"
     PNG_TO_PDF = "png_to_pdf"
+    JPG_TO_PDF = "jpg_to_pdf"
+    JPEG_TO_PDF = "jpeg_to_pdf"
 
 class ConvertResponse(BaseModel):
     task_id: Optional[str] = None

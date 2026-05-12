@@ -225,32 +225,37 @@ class DocumentConverter:
             os.unlink(tmp_path)
 
     def excel_to_pdf(
-        self, xlsx_data: bytes, output_path: Optional[str] = None
+        self,
+        xlsx_data: bytes,
+        output_path: Optional[str] = None,
+        layout_options: Optional[Dict[str, Any]] = None,
     ) -> bytes:
+        if layout_options:
+            return self._excel_to_pdf_fallback(xlsx_data, output_path, layout_options)
         try:
             return self._gotenberg_convert(xlsx_data, "xlsx", "pdf")
         except Exception:
-            return self._excel_to_pdf_fallback(xlsx_data, output_path)
+            return self._excel_to_pdf_fallback(xlsx_data, output_path, layout_options)
 
     def _excel_to_pdf_fallback(
-        self, xlsx_data: bytes, output_path: Optional[str] = None
+        self,
+        xlsx_data: bytes,
+        output_path: Optional[str] = None,
+        layout_options: Optional[Dict[str, Any]] = None,
     ) -> bytes:
         from openpyxl import load_workbook
-        from openpyxl.styles import Font, Alignment
-        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.pagesizes import A3, A4, landscape, portrait
         from reportlab.lib import colors
         from reportlab.platypus import (
             SimpleDocTemplate,
             Table,
             TableStyle,
-            Paragraph,
             Spacer,
+            PageBreak,
         )
         from reportlab.lib.units import inch
         from reportlab.pdfbase import pdfmetrics
         from reportlab.pdfbase.ttfonts import TTFont
-        from reportlab.lib.styles import getSampleStyleSheet
-        import io
 
         # Register Chinese font
         chinese_fonts = [
@@ -271,13 +276,22 @@ class DocumentConverter:
         # Fallback to STSong-Light (built-in PDF font for Chinese)
         if not registered_font:
             try:
-                from reportlab.pdfbase import pdffont
-
                 registered_font = "STSong-Light"
             except Exception:
                 registered_font = "Helvetica"
 
         output_path = output_path or self._get_temp_path(".pdf")
+        options = layout_options or {}
+        page_size_name = str(options.get("page_size", "A4")).upper()
+        page_size = A3 if page_size_name == "A3" else A4
+        orientation = str(options.get("orientation", "landscape")).lower()
+        page_size = landscape(page_size) if orientation == "landscape" else portrait(page_size)
+        max_columns = int(options.get("max_columns", 8) or 8)
+        max_columns = max(1, min(max_columns, 32))
+        include_all_sheets = bool(options.get("include_all_sheets", False))
+        font_size = int(options.get("font_size", 8) or 8)
+        font_size = max(6, min(font_size, 12))
+        repeat_header = bool(options.get("repeat_header", True))
 
         with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
             tmp.write(xlsx_data)
@@ -285,46 +299,63 @@ class DocumentConverter:
 
         try:
             wb = load_workbook(tmp_path, read_only=True)
-            ws = wb.active
-
-            doc = SimpleDocTemplate(output_path, pagesize=A4)
+            worksheets = wb.worksheets if include_all_sheets else [wb.active]
+            doc = SimpleDocTemplate(
+                output_path,
+                pagesize=page_size,
+                leftMargin=0.35 * inch,
+                rightMargin=0.35 * inch,
+                topMargin=0.45 * inch,
+                bottomMargin=0.45 * inch,
+            )
             elements = []
-            styles = getSampleStyleSheet()
-
             font_name = registered_font
 
-            for row_idx, row in enumerate(ws.iter_rows(values_only=True)):
-                if row_idx == 0:
+            for sheet_index, ws in enumerate(worksheets):
+                rows = []
+                for row in ws.iter_rows(values_only=True):
+                    values = ["" if cell is None else str(cell) for cell in row[:max_columns]]
+                    if any(value.strip() for value in values):
+                        rows.append(values)
+
+                if not rows:
                     continue
 
-                data = []
-                for cell in row:
-                    if cell is not None:
-                        data.append(str(cell))
-                    else:
-                        data.append("")
-
-                if data:
-                    t = Table([data])
-                    t.setStyle(
-                        TableStyle(
-                            [
-                                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
-                                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                                ("FONTNAME", (0, 0), (-1, -1), font_name),
-                                ("FONTSIZE", (0, 0), (-1, 0), 10),
-                                ("FONTSIZE", (0, 1), (-1, -1), 8),
-                                ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
-                                ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
-                                ("GRID", (0, 0), (-1, -1), 1, colors.black),
-                            ]
-                        )
+                column_count = max(len(row) for row in rows)
+                normalized_rows = [row + [""] * (column_count - len(row)) for row in rows]
+                usable_width = page_size[0] - doc.leftMargin - doc.rightMargin
+                col_widths = [usable_width / column_count] * column_count
+                table = Table(
+                    normalized_rows,
+                    colWidths=col_widths,
+                    repeatRows=1 if repeat_header and len(normalized_rows) > 1 else 0,
+                )
+                table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#eef2ff")),
+                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#111827")),
+                            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("FONTNAME", (0, 0), (-1, -1), font_name),
+                            ("FONTSIZE", (0, 0), (-1, -1), font_size),
+                            ("LEADING", (0, 0), (-1, -1), font_size + 2),
+                            ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cbd5e1")),
+                            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
+                            ("LEFTPADDING", (0, 0), (-1, -1), 3),
+                            ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+                            ("TOPPADDING", (0, 0), (-1, -1), 3),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                        ]
                     )
-                    elements.append(t)
-                    elements.append(Spacer(1, 0.2 * inch))
+                )
+                if sheet_index > 0:
+                    elements.append(PageBreak())
+                elements.append(table)
+                elements.append(Spacer(1, 0.15 * inch))
 
             doc.build(elements)
+            wb.close()
 
             with open(output_path, "rb") as f:
                 return f.read()

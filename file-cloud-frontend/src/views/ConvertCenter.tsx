@@ -6,6 +6,7 @@ import {
   convertExistingFile,
   uploadFile
 } from '../services/api';
+import type { ConversionOptions } from '../services/api';
 import { 
   FileUp, 
   Cloud, 
@@ -19,7 +20,9 @@ import {
   X,
   Loader2,
   FileIcon as FilePdf,
-  RefreshCw
+  RefreshCw,
+  SlidersHorizontal,
+  Table2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLanguage } from '../context/LanguageContext';
@@ -34,6 +37,14 @@ interface SelectedFile {
   isCloud?: boolean;
 }
 
+interface FileAnalysis {
+  extension: string;
+  category: string;
+  previewRows?: string[][];
+  columnCount?: number;
+  rowCount?: number;
+}
+
 export default function ConvertCenter() {
   const { t } = useLanguage();
   const [status, setStatus] = useState<ConversionStatus>('idle');
@@ -44,6 +55,16 @@ export default function ConvertCenter() {
   const [progress, setProgress] = useState(0);
   const [targetFormat, setTargetFormat] = useState('word_to_pdf');
   const [fidelity, setFidelity] = useState('Auto');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [fileAnalysis, setFileAnalysis] = useState<FileAnalysis | null>(null);
+  const [excelLayout, setExcelLayout] = useState<ConversionOptions['excel_layout']>({
+    page_size: 'A4',
+    orientation: 'landscape',
+    max_columns: 8,
+    font_size: 8,
+    include_all_sheets: false,
+    repeat_header: true,
+  });
   
   // Cloud Selector State
   const [isCloudSelectorOpen, setIsCloudSelectorOpen] = useState(false);
@@ -62,14 +83,55 @@ export default function ConvertCenter() {
     }
   };
 
+  const getExtension = (name: string) => {
+    const clean = name.split('?')[0].toLowerCase();
+    return clean.includes('.') ? clean.split('.').pop() || '' : '';
+  };
+
+  const isExcelConversion = () => targetFormat === 'excel_to_pdf' || targetFormat === 'excel_to_csv';
+
+  const buildConversionOptions = (): ConversionOptions | undefined => {
+    if (!isExcelConversion()) return undefined;
+    return { excel_layout: excelLayout };
+  };
+
+  const analyzeLocalFile = async (file: File) => {
+    const extension = getExtension(file.name);
+    const category = ['xlsx', 'xls', 'csv'].includes(extension)
+      ? 'Spreadsheet'
+      : ['pdf', 'docx', 'pptx', 'md', 'txt'].includes(extension)
+        ? 'Document'
+        : ['png', 'jpg', 'jpeg', 'svg'].includes(extension)
+          ? 'Image'
+          : 'File';
+
+    if (extension === 'csv' || extension === 'txt') {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter(Boolean).slice(0, 6);
+      const previewRows = lines.map((line) => line.split(',').slice(0, 12));
+      setFileAnalysis({
+        extension,
+        category,
+        previewRows,
+        rowCount: text.split(/\r?\n/).filter(Boolean).length,
+        columnCount: Math.max(0, ...previewRows.map((row) => row.length)),
+      });
+      return;
+    }
+
+    setFileAnalysis({ extension, category });
+  };
+
   const handleFileSelect = (name: string, size: string, type: string, isCloud = false) => {
     setSelectedFile({ name, size, type, isCloud });
     setStatus('detected');
+    setErrorMessage('');
+    const lowerName = name.toLowerCase();
     // Simple auto-detection logic
-    if (name.endsWith('.docx') || name.endsWith('.doc')) setTargetFormat('word_to_pdf');
-    else if (name.endsWith('.pdf')) setTargetFormat('pdf_to_word');
-    else if (name.endsWith('.xlsx')) setTargetFormat('excel_to_pdf');
-    else if (name.endsWith('.pptx')) setTargetFormat('pptx_to_pdf');
+    if (lowerName.endsWith('.docx') || lowerName.endsWith('.doc')) setTargetFormat('word_to_pdf');
+    else if (lowerName.endsWith('.pdf')) setTargetFormat('pdf_to_word');
+    else if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls') || lowerName.endsWith('.csv')) setTargetFormat('excel_to_pdf');
+    else if (lowerName.endsWith('.pptx')) setTargetFormat('pptx_to_pdf');
     else setTargetFormat('word_to_pdf');
   };
 
@@ -78,13 +140,14 @@ export default function ConvertCenter() {
     setProgress(5);
     try {
       let res;
+      const options = buildConversionOptions();
       if (selectedFile?.isCloud) {
-        res = await convertExistingFile(selectedFile.name, targetFormat);
+        res = await convertExistingFile(selectedFile.name, targetFormat, options);
       } else if (actualFile) {
         // Upload the file to S3 API first so it appears in "My Files"
         const uploadRes = await uploadFile(actualFile);
         // Assuming uploadRes has an object_name property based on standard response
-        res = await convertExistingFile(uploadRes.object_name || uploadRes.filename || actualFile.name, targetFormat);
+        res = await convertExistingFile(uploadRes.object_name || uploadRes.filename || actualFile.name, targetFormat, options);
       } else {
         return;
       }
@@ -94,6 +157,7 @@ export default function ConvertCenter() {
       }
     } catch (e) {
       console.error(e);
+      setErrorMessage(e instanceof Error ? e.message : (t.zh ? '转换启动失败' : 'Failed to start conversion'));
       setStatus('failed');
     }
   };
@@ -110,6 +174,7 @@ export default function ConvertCenter() {
             setProgress(100);
           } else if (res.status === 'failed') {
             clearInterval(interval);
+            setErrorMessage(res.error || (t.zh ? '转换失败，请检查文件格式和导出设置。' : 'Conversion failed. Check the file type and export settings.'));
             setStatus('failed');
           } else {
             setProgress(prev => Math.min(prev + (Math.random() * 10), 95));
@@ -124,7 +189,18 @@ export default function ConvertCenter() {
 
   const handleDownload = () => {
     if (downloadUrl) {
-      window.open(downloadUrl, '_blank');
+      if (downloadUrl.includes(':9000/')) {
+        setErrorMessage(t.zh ? '已阻止不安全的 MinIO 直连下载链接，请重新转换。' : 'Blocked unsafe MinIO direct download URL. Please retry.');
+        setStatus('failed');
+        return;
+      }
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.rel = 'noopener noreferrer';
+      link.download = '';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
     }
   };
 
@@ -133,6 +209,8 @@ export default function ConvertCenter() {
     setActualFile(null);
     setTaskId(null);
     setDownloadUrl(null);
+    setErrorMessage('');
+    setFileAnalysis(null);
     setStatus('idle');
     setProgress(0);
   };
@@ -160,6 +238,7 @@ export default function ConvertCenter() {
                 if (file) {
                   setActualFile(file);
                   handleFileSelect(file.name, `${(file.size / (1024 * 1024)).toFixed(2)} MB`, file.type);
+                  analyzeLocalFile(file);
                 }
               }}
             >
@@ -177,6 +256,7 @@ export default function ConvertCenter() {
                     if (file) {
                       setActualFile(file);
                       handleFileSelect(file.name, `${(file.size / (1024 * 1024)).toFixed(2)} MB`, file.type);
+                      analyzeLocalFile(file);
                     }
                   }} />
                 </label>
@@ -238,6 +318,7 @@ export default function ConvertCenter() {
                       <option value="word_to_pdf">{t.zh ? '便携式文档格式 (.pdf)' : 'Portable Document Format (.pdf)'}</option>
                       <option value="pdf_to_word">{t.zh ? '微软 Word (.docx)' : 'Microsoft Word (.docx)'}</option>
                       <option value="excel_to_pdf">{t.zh ? 'Excel 转 PDF (.pdf)' : 'Excel to PDF (.pdf)'}</option>
+                      <option value="excel_to_csv">{t.zh ? 'Excel 转 CSV (.csv)' : 'Excel to CSV (.csv)'}</option>
                       <option value="pptx_to_pdf">{t.zh ? 'PPTX 转 PDF (.pdf)' : 'PPTX to PDF (.pdf)'}</option>
                       <option value="pdf_to_html">{t.zh ? 'PDF 转 HTML (.html)' : 'PDF to HTML (.html)'}</option>
                     </select>
@@ -278,6 +359,141 @@ export default function ConvertCenter() {
                 </div>
               </div>
 
+              {(fileAnalysis || isExcelConversion()) && (
+                <div className="px-8 pb-8 grid grid-cols-1 xl:grid-cols-[1fr_1.2fr] gap-6">
+                  <div className="rounded-2xl border border-outline-variant/50 bg-surface-container-low/40 p-6 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                        <Table2 className="w-4 h-4 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black tracking-tight">{t.zh ? '文件解析' : 'File Analysis'}</h3>
+                        <p className="text-[10px] font-black text-outline uppercase tracking-widest">
+                          {fileAnalysis?.category || (t.zh ? '表格文件' : 'Spreadsheet')} · {fileAnalysis?.extension || 'xlsx'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-xl bg-white/70 border border-outline-variant/30 p-4">
+                        <p className="text-[10px] font-black text-outline uppercase tracking-widest">{t.zh ? '估计列数' : 'Columns'}</p>
+                        <p className="text-xl font-black text-on-surface">{fileAnalysis?.columnCount ?? excelLayout.max_columns}</p>
+                      </div>
+                      <div className="rounded-xl bg-white/70 border border-outline-variant/30 p-4">
+                        <p className="text-[10px] font-black text-outline uppercase tracking-widest">{t.zh ? '导出上限' : 'Export Cap'}</p>
+                        <p className="text-xl font-black text-on-surface">{excelLayout.max_columns}</p>
+                      </div>
+                    </div>
+
+                    {fileAnalysis?.previewRows && fileAnalysis.previewRows.length > 0 && (
+                      <div className="max-h-40 overflow-auto rounded-xl border border-outline-variant/40 bg-white">
+                        <table className="w-full text-left text-[11px]">
+                          <tbody>
+                            {fileAnalysis.previewRows.map((row, rowIndex) => (
+                              <tr key={rowIndex} className="border-b border-outline-variant/20 last:border-0">
+                                {row.map((cell, cellIndex) => (
+                                  <td key={cellIndex} className="px-3 py-2 font-semibold text-on-surface/80 whitespace-nowrap">
+                                    {cell || '--'}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {isExcelConversion() && (
+                    <div className="rounded-2xl border border-outline-variant/50 bg-surface-container-low/40 p-6 space-y-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                          <SlidersHorizontal className="w-4 h-4 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-black tracking-tight">{t.zh ? 'Excel 导出布局' : 'Excel Export Layout'}</h3>
+                          <p className="text-[10px] font-black text-outline uppercase tracking-widest">
+                            {t.zh ? '控制页面、列数和字体，减少错位与溢出' : 'Control page, columns and font to avoid overflow'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <label className="space-y-2">
+                          <span className="text-[10px] font-black text-outline uppercase tracking-widest">{t.zh ? '页面' : 'Page'}</span>
+                          <select
+                            value={excelLayout.page_size}
+                            onChange={(e) => setExcelLayout((prev) => ({ ...prev, page_size: e.target.value as 'A4' | 'A3' }))}
+                            className="w-full rounded-xl border border-outline-variant bg-white px-4 py-3 text-xs font-black outline-none"
+                          >
+                            <option value="A4">A4</option>
+                            <option value="A3">A3</option>
+                          </select>
+                        </label>
+                        <label className="space-y-2">
+                          <span className="text-[10px] font-black text-outline uppercase tracking-widest">{t.zh ? '方向' : 'Orientation'}</span>
+                          <select
+                            value={excelLayout.orientation}
+                            onChange={(e) => setExcelLayout((prev) => ({ ...prev, orientation: e.target.value as 'portrait' | 'landscape' }))}
+                            className="w-full rounded-xl border border-outline-variant bg-white px-4 py-3 text-xs font-black outline-none"
+                          >
+                            <option value="landscape">{t.zh ? '横向' : 'Landscape'}</option>
+                            <option value="portrait">{t.zh ? '纵向' : 'Portrait'}</option>
+                          </select>
+                        </label>
+                        <label className="space-y-2">
+                          <span className="text-[10px] font-black text-outline uppercase tracking-widest">{t.zh ? '字号' : 'Font'}</span>
+                          <input
+                            type="number"
+                            min={6}
+                            max={12}
+                            value={excelLayout.font_size}
+                            onChange={(e) => setExcelLayout((prev) => ({ ...prev, font_size: Number(e.target.value) }))}
+                            className="w-full rounded-xl border border-outline-variant bg-white px-4 py-3 text-xs font-black outline-none"
+                          />
+                        </label>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black text-outline uppercase tracking-widest">{t.zh ? '导出列数' : 'Export Columns'}</span>
+                          <span className="text-[10px] font-black text-primary uppercase tracking-widest">{excelLayout.max_columns}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={1}
+                          max={24}
+                          value={excelLayout.max_columns}
+                          onChange={(e) => setExcelLayout((prev) => ({ ...prev, max_columns: Number(e.target.value) }))}
+                          className="w-full accent-primary"
+                        />
+                      </div>
+
+                      <div className="flex flex-wrap gap-4">
+                        <label className="flex items-center gap-3 text-xs font-black text-outline uppercase tracking-wider">
+                          <input
+                            type="checkbox"
+                            checked={excelLayout.repeat_header}
+                            onChange={(e) => setExcelLayout((prev) => ({ ...prev, repeat_header: e.target.checked }))}
+                            className="w-5 h-5 rounded-lg border-outline-variant text-primary focus:ring-primary/20"
+                          />
+                          {t.zh ? '重复表头' : 'Repeat Header'}
+                        </label>
+                        <label className="flex items-center gap-3 text-xs font-black text-outline uppercase tracking-wider">
+                          <input
+                            type="checkbox"
+                            checked={excelLayout.include_all_sheets}
+                            onChange={(e) => setExcelLayout((prev) => ({ ...prev, include_all_sheets: e.target.checked }))}
+                            className="w-5 h-5 rounded-lg border-outline-variant text-primary focus:ring-primary/20"
+                          />
+                          {t.zh ? '全部工作表' : 'All Sheets'}
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Status Section */}
               <div className="px-8 pb-8 flex flex-col sm:flex-row items-center justify-between gap-6">
                 <div className="flex-1 w-full max-w-lg">
@@ -304,6 +520,11 @@ export default function ConvertCenter() {
                          {status === 'success' && <CheckCircle2 className="w-4 h-4 text-[#0b5cff]" />}
                          {status === 'failed' && <X className="w-4 h-4 text-error" />}
                        </div>
+                       {errorMessage && (
+                         <p className="text-xs font-bold text-error leading-relaxed">
+                           {errorMessage}
+                         </p>
+                       )}
                     </div>
                   ) : (
                     <div className="text-[10px] font-black text-outline-variant uppercase tracking-widest flex items-center gap-2">
@@ -397,6 +618,11 @@ export default function ConvertCenter() {
                           key={idx}
                           onClick={() => {
                             handleFileSelect(file.object_name, `${(file.size / 1024).toFixed(2)} KB`, 'application/octet-stream', true);
+                            const extension = getExtension(file.object_name);
+                            setFileAnalysis({
+                              extension,
+                              category: ['xlsx', 'xls', 'csv'].includes(extension) ? 'Spreadsheet' : 'Cloud File',
+                            });
                             setIsCloudSelectorOpen(false);
                           }}
                           className="flex items-center justify-between p-4 bg-surface-container-low/50 rounded-2xl border border-outline-variant/30 hover:bg-primary/5 hover:border-primary/30 transition-all text-left group"
