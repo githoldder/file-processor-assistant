@@ -1,0 +1,105 @@
+{
+  "id": "08-file-preview-conversion-folders",
+  "title": "文件预览、轻量转换集成与文件夹云盘能力",
+  "branch": "feature/file-preview-conversion-folders",
+  "source_references": [
+    "99-archive/file-processor/README.md",
+    "99-archive/file-processor/SPEC.md",
+    "99-archive/file-processor/backend/app/services/converter.py",
+    "99-archive/file-processor/backend/app/tasks/convert_tasks.py"
+  ],
+  "tasks": [
+    {
+      "id": "T1",
+      "description": "梳理当前轻量版 converter 与旧 file-processor-assistant 转换矩阵差异，形成 capabilities 映射",
+      "status": "pending"
+    },
+    {
+      "id": "T2",
+      "description": "后端新增 preview service：按文件类型生成或复用预览产物，缓存到 MinIO previews/ 前缀",
+      "status": "pending"
+    },
+    {
+      "id": "T3",
+      "description": "后端新增 /api/v1/preview 路由，支持 PDF、Markdown、TXT、图片、Office 预览内容输出",
+      "status": "pending"
+    },
+    {
+      "id": "T4",
+      "description": "后端扩展 convert dispatch，暴露旧系统已验证的轻量转换矩阵并写回 conversions/",
+      "status": "pending"
+    },
+    {
+      "id": "T5",
+      "description": "后端扩展 files API：创建文件夹、prefix 列表、文件夹上传 relative_path、递归删除目录",
+      "status": "pending"
+    },
+    {
+      "id": "T6",
+      "description": "前端 API service 增加 preview、folder、capabilities 接口封装",
+      "status": "pending"
+    },
+    {
+      "id": "T7",
+      "description": "前端 MyFiles 视图增加目录导航、创建文件夹、文件夹上传和真实预览弹窗",
+      "status": "pending"
+    },
+    {
+      "id": "T8",
+      "description": "前端 ConvertCenter 从 capabilities 动态渲染可用转换类型，并支持云端文件转换矩阵",
+      "status": "pending"
+    },
+    {
+      "id": "T9",
+      "description": "补充单元/集成测试：预览类型识别、MinIO 预览缓存、文件夹 prefix 行为、转换 dispatch",
+      "status": "pending"
+    },
+    {
+      "id": "T10",
+      "description": "补充 Playwright E2E：文件夹创建/上传、图片/PDF/MD/TXT/Office 预览、云端转换",
+      "status": "pending"
+    },
+    {
+      "id": "T11",
+      "description": "更新 README/报告/上下文，记录 PRD08 完整闭环和已知限制",
+      "status": "pending"
+    }
+  ],
+  "acceptance": {
+    "preview_formats": [
+      "pptx",
+      "xlsx",
+      "xls",
+      "docx",
+      "pdf",
+      "md",
+      "txt",
+      "png",
+      "jpg",
+      "jpeg",
+      "svg"
+    ],
+    "conversion_scope": [
+      "pdf_to_word",
+      "pdf_to_images",
+      "pdf_to_html",
+      "word_to_pdf",
+      "word_to_markdown",
+      "excel_to_pdf",
+      "excel_to_csv",
+      "pptx_to_pdf",
+      "pptx_to_images",
+      "markdown_to_pdf",
+      "markdown_to_html",
+      "markdown_to_word",
+      "svg_to_png",
+      "svg_to_pdf",
+      "png_to_svg",
+      "png_to_ico",
+      "png_to_pdf",
+      "jpg_to_pdf",
+      "jpeg_to_pdf"
+    ],
+    "storage": "MinIO S3-compatible culcloud-bucket with folders as prefixes"
+  }
+}

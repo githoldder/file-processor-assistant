@@ -1,5 +1,81 @@
 # 项目上下文管理
 
+## 最新交接：PRD08 文件预览、轻量转换集成与文件夹云盘能力
+
+- 当前日期：2026-05-12
+- 当前分支：`feature/file-preview-conversion-folders`
+- 基线：已从 `feature/minio-s3-integration` 合并到 `master`
+- 合并提交：`1631627 merge: complete minio s3 integration`
+- 新 PRD：`prds/08-file-preview-conversion-folders/prd.md`
+- 新 PRD 任务表：`prds/08-file-preview-conversion-folders/prd.json`
+
+### 本轮用户需求
+
+1. 当前没有文件预览功能，需要新增常见格式预览：
+   - Office：`pptx`, `excel/xlsx/xls`, `docx`
+   - 文档：`pdf`, `md`, `txt`
+   - 图片：`png`, `jpg/jpeg`, `svg`
+2. 文件转换功能参考旧主分支/旧系统 `file-process-assistant`，做轻量化集成。
+3. 文件上传需要支持：
+   - 文件夹上传
+   - 创建文件夹
+   - MinIO/S3 prefix 风格目录管理
+4. 基于这些需求生成新 PRD。
+5. 保存上下文到 `context/context.txt`，下一 session 按该上下文继续实现。
+
+### 已完成
+
+- [x] 将 `feature/minio-s3-integration` 合并进 `master`
+- [x] 从合并后的 `master` 创建新分支 `feature/file-preview-conversion-folders`
+- [x] 参考旧系统资料：
+  - `99-archive/file-processor/README.md`
+  - `99-archive/file-processor/SPEC.md`
+  - `99-archive/file-processor/backend/app/services/converter.py`
+  - `99-archive/file-processor/backend/app/tasks/convert_tasks.py`
+- [x] 创建 PRD08：
+  - `prds/08-file-preview-conversion-folders/prd.md`
+  - `prds/08-file-preview-conversion-folders/prd.json`
+
+### PRD08 核心设计
+
+- 文件预览新增后端 preview service：
+  - 直接预览：PDF、图片、TXT
+  - 转 HTML：Markdown
+  - 转 PDF/HTML 预览：DOCX、XLSX/XLS、PPTX
+  - 预览产物缓存到 MinIO `previews/` 前缀
+- 转换功能轻量集成：
+  - 当前 `backend/app/services/converter.py` 已包含旧系统大部分转换方法
+  - 下一步应补齐 `backend/app/routers/convert.py` dispatch 和前端 capabilities
+  - 不恢复 Celery 重队列，继续使用当前 FastAPI + Redis task status 模型
+- 文件夹能力：
+  - MinIO folder = prefix + `.keep`
+  - 上传文件夹时保留 `webkitRelativePath`
+  - 文件列表支持 `prefix` 参数、目录导航、递归删除
+
+### 下一 session 建议执行顺序
+
+1. 清理或忽略本地 `.DS_Store` 与构建缓存噪声，避免误提交：
+   - 当前存在未跟踪：`99-archive/.DS_Store`, `doc/.DS_Store`, `prds/.DS_Store`, `tests/.DS_Store`, `node_modules/.DS_Store`, `file-cloud-frontend/.vite/`, `docker/hadoop-mapreduce-lab/target/`
+   - `.DS_Store` 曾阻塞分支切换，备份在 `/private/tmp/culcloud-platform.DS_Store.backup` 和 `/private/tmp/culcloud-platform.DS_Store.master-untracked`
+   - `git stash list` 中有 3 个 `.DS_Store` 相关 stash，可后续确认后删除
+2. 提交 PRD08 与本上下文文件。
+3. 实现后端：
+   - `backend/app/services/preview.py`
+   - `backend/app/routers/preview.py`
+   - `backend/app/routers/files.py` folder/prefix/relative_path
+   - `backend/app/routers/convert.py` capabilities + 完整 dispatch
+4. 实现前端：
+   - `file-cloud-frontend/src/services/api.ts` preview/folder/capabilities
+   - `file-cloud-frontend/src/views/MyFiles.tsx` 目录导航、文件夹上传、创建文件夹、真实预览弹窗
+   - `file-cloud-frontend/src/views/ConvertCenter.tsx` 动态转换选项
+5. 验证：
+   - `npm run lint`
+   - `npm run build`
+   - Docker Compose API/MinIO/Gotenberg 健康检查
+   - Playwright E2E 覆盖 PRD08 关键路径
+
+---
+
 ## 当前状态
 - 分支：integration-mvp
 - 阶段：文档结构建立完成，开始执行PRD任务
