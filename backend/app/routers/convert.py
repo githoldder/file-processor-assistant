@@ -3,6 +3,7 @@ from app.services.converter import DocumentConverter
 from app.models.schemas import ConversionType, ConvertResponse, TaskStatus
 from app.services.task_queue import set_task_status
 from app.services.minio_client import get_minio_client
+from app.config import settings
 import uuid
 import io
 from datetime import timedelta
@@ -36,9 +37,11 @@ async def async_convert_task(task_id: str, file_bytes: bytes, target_format: Con
             raise Exception(f"Unsupported MVP conversion format: {target_format}")
             
         client = get_minio_client()
-        object_name = f"converted_{task_id}.{output_ext}"
-        client.put_object("culcloud-files", object_name, io.BytesIO(result_bytes), len(result_bytes))
-        url = client.presigned_get_object("culcloud-files", object_name, expires=timedelta(hours=24))
+        object_name = f"conversions/{task_id}.{output_ext}"
+        client.put_object(settings.MINIO_BUCKET, object_name, io.BytesIO(result_bytes), len(result_bytes))
+        url = client.presigned_get_object(settings.MINIO_BUCKET, object_name, expires=timedelta(hours=24))
+        internal = settings.MINIO_ENDPOINT.replace("http://", "").replace("https://", "")
+        url = url.replace(f"http://{internal}", settings.MINIO_PUBLIC_ENDPOINT.rstrip("/"))
         
         await set_task_status(task_id, TaskStatus.SUCCESS, result_url=url)
     except Exception as e:
@@ -66,8 +69,10 @@ async def convert_existing_file(
 ):
     client = get_minio_client()
     try:
-        response = client.get_object("culcloud-files", object_name)
+        response = client.get_object(settings.MINIO_BUCKET, object_name)
         file_bytes = response.read()
+        response.close()
+        response.release_conn()
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"File not found in cloud storage: {str(e)}")
     

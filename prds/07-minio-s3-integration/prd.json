@@ -40,7 +40,7 @@
     {
       "id": "T8",
       "description": "全链路 Playwright E2E 自动化测试验证",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }

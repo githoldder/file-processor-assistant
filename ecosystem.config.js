@@ -1,36 +1,51 @@
 module.exports = {
   apps: [
     {
-      name: 'frontend-dev',
+      name: 'culcloud-frontend-dev',
       cwd: './file-cloud-frontend',
       script: 'npm',
       args: 'run dev',
+      exec_mode: 'fork',
+      instances: 1,
       watch: false,
+      time: true,
       env: {
-        NODE_ENV: 'development'
-      }
+        NODE_ENV: 'development',
+        HOST: '127.0.0.1',
+        PORT: '5173',
+        VITE_API_BASE_URL: 'http://127.0.0.1:8000',
+      },
     },
     {
-      name: 'frontend-build',
+      name: 'culcloud-frontend-build',
       cwd: './file-cloud-frontend',
       script: 'npm',
       args: 'run build',
+      exec_mode: 'fork',
+      instances: 1,
       watch: false,
       autorestart: false,
+      time: true,
       env: {
-        NODE_ENV: 'production'
-      }
+        NODE_ENV: 'production',
+        VITE_API_BASE_URL: 'http://127.0.0.1:8000',
+      },
     },
     {
-      name: 'frontend-preview',
+      name: 'culcloud-frontend-preview',
       cwd: './file-cloud-frontend',
       script: 'npm',
       args: 'run preview',
+      exec_mode: 'fork',
+      instances: 1,
       watch: false,
+      time: true,
       env: {
-        NODE_ENV: 'production'
-      }
-    }
-  ]
+        NODE_ENV: 'production',
+        HOST: '127.0.0.1',
+        PORT: '4173',
+        VITE_API_BASE_URL: 'http://127.0.0.1:8000',
+      },
+    },
+  ],
 };
-

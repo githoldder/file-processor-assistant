@@ -23,14 +23,9 @@ import {
   Box
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { WORKER_NODES } from '../constants';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../context/LanguageContext';
 import { listFiles } from '../services/api';
-
-const PIE_DATA = [
-  { name: 'S3 Files', value: 100, color: '#0061ff' },
-];
 
 export default function Dashboard() {
   const { t } = useLanguage();

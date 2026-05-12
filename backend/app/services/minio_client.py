@@ -30,8 +30,8 @@ def init_minio():
                 secure=False
             )
             
-            # Standard bucket naming from PRD
-            required_buckets = ["culcloud-files"]
+            # Standard bucket naming from PRD plus a temp bucket for future artifacts.
+            required_buckets = [settings.MINIO_BUCKET, settings.MINIO_TEMP_BUCKET]
             for bucket in required_buckets:
                 if not minio_client.bucket_exists(bucket):
                     minio_client.make_bucket(bucket)

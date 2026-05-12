@@ -16,7 +16,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../context/LanguageContext';
-import { uploadFile, listFiles, deleteFile, getDownloadUrl, convertFile } from '../services/api';
+import { uploadFile, listFiles, deleteFile, getDownloadUrl, renameFile } from '../services/api';
 
 export default function MyFiles() {
   const { t } = useLanguage();
@@ -25,14 +25,19 @@ export default function MyFiles() {
   const [previewFile, setPreviewFile] = useState<any | null>(null);
   const [renamingFile, setRenamingFile] = useState<any | null>(null);
   const [newName, setNewName] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   const fetchFiles = async () => {
     try {
       setLoading(true);
+      setError('');
       const res = await listFiles();
       setFiles(res.files);
     } catch (err) {
       console.error(err);
+      setError(t.zh ? '读取云端文件失败' : 'Failed to load cloud files');
     } finally {
       setLoading(false);
     }
@@ -46,10 +51,16 @@ export default function MyFiles() {
     const file = e.target.files?.[0];
     if (file) {
       try {
+        setUploading(true);
+        setError('');
         await uploadFile(file);
         fetchFiles();
       } catch (err) {
         console.error(err);
+        setError(t.zh ? '上传失败' : 'Upload failed');
+      } finally {
+        setUploading(false);
+        e.target.value = '';
       }
     }
   };
@@ -61,6 +72,7 @@ export default function MyFiles() {
         fetchFiles();
       } catch (err) {
         console.error(err);
+        setError(t.zh ? '删除失败' : 'Delete failed');
       }
     }
   };
@@ -68,18 +80,32 @@ export default function MyFiles() {
   const handleDownload = async (name: string) => {
     try {
       const res = await getDownloadUrl(name);
-      window.open(res.download_url, '_blank');
+      window.open(res.api_download_url || res.download_url, '_blank');
     } catch (err) {
       console.error(err);
+      setError(t.zh ? '下载链接生成失败' : 'Failed to create download link');
     }
   };
 
   const handleRename = async () => {
     if (!renamingFile || !newName) return;
-    // In MVP-v2, we don't have a rename API yet, but we'll mock it or just alert
-    alert('Rename API not implemented in backend yet. Placeholder for future use.');
-    setRenamingFile(null);
+    try {
+      setError('');
+      await renameFile(renamingFile.object_name, newName);
+      setRenamingFile(null);
+      setNewName('');
+      fetchFiles();
+    } catch (err) {
+      console.error(err);
+      setError(t.zh ? '重命名失败' : 'Rename failed');
+    }
   };
+
+  const filteredFiles = files.filter((file) => {
+    const keyword = searchTerm.trim().toLowerCase();
+    if (!keyword) return true;
+    return `${file.filename || ''} ${file.object_name || ''}`.toLowerCase().includes(keyword);
+  });
 
   return (
     <div className="space-y-10 pb-20">
@@ -102,6 +128,8 @@ export default function MyFiles() {
             <input 
               type="text" 
               placeholder={t.files.search}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-surface-container-low border border-outline-variant/30 rounded-2xl pl-12 pr-6 py-3 text-xs font-bold outline-none w-64 focus:ring-4 focus:ring-primary/5 transition-all"
             />
           </div>
@@ -117,7 +145,7 @@ export default function MyFiles() {
               {t.files.allFiles}
             </button>
             <button onClick={fetchFiles} className="p-2.5 hover:bg-surface-container-low rounded-xl transition-all">
-              <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+              <RefreshCw className={cn("w-4 h-4", (loading || uploading) && "animate-spin")} />
             </button>
           </div>
           
@@ -133,15 +161,20 @@ export default function MyFiles() {
         </div>
 
         <div className="p-10 flex-1 overflow-y-auto">
+          {error && (
+            <div className="mb-6 rounded-2xl border border-error/20 bg-error/5 px-5 py-3 text-xs font-black uppercase tracking-widest text-error">
+              {error}
+            </div>
+          )}
           {loading ? (
              <div className="flex flex-col items-center justify-center py-20 space-y-4">
                 <Loader2 className="w-12 h-12 text-primary animate-spin" />
                 <p className="text-xs font-black text-outline uppercase tracking-widest">{t.zh ? '正在读取云端文件...' : 'Loading cloud files...'}</p>
              </div>
-          ) : files && files.length > 0 ? (
+          ) : filteredFiles && filteredFiles.length > 0 ? (
             <div className="grid grid-cols-1 gap-4">
-              {files.map((file, idx) => (
-                <div key={idx} className="flex items-center justify-between p-6 bg-surface-container-low/50 rounded-[1.5rem] border border-outline-variant/30 hover:bg-surface-container-low transition-all group">
+              {filteredFiles.map((file, idx) => (
+                <div key={file.object_name || idx} className="flex items-center justify-between p-6 bg-surface-container-low/50 rounded-[1.5rem] border border-outline-variant/30 hover:bg-surface-container-low transition-all group">
                   <div className="flex items-center gap-6">
                     <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
                       <FileText className="text-primary w-6 h-6" />
@@ -159,6 +192,9 @@ export default function MyFiles() {
                     </button>
                     <button onClick={() => handleDownload(file.object_name)} className="p-3 hover:bg-primary/10 text-primary rounded-xl transition-all" title="Download">
                       <Download size={18} />
+                    </button>
+                    <button onClick={() => { setRenamingFile(file); setNewName(file.filename || file.object_name); }} className="p-3 hover:bg-primary/10 text-primary rounded-xl transition-all" title="Rename">
+                      <Edit2 size={18} />
                     </button>
                     <button onClick={() => handleDelete(file.object_name)} className="p-3 hover:bg-error/10 text-error rounded-xl transition-all" title="Delete">
                       <Trash2 size={18} />

@@ -8,3 +8,13 @@ redis
 httpx
 pytest
 pytest-asyncio
+PyMuPDF
+Pillow
+python-docx
+python-pptx
+openpyxl
+reportlab
+markdown
+pypandoc
+cairosvg
+requests

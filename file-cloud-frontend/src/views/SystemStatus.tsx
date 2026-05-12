@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Database, 
   Cpu, 
@@ -16,9 +16,23 @@ import {
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../context/LanguageContext';
+import { listFiles } from '../services/api';
 
 export default function SystemStatus() {
   const { t } = useLanguage();
+  const [storage, setStorage] = useState({ count: 0, size: 0 });
+
+  useEffect(() => {
+    listFiles()
+      .then((res) => {
+        const size = res.files.reduce((total: number, file: any) => total + (file.size || 0), 0);
+        setStorage({ count: res.files.length, size });
+      })
+      .catch(() => setStorage({ count: 0, size: 0 }));
+  }, []);
+
+  const usedMb = (storage.size / 1024 / 1024).toFixed(2);
+
   return (
     <div className="space-y-8 pb-12">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -70,17 +84,17 @@ export default function SystemStatus() {
             <div>
               <p className="text-[10px] font-black text-outline uppercase tracking-widest mb-2">{t.status.dataNodes}</p>
               <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold">12 / 12</p>
-                <span className="text-[10px] font-black text-green-600 uppercase">{t.status.online}</span>
+                <p className="text-2xl font-bold">1 / 1</p>
+                <span className="text-[10px] font-black text-green-600 uppercase">MinIO</span>
               </div>
             </div>
             <div>
               <p className="text-[10px] font-black text-outline uppercase tracking-widest mb-2">{t.status.totalSpace}</p>
-              <p className="text-2xl font-bold">1.2 PB</p>
+              <p className="text-2xl font-bold">{usedMb} MB</p>
             </div>
             <div>
               <p className="text-[10px] font-black text-outline uppercase tracking-widest mb-2">{t.status.replication}</p>
-              <p className="text-2xl font-bold">3x Factor</p>
+              <p className="text-2xl font-bold">{storage.count} Objects</p>
             </div>
           </div>
         </section>

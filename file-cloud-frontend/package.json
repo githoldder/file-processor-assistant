@@ -4,11 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port=3000 --host=0.0.0.0",
+    "dev": "vite --host ${HOST:-127.0.0.1} --port ${PORT:-5173}",
     "build": "vite build",
-    "preview": "vite preview",
+    "preview": "vite preview --host ${HOST:-127.0.0.1} --port ${PORT:-4173}",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "pm2:start": "pm2 start ../ecosystem.config.js",
+    "pm2:restart": "pm2 restart ../ecosystem.config.js --update-env",
+    "pm2:stop": "pm2 stop culcloud-frontend-dev culcloud-frontend-preview",
+    "pm2:logs": "pm2 logs culcloud-frontend-dev --lines 80"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

@@ -20,11 +20,12 @@ test.describe('MinIO File Operations E2E', () => {
 
   test('should upload, list, download link, and delete a file', async ({ page }) => {
     // Navigate to MyFiles
-    await page.goto('/files');
+    await page.goto('/');
+    await page.getByText(/My Files|我的文件/).click();
     
     // Upload file
     const fileChooserPromise = page.waitForEvent('filechooser');
-    await page.getByText('New').first().click();
+    await page.getByText(/New|新/).first().click();
     const fileChooser = await fileChooserPromise;
     await fileChooser.setFiles(testFilePath);
 
