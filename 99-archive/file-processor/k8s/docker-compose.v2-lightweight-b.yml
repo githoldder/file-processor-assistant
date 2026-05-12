@@ -1,0 +1,242 @@
+version: '3.8'
+
+# =============================================================================
+# 文件处理全能助手 - 轻量化方案B (v2-lightweight-b)
+# =============================================================================
+# 设计目标: 文件转换 + 网盘服务，轻量化部署，存储预算 ≤15GB
+# 版本: v2-lightweight-b
+# 日期: 2026-04-22
+#
+# 服务清单:
+#   - api: FastAPI 文件转换核心 (本地构建)
+#   - redis: 消息队列缓存 (redis:7-alpine)
+#   - postgres: 元数据存储 (postgres:15-alpine)
+#   - gotenberg: 文档转换服务 (gotenberg:7)
+#   - minio: S3 网盘存储 (minio/minio)
+#   - hadoop: Hadoop YARN 大数据处理 (自定义镜像)
+#
+# 存储分配 (~15GB):
+#   - Docker镜像缓存: ~4GB
+#   - PostgreSQL: 500MB
+#   - MinIO 数据: 5GB
+#   - Hadoop HDFS: 3GB
+#   - Gotenberg 临时: 500MB
+#   - 系统余量: 2GB
+# =============================================================================
+
+services:
+  # -------------------------------------------------------------------------
+  # Redis - 消息队列 + 缓存
+  # -------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - file_processor_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # -------------------------------------------------------------------------
+  # PostgreSQL - 元数据存储 (用户、文件记录)
+  # -------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: file_processor
+      POSTGRES_USER: fileuser
+      POSTGRES_PASSWORD: filepass123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - file_processor_network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # -------------------------------------------------------------------------
+  # Gotenberg - 文档转换服务
+  # -------------------------------------------------------------------------
+  gotenberg:
+    image: gotenberg/gotenberg:7
+    restart: always
+    command: ["gotenberg"]
+    networks:
+      - file_processor_network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  # -------------------------------------------------------------------------
+  # MinIO - S3 网盘存储 (百度网盘替代方案)
+  # -------------------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    restart: always
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+      MINIO_REGION_NAME: us-east-1
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - file_processor_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # -------------------------------------------------------------------------
+  # Hadoop - YARN 大数据处理 (未来扩展)
+  # -------------------------------------------------------------------------
+  hadoop:
+    image: myubuntu:hadoop-yarn-v1
+    restart: always
+    command: ["bash", "-c", "service ssh start && /usr/local/hadoop/sbin/start-yarn.sh && tail -f /dev/null"]
+    environment:
+      JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
+      HADOOP_HOME: /usr/local/hadoop
+    volumes:
+      - hadoop_data:/hadoop/data
+      - hadoop_logs:/usr/local/hadoop/logs
+    ports:
+      - "8088:8088"   # YARN ResourceManager
+      - "9864:9864"   # DataNode
+      - "9866:9866"    # DataNode IPC
+    networks:
+      - file_processor_network
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  # -------------------------------------------------------------------------
+  # API - FastAPI 文件转换核心
+  # -------------------------------------------------------------------------
+  api:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://fileuser:filepass123@postgres:5432/file_processor
+      - GOTENBERG_URL=http://gotenberg:3000
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin123
+      - MINIO_BUCKET=uploads
+      - PPTX_WINDOWS_WORKER_URL=${PPTX_WINDOWS_WORKER_URL:-}
+      - PPTX_RENDER_TIMEOUT=${PPTX_RENDER_TIMEOUT:-180}
+      - UPLOAD_DIR=/app/uploads
+    volumes:
+      - upload_data:/app/uploads
+    depends_on:
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_started
+      minio:
+        condition: service_healthy
+    networks:
+      - file_processor_network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # -------------------------------------------------------------------------
+  # Celery Worker - 单实例，所有队列共享
+  # -------------------------------------------------------------------------
+  celery-worker:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: always
+    command: celery -A celery_config worker --loglevel=info --concurrency=2 -Q celery,conversions,batch,pdf_operations
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://fileuser:filepass123@postgres:5432/file_processor
+      - GOTENBERG_URL=http://gotenberg:3000
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin123
+      - MINIO_BUCKET=uploads
+      - UPLOAD_DIR=/app/uploads
+    volumes:
+      - upload_data:/app/uploads
+    depends_on:
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_started
+    networks:
+      - file_processor_network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # -------------------------------------------------------------------------
+  # Nginx - API 网关 + 前端静态服务
+  # -------------------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ../nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../frontend/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - api
+    networks:
+      - file_processor_network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+  minio_data:
+    driver: local
+  hadoop_data:
+    driver: local
+  hadoop_logs:
+    driver: local
+  upload_data:
+    driver: local
+
+networks:
+  file_processor_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

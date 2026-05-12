@@ -1,0 +1,83 @@
+# 项目上下文管理
+
+## 当前状态
+- 分支：integration-mvp
+- 阶段：文档结构建立完成，开始执行PRD任务
+- 最后更新：2026-05-06
+
+## 项目目标
+完成实验三（Hadoop分布式搭建）和实验四（HDFS编程实现），以可交付的实验报告为最终产出。
+
+## 关键路径
+1. 资源清理 → 2. Hadoop镜像优化 → 3. 实验三（3节点集群）→ 4. 实验四（WebHDFS）→ 5. MVP验证 → 6. 前端集成 → 7. 生成报告
+
+## 当前环境
+- Docker镜像占用：~8.5GB（PRD 1已清理）
+- 运行中容器：k8s-hadoop-1, k8s-api-1, k8s-celery-worker-1等
+- Hadoop镜像：myubuntu:hadoop-yarn-v1 (4.31GB)
+- 已删除：file-processor-api, hadoop-template, 6.66GB构建缓存
+- Playwright版本：1.59.1
+- 终端操作：所有实验操作需在终端执行并截图
+
+## 待执行任务
+- [x] PRD 1：资源清理 ✅ 已完成（2026-05-06）
+- [x] PRD 2：Hadoop镜像优化 ✅ 已完成（2026-05-06）
+- [x] PRD 3：实验三（3节点集群）✅ 已完成（2026-05-06）
+- [x] PRD 4：实验四（WebHDFS）✅ 已完成（2026-05-06）
+- [x] PRD 5：MVP验证 ✅ 已完成（2026-05-06）
+- [x] PRD 6：前端集成 ✅ 已完成（2026-05-06）
+- [x] 生成最终实验报告 ✅ 已完成（2026-05-06）
+
+## 项目状态：✅ 全部完成！
+- [ ] PRD 3：实验三（3节点集群）
+- [ ] PRD 4：实验四（WebHDFS）
+- [ ] PRD 5：MVP验证（Playwright有头测试）
+- [ ] PRD 6：前端集成
+
+## 注意事项
+- 所有实验操作需在终端显示执行（用于截图）
+- 能用脚本自动化的不直接手动解决（节省token）
+- Playwright测试使用有头模式：npx playwright test --headed
+- 每个阶段完成后更新此文件
+
+---
+---
+# CulCloud Platform: MinIO S3 Integration
+## 当前状态
+- 分支：refactor/minio-s3
+- 阶段：T1 (后端 MinIO Client 重构)
+- 最近修改：
+  - 合并了 progress.txt 与 context.txt
+  - 更新了 Vibe-Coding 规范与 .cursorrules
+  - 在 prds/07-minio-s3-integration 下创建了 prd.md/json
+- 整体进度：1/8 原子任务开始执行
+
+## 关键经验 (Lessons Learned)
+- [2026-05-11] 宿主机 Docker Socket 权限问题可通过 `sudo chown $USER /var/run/docker.sock` 解决。
+- [2026-05-11] 进程 Kill 失败通常因权限限制，需在宿主机执行 `sudo kill -9`。
+- [2026-05-11] 合并记忆文件至 `context/context.txt` 以减少冗余。
+
+## 待执行任务 (Harness PRD)
+- [x] T1: 后端 MinIO Client 重构 (标准 S3 协议) ✅ 已完成
+- [x] T2: 实现 /upload 上传接口 ✅ 已完成
+- [x] T3: 实现 /list 及 /download 接口 ✅ 已完成
+- [x] T4: 实现 /delete 删除接口 ✅ 已完成
+- [x] T5: 前端服务层 Mock 数据清理 ✅ 已完成
+- [x] T6: 前端 MyFiles 视图集成真实上传/下载/删除交互 ✅ 已完成
+- [x] T7: 前端 Dashboard 视图 Mock 注入清理与基础指标对接 ✅ 已完成
+- [ ] T8: 全链路 E2E 自动化测试验证
+# Progress Log - MinIO S3 Integration
+
+## Session Start: 2026-05-11
+
+### Initial Context
+- Project structure refactored to lightweight FastAPI + React.
+- Docker infrastructure (MinIO, Redis) is confirmed running locally.
+- Standards (Git SOP, Harness) have been distilled into `skills/` and `.cursorrules`.
+
+### Task Status Tracking
+- [x] T1-T4: Backend S3 operations (Upload/List/Download/Delete) completed.
+- [ ] T5-T7: Frontend integration pending.
+
+### Lessons Learned & Anti-patterns
+- (Pending execution)

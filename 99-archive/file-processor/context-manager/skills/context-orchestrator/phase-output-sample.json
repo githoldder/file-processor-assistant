@@ -1,0 +1,26 @@
+{
+  "phase": "organize-repo",
+  "status": "completed",
+  "agent": "context-orchestrator",
+  "inputs": [
+    "root README.md presence",
+    "context-manager READMEs",
+    "k8s README",
+    "AGENTS.md guidance"
+  ],
+  "outputs": {
+    "artifacts": [
+      "README.md"  "/README.md",
+      "context-manager/README.md",
+      "k8s/README.md",
+      "context-manager/agents/README.md"
+    ],
+    "decisions": [
+      "Reuse existing READMEs where present; create templates for missing folders"
+    ],
+    "open-questions": []
+  },
+  "next-phase": "handoff-assembly",
+  "handoff-summary": "Repo tidied; READMEs created/reused; plan prepared for handoff.",
+  "context-signature": "d41d8cd98f00b204e9800998ecf8427e"
+}

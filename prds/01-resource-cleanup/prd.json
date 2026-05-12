@@ -1,0 +1,28 @@
+{
+  "phase": "01-resource-cleanup",
+  "objective": "清理无用Docker资源，保留可反向推导的镜像和服务",
+  "priority": "high",
+  "estimated_time": "5分钟",
+  "terminal_operations": true,
+  "screenshot_required": [
+    "docker system df -v before",
+    "docker images list before",
+    "delete commands execution",
+    "docker system df -v after",
+    "docker images list after"
+  ],
+  "success_criteria": [
+    "Docker镜像占用从15.61GB降至≤8GB",
+    "保留：myubuntu:hadoop-yarn-v1, gotenberg, postgres, redis, nginx, minio",
+    "保留：k8s-api, k8s-celery-worker（运行中）",
+    "删除：file-processor-api, hadoop-template, 未使用卷",
+    "可通过docker-compose.v2-lightweight-b.yml和Dockerfile反向推导"
+  ],
+  "scripts": [
+    "scripts/cleanup-resources.sh"
+  ],
+  "verification": [
+    "docker-compose -f file-processor/k8s/docker-compose.v2-lightweight-b.yml up -d 正常启动",
+    "docker commit k8s-hadoop-1 可重新生成镜像"
+  ]
+}

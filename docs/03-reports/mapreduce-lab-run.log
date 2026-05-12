@@ -1,0 +1,40 @@
+=== Environment ===
+openjdk version "1.8.0_482"
+OpenJDK Runtime Environment (build 1.8.0_482-8u482-ga~us1-0ubuntu1~24.04-b08)
+OpenJDK 64-Bit Server VM (build 25.482-b08, mixed mode)
+Apache Maven 3.9.11 (3e54c93a704957b63ee3494413a2b544fd3d825b)
+Maven home: /opt/maven
+Hadoop 3.4.3
+Source code repository https://github.com/apache/hadoop.git -r 9d50c6884666e794e45102260a4017bb31802e1b
+Compiled by stevel on 2026-02-12T15:31Z
+=== Start Hadoop services ===
+1314 Jps
+968 NodeManager
+859 ResourceManager
+636 SecondaryNameNode
+303 NameNode
+447 DataNode
+=== Build MapReduce jar ===
+-rw-r--r-- 1 root root 7.9K May 11 01:04 /root/mapreduce-lab/target/mapreduce-lab-1.0.0.jar
+=== Prepare WordCount input ===
+--- WordCount output ---
+hadoop	2
+hello	2
+mapreduce	2
+=== Prepare SalesCount input ===
+--- SalesCount output ---
+apple	28.0
+banana	30.0
+orange	32.0
+=== HDFS tree ===
+drwxr-xr-x   - root supergroup          0 2026-05-11 01:05 /wordcount/input
+-rw-r--r--   1 root supergroup         46 2026-05-11 01:05 /wordcount/input/test.txt
+drwxr-xr-x   - root supergroup          0 2026-05-11 01:05 /wordcount/output
+-rw-r--r--   1 root supergroup          0 2026-05-11 01:05 /wordcount/output/_SUCCESS
+-rw-r--r--   1 root supergroup         29 2026-05-11 01:05 /wordcount/output/part-r-00000
+drwxr-xr-x   - root supergroup          0 2026-05-11 01:05 /sales/input
+-rw-r--r--   1 root supergroup        144 2026-05-11 01:05 /sales/input/sales.txt
+drwxr-xr-x   - root supergroup          0 2026-05-11 01:05 /sales/output
+-rw-r--r--   1 root supergroup          0 2026-05-11 01:05 /sales/output/_SUCCESS
+-rw-r--r--   1 root supergroup         35 2026-05-11 01:05 /sales/output/part-r-00000
+=== Lab completed ===

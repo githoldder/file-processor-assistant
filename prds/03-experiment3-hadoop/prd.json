@@ -1,0 +1,34 @@
+{
+  "phase": "03-experiment3-hadoop",
+  "objective": "搭建3节点Hadoop完全分布式集群，终端操作并截图",
+  "priority": "high",
+  "estimated_time": "20分钟",
+  "terminal_operations": true,
+  "terminal_display": true,
+  "screenshot_required": [
+    "docker commit创建模板镜像",
+    "docker run创建slave容器",
+    "/etc/hosts配置内容",
+    "workers文件内容",
+    "xsync.sh脚本内容",
+    "jps进程列表（3个容器）",
+    "HDFS WebUI - Live Nodes（3个DataNode）",
+    "YARN WebUI - Nodes（3个NodeManager）"
+  ],
+  "success_criteria": [
+    "创建3个容器：master, slave1, slave2",
+    "配置/etc/hosts实现3节点互相识别",
+    "配置workers文件包含slave1和slave2",
+    "编写xsync.sh配置同步脚本",
+    "格式化NameNode并启动HDFS+YARN",
+    "WebUI验证：3个DataNode和3个NodeManager"
+  ],
+  "scripts": [
+    "scripts/xsync.sh"
+  ],
+  "verification": [
+    "hdfs dfsadmin -report 显示3个Live datanodes",
+    "YARN WebUI显示3个Active NodeManager",
+    "SSH免密登录正常"
+  ]
+}

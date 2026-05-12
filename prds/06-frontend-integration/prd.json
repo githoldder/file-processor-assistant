@@ -1,0 +1,33 @@
+{
+  "phase": "06-frontend-integration",
+  "objective": "file-cloud-frontend对接file-processor后端服务，Playwright有头测试",
+  "priority": "medium",
+  "estimated_time": "20分钟",
+  "terminal_operations": false,
+  "playwright_headed": true,
+  "screenshot_required": [
+    "前端配置文件.env",
+    "api.ts服务层代码",
+    "npm install和构建过程",
+    "Playwright有头测试过程",
+    "集成后界面截图（3-5张）",
+    "文件上传功能演示截图"
+  ],
+  "success_criteria": [
+    "修改前端API端点指向http://localhost:8000",
+    "前端能访问file-processor的API文档",
+    "利用MinIO作为存储后端（通过API中转）",
+    "Playwright有头测试文件上传功能",
+    "Playwright有头测试文件下载功能",
+    "验证前端与后端协同工作"
+  ],
+  "scripts": [
+    "scripts/test-integration-headed.js"
+  ],
+  "verification": [
+    "前端能成功连接后端API",
+    "文件上传功能正常工作",
+    "MinIO存储后端可用",
+    "Playwright有头测试通过"
+  ]
+}

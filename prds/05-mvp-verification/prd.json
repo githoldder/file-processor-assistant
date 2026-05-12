@@ -1,0 +1,33 @@
+{
+  "phase": "05-mvp-verification",
+  "objective": "验证轻量化MVP所有服务健康，Playwright有头模式测试",
+  "priority": "high",
+  "estimated_time": "15分钟",
+  "terminal_operations": true,
+  "playwright_headed": true,
+  "screenshot_required": [
+    "docker-compose up启动过程",
+    "服务状态：docker-compose ps",
+    "4个健康验证curl命令输出",
+    "docker stats资源占用",
+    "Playwright有头测试过程",
+    "5个界面截图（frontend, API docs, MinIO, YARN, HDFS）"
+  ],
+  "success_criteria": [
+    "docker-compose.v2-lightweight-b.yml所有服务启动成功",
+    "curl验证API健康：http://localhost:8000/health",
+    "curl验证MinIO健康：http://localhost:9000/minio/health/live",
+    "curl验证YARN状态：STARTED",
+    "curl验证HDFS WebUI响应",
+    "Playwright有头模式测试前端界面成功",
+    "验证文件上传→转换→存储全流程"
+  ],
+  "scripts": [
+    "scripts/test-mvp-headed.js"
+  ],
+  "verification": [
+    "所有服务健康状态返回正常",
+    "Playwright有头模式成功访问5个界面并截图",
+    "资源占用合理（内存≤12GB，磁盘≤15GB）"
+  ]
+}
