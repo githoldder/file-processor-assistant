@@ -1,189 +1,27 @@
 # 项目上下文管理
 
-## Session Update: 2026-06-14
-### Repository Governance and Entropy Reduction
-- Confirmed the active repository path is `/Users/caolei/Desktop/culcloud-platform`.
-- Promoted `Agent.md` to the project Agent spec and aligned it with the decoupled workspace governance model.
-- Added a root `.gitignore` to block local env files, OS metadata, Python/Node caches, dependency folders, generated reports, logs and build outputs.
-- Created `docs/02-process/governance/entropy-audit-20260614.md` as the current structure diagnosis and maintenance plan.
-- Root process snapshots should be archived under `docs/02-process/archive-snapshots/`; future Sprint planning should use `prds/md/` plus `prds/json/`.
-- Git rule remains strict: run `git status --short`, stage explicit paths only, never use `git add .`, and push only after explicit human backup/release request.
+## Session Update: 2026-06-14 — Repository Governance Restructuring
 
-## 最新交接：PRD08 文件预览、轻量转换集成与文件夹云盘能力
+### Completed
+- [Decision] Moved 5 root-level Chinese-named snapshot files to `docs/02-process/archive-snapshots/` to keep root clean.
+- [Decision] Created `.agent/workflows/` with 3 workflow files: mvp-implementation, document-latex-delivery, devops-smoke-test.
+- [Decision] Updated `Agent.md` with latest sprint status, blockers and defense prep items from external progress summary.
+- [Decision] Updated `.gitignore` with IDE settings, editor temp files and additional cache patterns.
+- [Decision] Updated `README.md` to reflect current directory structure and startup sequence.
+- [Observation] No code modifications — all changes are governance and directory structure.
 
-- 当前日期：2026-05-12
-- 当前分支：`feature/file-preview-conversion-folders`
-- 基线：已从 `feature/minio-s3-integration` 合并到 `master`
-- 合并提交：`1631627 merge: complete minio s3 integration`
-- 新 PRD：`prds/08-file-preview-conversion-folders/prd.md`
-- 新 PRD 任务表：`prds/08-file-preview-conversion-folders/prd.json`
+### Service Verification
+- Docker services (API:8000, Redis:6379, MinIO:9010, Gotenberg:3000) — all healthy
+- PM2 services — flask-analytics:5050 online, frontend-dev:5173 online, frontend-preview:4173 online
+- LaTeX build — compiles successfully (20 pages), output in cit-template/output/
 
-### 本轮用户需求
+### Key Architecture Points
+- PM2 manages Flask analytics + React frontend (app layer, hot-reload for iteration)
+- Docker Compose manages Redis, MinIO, Gotenberg, FastAPI (infra layer, stateful)
+- Communication: frontend → FastAPI (8000) for file ops, frontend → Flask (5050) for analytics
+- Defense logic: layered governance — "基础设施层用容器化保证一致性，应用层用进程管理器保证迭代效率"
 
-1. 当前没有文件预览功能，需要新增常见格式预览：
-   - Office：`pptx`, `excel/xlsx/xls`, `docx`
-   - 文档：`pdf`, `md`, `txt`
-   - 图片：`png`, `jpg/jpeg`, `svg`
-2. 文件转换功能参考旧主分支/旧系统 `file-process-assistant`，做轻量化集成。
-3. 文件上传需要支持：
-   - 文件夹上传
-   - 创建文件夹
-   - MinIO/S3 prefix 风格目录管理
-4. 基于这些需求生成新 PRD。
-5. 保存上下文到 `context/context.txt`，下一 session 按该上下文继续实现。
-
-### 已完成
-
-- [x] 将 `feature/minio-s3-integration` 合并进 `master`
-- [x] 从合并后的 `master` 创建新分支 `feature/file-preview-conversion-folders`
-- [x] 参考旧系统资料：
-  - `99-archive/file-processor/README.md`
-  - `99-archive/file-processor/SPEC.md`
-  - `99-archive/file-processor/backend/app/services/converter.py`
-  - `99-archive/file-processor/backend/app/tasks/convert_tasks.py`
-- [x] 创建 PRD08：
-  - `prds/08-file-preview-conversion-folders/prd.md`
-  - `prds/08-file-preview-conversion-folders/prd.json`
-
-### PRD08 核心设计
-
-- 文件预览新增后端 preview service：
-  - 直接预览：PDF、图片、TXT
-  - 转 HTML：Markdown
-  - 转 PDF/HTML 预览：DOCX、XLSX/XLS、PPTX
-  - 预览产物缓存到 MinIO `previews/` 前缀
-- 转换功能轻量集成：
-  - 当前 `backend/app/services/converter.py` 已包含旧系统大部分转换方法
-  - 下一步应补齐 `backend/app/routers/convert.py` dispatch 和前端 capabilities
-  - 不恢复 Celery 重队列，继续使用当前 FastAPI + Redis task status 模型
-- 文件夹能力：
-  - MinIO folder = prefix + `.keep`
-  - 上传文件夹时保留 `webkitRelativePath`
-  - 文件列表支持 `prefix` 参数、目录导航、递归删除
-
-### 下一 session 建议执行顺序
-
-1. 清理或忽略本地 `.DS_Store` 与构建缓存噪声，避免误提交：
-   - 当前存在未跟踪：`99-archive/.DS_Store`, `doc/.DS_Store`, `prds/.DS_Store`, `tests/.DS_Store`, `node_modules/.DS_Store`, `file-cloud-frontend/.vite/`, `docker/hadoop-mapreduce-lab/target/`
-   - `.DS_Store` 曾阻塞分支切换，备份在 `/private/tmp/culcloud-platform.DS_Store.backup` 和 `/private/tmp/culcloud-platform.DS_Store.master-untracked`
-   - `git stash list` 中有 3 个 `.DS_Store` 相关 stash，可后续确认后删除
-2. 提交 PRD08 与本上下文文件。
-3. 实现后端：
-   - `backend/app/services/preview.py`
-   - `backend/app/routers/preview.py`
-   - `backend/app/routers/files.py` folder/prefix/relative_path
-   - `backend/app/routers/convert.py` capabilities + 完整 dispatch
-4. 实现前端：
-   - `file-cloud-frontend/src/services/api.ts` preview/folder/capabilities
-   - `file-cloud-frontend/src/views/MyFiles.tsx` 目录导航、文件夹上传、创建文件夹、真实预览弹窗
-   - `file-cloud-frontend/src/views/ConvertCenter.tsx` 动态转换选项
-5. 验证：
-   - `npm run lint`
-   - `npm run build`
-   - Docker Compose API/MinIO/Gotenberg 健康检查
-   - Playwright E2E 覆盖 PRD08 关键路径
-
----
-
-## 当前状态
-- 分支：integration-mvp
-- 阶段：文档结构建立完成，开始执行PRD任务
-- 最后更新：2026-05-06
-
-## 项目目标
-完成实验三（Hadoop分布式搭建）和实验四（HDFS编程实现），以可交付的实验报告为最终产出。
-
-## 关键路径
-1. 资源清理 → 2. Hadoop镜像优化 → 3. 实验三（3节点集群）→ 4. 实验四（WebHDFS）→ 5. MVP验证 → 6. 前端集成 → 7. 生成报告
-
-## 当前环境
-- Docker镜像占用：~8.5GB（PRD 1已清理）
-- 运行中容器：k8s-hadoop-1, k8s-api-1, k8s-celery-worker-1等
-- Hadoop镜像：myubuntu:hadoop-yarn-v1 (4.31GB)
-- 已删除：file-processor-api, hadoop-template, 6.66GB构建缓存
-- Playwright版本：1.59.1
-- 终端操作：所有实验操作需在终端执行并截图
-
-## 待执行任务
-- [x] PRD 1：资源清理 ✅ 已完成（2026-05-06）
-- [x] PRD 2：Hadoop镜像优化 ✅ 已完成（2026-05-06）
-- [x] PRD 3：实验三（3节点集群）✅ 已完成（2026-05-06）
-- [x] PRD 4：实验四（WebHDFS）✅ 已完成（2026-05-06）
-- [x] PRD 5：MVP验证 ✅ 已完成（2026-05-06）
-- [x] PRD 6：前端集成 ✅ 已完成（2026-05-06）
-- [x] 生成最终实验报告 ✅ 已完成（2026-05-06）
-
-## 项目状态：✅ 全部完成！
-- [ ] PRD 3：实验三（3节点集群）
-- [ ] PRD 4：实验四（WebHDFS）
-- [ ] PRD 5：MVP验证（Playwright有头测试）
-- [ ] PRD 6：前端集成
-
-## 注意事项
-- 所有实验操作需在终端显示执行（用于截图）
-- 能用脚本自动化的不直接手动解决（节省token）
-- Playwright测试使用有头模式：npx playwright test --headed
-- 每个阶段完成后更新此文件
-
----
----
-# CulCloud Platform: MinIO S3 Integration
-## 当前状态
-- 分支：refactor/minio-s3
-- 阶段：T1 (后端 MinIO Client 重构)
-- 最近修改：
-  - 合并了 progress.txt 与 context.txt
-  - 更新了 Vibe-Coding 规范与 .cursorrules
-  - 在 prds/07-minio-s3-integration 下创建了 prd.md/json
-- 整体进度：1/8 原子任务开始执行
-
-## 关键经验 (Lessons Learned)
-- [2026-05-11] 宿主机 Docker Socket 权限问题可通过 `sudo chown $USER /var/run/docker.sock` 解决。
-- [2026-05-11] 进程 Kill 失败通常因权限限制，需在宿主机执行 `sudo kill -9`。
-- [2026-05-11] 合并记忆文件至 `context/context.txt` 以减少冗余。
-
-## 待执行任务 (Harness PRD)
-- [x] T1: 后端 MinIO Client 重构 (标准 S3 协议) ✅ 已完成
-- [x] T2: 实现 /upload 上传接口 ✅ 已完成
-- [x] T3: 实现 /list 及 /download 接口 ✅ 已完成
-- [x] T4: 实现 /delete 删除接口 ✅ 已完成
-- [x] T5: 前端服务层 Mock 数据清理 ✅ 已完成
-- [x] T6: 前端 MyFiles 视图集成真实上传/下载/删除交互 ✅ 已完成
-- [x] T7: 前端 Dashboard 视图 Mock 注入清理与基础指标对接 ✅ 已完成
-- [ ] T8: 全链路 E2E 自动化测试验证
-# Progress Log - MinIO S3 Integration
-
-## Session Start: 2026-05-11
-
-### Initial Context
-- Project structure refactored to lightweight FastAPI + React.
-- Docker infrastructure (MinIO, Redis) is confirmed running locally.
-- Standards (Git SOP, Harness) have been distilled into `skills/` and `.cursorrules`.
-
-### Task Status Tracking
-- [x] T1-T4: Backend S3 operations (Upload/List/Download/Delete) completed.
-- [ ] T5-T7: Frontend integration pending.
-
-
-### Lessons Learned & Anti-patterns
-- (Pending execution)
-
-## Session Update: 2026-06-03
-### Docker Local Cleanup
-- Verified remote image: `chaoliu123/myubuntu:hadoop-mapreduce-lab-topn` with digest `sha256:6552b3b4ec0a150195728741c97f086f4ac9e3086bfa20bc80a1965b9a25787d`.
-- Deleted local inactive image: `6552b3b4ec0a`.
-- Cleaned builder cache: 6.557GB.
-
-## Session Update: 2026-06-14
-### Services Verification
-- Checked Docker services (API, Redis, MinIO, Gotenberg) status: All healthy.
-- Checked PM2 services (Flask Analytics, Frontend Dev Server) status: All running.
-- Fixed frontend compilation error: renamed `file-cloud-frontend/src/context/useDashboard.ts` to `.tsx` as it contains JSX.
-- Fixed white screen issue: implemented missing exports and TS interfaces in `file-cloud-frontend/src/services/api.ts` imported by `TaskMonitor.tsx` and `SystemStatus.tsx` (`listTasks`, `getQueueLength`, `getClusterOverview`, `getRecentFailures`, `getSystemHealth`, `getLogTimeline`, `getLogStats`).
-- Verified Web interface access: http://localhost:5173 is up and running.
-
-### Governance Consolidation
-- [Decision] `Agent.md` is the project spec and first-read file for future agents.
-- [Decision] External progress summary and Taste v3.0 governance are mirrored into repo-local context, PRD index and `.agent/workflows/`.
-- [Decision] Current sprint remains focused on analytics dashboard, PM2/Docker Compose defense logic, cluster status visualization and final report evidence.
-- [Risk] Full feature validation is still required after this governance checkpoint because many code files were already modified before this pass.
+### Active Blockers
+- Analytics big-screen UI needs auto-refresh, loading/empty/error states, and clean grid layout
+- Cluster status visualization needs refresh endpoint in flask-analytics
+- Final report evidence chain needs assembly from real APIs + screenshots + logs

@@ -1,7 +1,12 @@
+# ─── OS metadata ───────────────────────────────────────────
 .DS_Store
 **/.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
 
-# Local secrets and machine-specific environment files
+# ─── Local secrets and machine-specific env files ──────────
 .env
 .env.*
 !.env.example
@@ -11,38 +16,46 @@ file-cloud-frontend/.env
 file-cloud-frontend/.env.*
 !file-cloud-frontend/.env.example
 
-# Python runtime/cache
+# ─── Python runtime/cache ─────────────────────────────────
 __pycache__/
 *.py[cod]
 .pytest_cache/
 venv/
 .venv/
+*.egg-info/
 
-# Node/Vite runtime/cache
+# ─── Node/Vite runtime/cache ──────────────────────────────
 node_modules/
 file-cloud-frontend/node_modules/
 tests/e2e/node_modules/
 file-cloud-frontend/dist/
 file-cloud-frontend/.vite/
 
-# Test and generated reports
+# ─── Test and generated reports ───────────────────────────
 tests/e2e/playwright-report/
 tests/e2e/test-results/
 logs/
+*.log
 
-# Build outputs
+# ─── Build outputs ────────────────────────────────────────
 docker/hadoop-mapreduce-lab/target/
 data/spark-output/
+target/
 
-# LaTeX build byproducts
+# ─── LaTeX build byproducts ───────────────────────────────
 *.aux
 *.bbl
 *.blg
 *.fdb_latexmk
 *.fls
-*.log
 *.out
 *.synctex.gz
 *.toc
 *.xdv
 **/latex/**/output/
+
+# ─── IDE/editor project settings ──────────────────────────
+.idea/
+*.iml
+.vscode/*  # except settings.json
+!.vscode/settings.json
