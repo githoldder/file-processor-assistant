@@ -1,0 +1,136 @@
+\chapter{系统实现}
+
+\section{开发环境搭建}
+
+系统的开发环境基于 Docker Compose 构建，主要包含以下容器：
+
+\begin{itemize}
+  \item Hadoop 集群（NameNode + DataNode）：基于 Hadoop 3.3.6 镜像构建；
+  \item Spark 集群（Master + Worker）：基于 Spark 3.5.0 镜像构建；
+  \item Flask 后端服务：基于 Python 3.11 镜像构建，运行在 5000 端口；
+  \item React 前端应用：基于 Node.js 20 镜像构建，运行在 5173 端口。
+\end{itemize}
+
+Docker Compose 配置文件的简化示例如下：
+
+\begin{lstlisting}[caption={Docker Compose 配置文件}]
+version: '3.8'
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.3.6-java8
+    environment:
+      - CLUSTER_NAME=test
+    ports:
+      - "9870:9870"
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.3.6-java8
+    environment:
+      - SERVICE_PRECONDITION=namenode:9870
+
+  spark-master:
+    image: bitnami/spark:3.5.0
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+
+  spark-worker:
+    image: bitnami/spark:3.5.0
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+
+  flask-api:
+    build: ./backend
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build: ./file-cloud-frontend
+    ports:
+      - "5173:5173"
+\end{lstlisting}
+
+\section{数据处理实现}
+
+数据处理流程使用 PySpark 实现，核心代码如下：
+
+\begin{lstlisting}[language=Python, caption={Spark 数据处理核心代码}]
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, count, avg, sum, date_format
+
+def process_sales_data(spark, input_path, output_path):
+    """销售数据处理流水线"""
+
+    df = spark.read.csv(input_path, header=True, inferSchema=True)
+
+    cleaned_df = df.dropna().filter(col("amount") > 0)
+
+    summary_df = cleaned_df.groupBy(
+        date_format(col("timestamp"), "yyyy-MM").alias("month"),
+        col("product_category")
+    ).agg(
+        sum("amount").alias("total_sales"),
+        count("order_id").alias("order_count"),
+        avg("amount").alias("avg_order_value")
+    )
+
+    result = summary_df.collect()
+    return [row.asDict() for row in result]
+\end{lstlisting}
+
+\section{API 服务实现}
+
+Flask 后端服务的主要路由实现如下：
+
+\begin{lstlisting}[language=Python, caption={Flask API 路由实现}]
+from flask import Flask, jsonify
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)
+
+@app.route('/api/v1/analytics/overview', methods=['GET'])
+def get_overview():
+    results = analytics_service.compute_overview()
+    return jsonify({"status": "success", "data": results})
+
+@app.route('/api/v1/analytics/sales', methods=['GET'])
+def get_sales_analysis():
+    period = request.args.get('period', 'monthly')
+    results = analytics_service.compute_sales_analysis(period)
+    return jsonify({"status": "success", "data": results})
+
+@app.route('/api/v1/analytics/user-behavior', methods=['GET'])
+def get_user_behavior():
+    results = analytics_service.compute_user_behavior()
+    return jsonify({"status": "success", "data": results})
+\end{lstlisting}
+
+\section{前端可视化实现}
+
+前端使用 React + ECharts 实现数据可视化，核心组件如下：
+
+\begin{lstlisting}[language=Python, caption={ECharts 图表组件实现（TypeScript 示意代码）}]
+import ReactECharts from 'echarts-for-react';
+
+const SalesTrendChart: React.FC<{ data: SalesData[] }> = ({ data }) => {
+  const option = {
+    tooltip: { trigger: 'axis' },
+    xAxis: {
+      type: 'category',
+      data: data.map(d => d.month),
+    },
+    yAxis: { type: 'value' },
+    series: [{
+      name: '销售额',
+      type: 'line',
+      data: data.map(d => d.total_sales),
+      smooth: true,
+      areaStyle: { opacity: 0.3 },
+    }],
+  };
+
+  return <ReactECharts option={option} style={{ height: 400 }} />;
+};
+\end{lstlisting}

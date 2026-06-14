@@ -9,6 +9,7 @@ from minio.commonconfig import CopySource
 
 from app.config import settings
 from app.services.minio_client import get_minio_client
+from app.services.log_collector import log_event, EventType
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,12 @@ async def upload_file(file: UploadFile = File(...)):
             file.size if file.size else -1,
             content_type=file.content_type,
             part_size=10 * 1024 * 1024,
+        )
+        await log_event(
+            EventType.FILE_UPLOADED,
+            f"文件上传: {file.filename}",
+            file_name=file.filename,
+            file_size=file.size,
         )
         return {
             "status": "success",
@@ -210,6 +217,11 @@ async def delete_file(object_name: str):
     try:
         client.stat_object(BUCKET, object_name)
         client.remove_object(BUCKET, object_name)
+        await log_event(
+            EventType.FILE_DELETED,
+            f"文件删除: {object_name}",
+            file_name=_display_name(object_name),
+        )
         logger.info(f"Successfully deleted object: {object_name}")
         return {"status": "success", "message": f"File {object_name} deleted"}
     except Exception as e:

@@ -1,0 +1,35 @@
+五、实验过程与结果
+
+本次实验在 Docker 容器中完成 Hive 数仓环境搭建与基本使用测试。首先启动已封装好的 Hadoop/Hive 实验镜像，镜像名称为 chaoliu123/myubuntu:hadoop-mapreduce-lab-topn，本地别名为 myubuntu:hadoop-mapreduce-lab-topn。容器启动后，执行 jps 命令检查 Hadoop 相关进程，终端中可以看到 NameNode、DataNode、SecondaryNameNode、ResourceManager、NodeManager 等进程，说明 HDFS 和 YARN 均已正常启动，具备运行 Hive 的基础环境。
+
+随后进入容器检查 Hive 环境。通过 hive --version 命令确认 Hive 版本为 3.1.3，通过 hadoop version 命令确认 Hadoop 版本为 3.3.6。实验镜像中已经配置好 JAVA_HOME、HADOOP_HOME、HIVE_HOME 等环境变量，并将 Hadoop 与 Hive 的 bin 目录加入 PATH，因此可以在终端中直接执行 hadoop、hdfs、yarn、hive 等命令。实验开始前还在 HDFS 中创建 /user/hive/warehouse 和 /tmp/hive 目录，并设置合适权限，保证 Hive 可以正常写入数据仓库目录和临时目录。
+
+接着进行 Hive 元数据初始化和建库测试。执行 run-hive-exam6.sh 脚本后，系统会初始化 Hive metastore，并自动进入 Hive 命令执行流程。首先执行 CREATE DATABASE IF NOT EXISTS test_db; 创建测试数据库，再执行 SHOW DATABASES; 查看数据库列表。查询结果中显示 default 和 test_db，说明 Hive 数据库创建成功。
+
+在 test_db 数据库下创建 user_info 表。该表包含 id、name、age、dt 四个字段，数据行采用逗号分隔的文本格式存储。建表完成后执行 SHOW TABLES;，终端输出 user_info，说明表结构创建成功。然后使用 LOAD DATA LOCAL INPATH 命令将本地准备好的 user_data.csv 数据导入 user_info 表。
+
+导入的数据内容如下：
+1,zhangsan,22,2026-05-31
+2,lisi,25,2026-05-31
+3,wangwu,21,2026-05-31
+4,zhaoliu,28,2026-05-31
+5,qianqi,23,2026-05-31
+6,sunba,26,2026-05-31
+7,zhoujiu,24,2026-05-31
+8,wushi,27,2026-05-31
+
+为了验证数据是否成功进入 Hive 表，执行 SELECT * FROM user_info; 进行全表查询。终端输出 8 条记录，与导入的 user_data.csv 内容一致，说明数据加载成功。随后执行 SELECT name,age FROM user_info WHERE age > 24; 进行条件查询，输出结果为 lisi 25、zhaoliu 28、sunba 26、wushi 27，说明 Hive 可以按照字段条件正确过滤数据。最后执行 SELECT dt,COUNT(*) AS total_user FROM user_info GROUP BY dt; 进行分组聚合统计，输出结果为 2026-05-31 8，说明 Hive 的分组统计功能正常。
+
+实验完成后，将本次实验环境封装为可复用 Docker 镜像，并推送到 Docker Hub。远端镜像地址为 chaoliu123/myubuntu:hadoop-mapreduce-lab-topn，远端 digest 为 sha256:6552b3b4ec0a150195728741c97f086f4ac9e3086bfa20bc80a1965b9a25787d。后续需要重新实验时，可以直接拉取该镜像并启动容器，不需要重新手工安装 Hadoop、Hive 和依赖文件，提高了实验环境的可复现性。
+
+六、实验结果分析与体会
+
+通过本次实验，我掌握了 Hive 数仓搭建和基本使用的完整流程。Hive 的主要作用是将 HDFS 中的数据文件映射成类似关系型数据库中的表，并提供 HiveQL 进行查询分析。与直接编写 MapReduce 程序相比，Hive 使用类 SQL 的方式完成数据筛选、统计和聚合，开发成本更低，也更适合进行数据仓库中的批量分析任务。
+
+本次实验中，HDFS、YARN 和 Hive 之间的关系更加清晰。HDFS 负责保存实际数据文件，YARN 负责资源调度，Hive 负责表结构管理和 SQL 查询转换。用户在 Hive 中创建数据库和表时，并不是把数据保存到传统数据库中，而是由 Hive metastore 保存表名、字段、数据路径等元数据信息，真正的数据仍然存储在 HDFS 或本地导入后的仓库路径中。因此，Hive 是建立在 Hadoop 生态之上的数据仓库工具。
+
+在实验过程中，我也体会到环境配置对大数据组件运行非常重要。如果 Hadoop 进程没有正常启动，Hive 查询就无法顺利执行；如果 Hive warehouse 目录或临时目录权限不正确，也会导致建表、导入数据或查询过程失败。此外，Hive 3.1.3 与 Hadoop 3.3.6 在依赖版本上需要保持兼容，例如 guava、commons-collections、JDBC 驱动等依赖文件都需要放置到正确目录中，否则可能出现类冲突或找不到驱动的问题。
+
+采用 Docker 镜像保存实验环境后，实验过程更加稳定。过去每次换机器或清理本地环境后，都可能需要重新下载软件包、配置环境变量和排查依赖问题；现在只需要从 Docker Hub 拉取镜像，就可以恢复已经配置好的 Hadoop/Hive 实验环境。对于课程实验来说，这种方式既节省本地磁盘空间，也方便后续继续迭代实验内容。
+
+总的来说，本次实验不仅完成了 Hive 的建库、建表、导入和查询操作，也让我理解了数据仓库工具在大数据处理流程中的实际意义。Hive 将底层复杂的分布式存储和计算过程封装起来，使用户可以用更熟悉的 SQL 思维处理大规模数据，为后续学习数据仓库分层、分区表、外部表和数据分析任务打下了基础。

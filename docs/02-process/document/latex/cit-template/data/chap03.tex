@@ -1,0 +1,116 @@
+\chapter{系统分析与设计}
+
+\section{系统架构}
+
+本系统采用分层架构设计，自底向上分为数据层、计算层、服务层和展示层四个层次，如图~\ref{fig:architecture} 所示。
+
+% \begin{figure}[htbp]
+%   \centering
+%   \includegraphics[width=0.8\textwidth]{architecture.png}
+%   \caption{系统架构图}
+%   \label{fig:architecture}
+% \end{figure}
+
+\subsection{数据层}
+
+数据层基于 HDFS 构建，负责原始数据的存储与管理。数据来源包括：
+
+\begin{itemize}
+  \item \textbf{用户行为数据}：包含用户 ID、事件类型、访问页面、停留时长、设备类型、时间戳等字段；
+  \item \textbf{销售订单数据}：包含订单 ID、用户 ID、商品类别、销售额、支付方式、订单状态、时间等字段。
+\end{itemize}
+
+\subsection{计算层}
+
+计算层基于 Spark 构建，负责数据的 ETL 处理和多维度分析。主要分析任务包括：
+
+\begin{itemize}
+  \item 用户行为分析：日活跃用户、页面访问热度、用户转化率、用户留存率等；
+  \item 销售数据分析：销售额趋势、商品类别分布、地域销售分析、支付方式偏好等；
+  \item 数据质量分析：缺失值检测、异常值检测、数据分布统计等。
+\end{itemize}
+
+\subsection{服务层}
+
+服务层基于 Flask 构建，提供 RESTful API 接口，包括：
+
+\begin{itemize}
+  \item \texttt{/api/v1/analytics/overview}：获取整体概况数据；
+  \item \texttt{/api/v1/analytics/sales}：获取销售数据分析结果；
+  \item \texttt{/api/v1/analytics/user-behavior}：获取用户行为分析结果；
+  \item \texttt{/api/v1/analytics/data-quality}：获取数据质量报告。
+\end{itemize}
+
+\subsection{展示层}
+
+展示层基于 React + ECharts 构建，提供直观的可视化仪表盘，包括：
+
+\begin{itemize}
+  \item 仪表盘概览页面：展示关键指标和趋势图；
+  \item 销售分析页面：展示销售额趋势、商品分布等；
+  \item 用户分析页面：展示用户活跃度、转化率等；
+  \item 系统监控页面：展示服务状态和任务运行情况。
+\end{itemize}
+
+\section{数据库设计}
+
+系统使用 HDFS 存储原始数据文件，分析结果以 JSON 格式存储。主要数据文件设计如下。
+
+\subsection{用户行为数据表}
+
+\begin{table}[htbp]
+  \centering
+  \caption{用户行为数据字段说明}
+  \label{tab:user-behavior}
+  \begin{tabular}{lll}
+    \toprule
+    字段名 & 类型 & 说明 \\
+    \midrule
+    user\_id & String & 用户唯一标识 \\
+    event\_type & String & 事件类型（click/pageview/purchase） \\
+    page\_url & String & 访问页面 URL \\
+    duration & Integer & 停留时长（秒） \\
+    device\_type & String & 设备类型（mobile/desktop/tablet） \\
+    referrer & String & 来源渠道 \\
+    timestamp & Long & 事件时间戳 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{销售订单数据表}
+
+\begin{table}[htbp]
+  \centering
+  \caption{销售订单数据字段说明}
+  \label{tab:sales-orders}
+  \begin{tabular}{lll}
+    \toprule
+    字段名 & 类型 & 说明 \\
+    \midrule
+    order\_id & String & 订单唯一标识 \\
+    user\_id & String & 用户唯一标识 \\
+    product\_category & String & 商品类别 \\
+    amount & Double & 订单金额 \\
+    payment\_method & String & 支付方式 \\
+    status & String & 订单状态 \\
+    region & String & 地区 \\
+    timestamp & Long & 下单时间戳 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{接口设计}
+
+系统提供 RESTful API 接口，采用 JSON 格式进行数据交换。主要接口设计如下：
+
+\begin{lstlisting}[caption=API 接口示例]
+GET /api/v1/analytics/overview
+Response:
+{
+  "total_users": 10000,
+  "total_orders": 50000,
+  "total_revenue": 1250000.00,
+  "active_users_today": 1200,
+  "avg_order_value": 125.00
+}
+\end{lstlisting}

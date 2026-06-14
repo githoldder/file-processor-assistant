@@ -1,0 +1,62 @@
+{
+  "latex-workshop.latex.autoBuild.run": "onSave",
+  "latex-workshop.latex.autoBuild.interval": 1000,
+  "latex-workshop.latex.outDir": "%DIR%/output",
+  "latex-workshop.latex.rootFile.indicator": "thuthesis-example.tex",
+  "latex-workshop.latex.rootFile.doNotPrompt": true,
+  "latex-workshop.latex.recipes": [
+    {
+      "name": "latexmk (xelatex)",
+      "tools": ["latexmk"]
+    }
+  ],
+  "latex-workshop.latex.tools": [
+    {
+      "name": "latexmk",
+      "command": "latexmk",
+      "args": [
+        "-xelatex",
+        "-synctex=1",
+        "-interaction=nonstopmode",
+        "-halt-on-error",
+        "-outdir=%OUTDIR%",
+        "%DOC%"
+      ]
+    }
+  ],
+  "latex-workshop.view.pdf.viewer": "tab",
+  "latex-workshop.view.pdf.refresh.viewer": "auto",
+  "files.watcherExclude": {
+    "**/*.aux": true,
+    "**/*.bbl": true,
+    "**/*.blg": true,
+    "**/*.fdb_latexmk": true,
+    "**/*.fls": true,
+    "**/*.log": true,
+    "**/*.out": true,
+    "**/*.synctex.gz": true,
+    "**/*.toc": true,
+    "**/*.xdv": true,
+    "**/output/**": true,
+    "**/scripts/**": true,
+    "**/__pycache__/**": true,
+    "**/node_modules/**": true,
+    "**/.vite/**": true,
+    "**/venv/**": true,
+    "**/dist/**": true,
+    "**/.cache/**": true
+  },
+  "files.exclude": {
+    "**/__pycache__/**": true,
+    "**/*.pyc": true,
+    "**/.DS_Store": true
+  },
+  "search.exclude": {
+    "**/__pycache__": true,
+    "**/node_modules": true,
+    "**/output": true,
+    "**/venv": true,
+    "**/dist": true,
+    "**/.vite": true
+  }
+}

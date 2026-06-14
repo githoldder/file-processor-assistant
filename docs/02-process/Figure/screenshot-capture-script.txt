@@ -1,0 +1,93 @@
+绿果果分布式应用课程大作业截图采集脚本
+
+采集原则：
+1. 截图必须服务于最终报告和答辩，不截无关历史页面。
+2. 截图前先确认 PM2、Nacos、Gateway、核心服务健康状态。
+3. 正式报告截图文件放入 docs/02-process/Figure/screenshots-real。
+4. 文件名建议使用 Sxx-英文短名.png，例如 S01-pm2-status.png。
+
+重要修正：
+1. docs/02-process/Figure/screenshots 目录中的旧版自动生成模板图不得作为正式报告证据使用。
+2. docs/02-process/script/capture_report_screenshots.mjs 只可作为排版草稿或占位核对工具，不可替代真实工具截图。
+3. 正式截图必须来自真实终端、真实浏览器控制台、真实 Nacos/RabbitMQ 管理台、真实微信开发者工具或真实测试命令输出。
+4. 若某个真实工具因账号、权限、基础库兼容或系统截图权限无法完成，应在证据清单中标记为阻塞项，不能生成仿真页面冒充。
+
+S01-PM2服务运行状态
+操作路径：
+1. 打开终端，进入项目根目录。
+2. 执行 pm2 status 或 pm2 list。
+3. 截图要求展示 lgg-nacos、lgg-gateway、lgg-admin、lgg-business、lgg-pay、lgg-notice、lgg-redis、lgg-minio、lgg-ruoyi-frontend 均在线。
+建议文件：screenshots-real/S01-pm2-status-real.png
+
+S02-Nacos服务注册中心
+操作路径：
+1. 打开浏览器访问 http://127.0.0.1:8848/nacos。
+2. 进入服务列表。
+3. 截图要求展示 lgg-gateway、lgg-admin、lgg-business、lgg-pay、lgg-notice 实例在线。
+建议文件：screenshots-real/S02-nacos-services-real.png
+
+S03-Gateway接口动态路由转发
+操作路径：
+1. 打开真实终端、Apifox CLI、Apifox 或 Postman，请求网关端口 http://127.0.0.1:8090/login 或 http://127.0.0.1:8090/captchaImage。
+2. 截图工具窗口中的真实响应数据，证明网关成功进行了后端模块的统一动态路由。
+建议文件：screenshots-real/S03-gateway-route-real.png
+
+S04-OpenFeign跨服务远程状态调用
+操作路径：
+1. 查看 PM2 中 lgg-pay 或 lgg-business 的实时控制台日志。
+2. 截图 Feign 调用日志或 Spring Cloud LoadBalancer 获取 lgg-business 实例地址并更新成功的输出。
+建议文件：screenshots-real/S04-feign-call-real.png
+
+S05-RabbitMQ消息事件队列绑定
+操作路径：
+1. 浏览器打开 http://127.0.0.1:15672 并使用当前本地 RabbitMQ 管理台账号登录，当前环境验证为 guest/guest。
+2. 切换至 Queues 面板，找到 pay.success.queue 并进入详情。
+3. 截图其 Bindings 模块，证明其成功绑定至 pay.exchange。
+建议文件：screenshots-real/S05-rabbitmq-bindings-real.png
+
+S06-WebSocket后台实时提醒推送
+操作路径：
+1. 打开管理系统前端页面，按 F12 进入开发者工具。
+2. 切换至 Network 面板并筛选 WS 连接，刷新页面。
+3. 截图 WebSocket 成功建立握手（101 状态码）与推送的消息帧（包含订单号与 content 文本）列表。
+建议文件：screenshots-real/S06-websocket-frames-real.png
+
+S07-微信小程序商品结算UI
+操作路径：
+1. 打开微信开发者工具，在生鲜小程序中加购商品。
+2. 点击结算，进入订单预览与确认界面。
+3. 截图结算页，包含应付金额、收货地址与订单预览。
+4. 当前微信开发者工具已能打开 mp-weixin 项目，但模拟器出现 Foundation.onLoad is not a function 与 timeout 渲染错误；若未修复该兼容问题，不得使用模板图替代。
+建议文件：screenshots-real/S07-mp-checkout-real.png
+
+S08-生鲜模拟支付成功界面
+操作路径：
+1. 在浏览器或接口测试工具中调用模拟支付接口 POST http://127.0.0.1:8085/pay/mock?orderNumber=xxx。
+2. 截图接口返回的 code = 200 JSON 响应，证明模拟支付、Feign 回调、RabbitMQ 事件发布流程已触发。
+3. 当前项目实现为 mock pay 接口与微信小程序内“微信支付”模拟页，未接入真实微信/支付宝第三方收银台，不得宣传为真实微信或支付宝支付页面。
+建议文件：screenshots-real/S08-mock-pay-success-real.png
+
+S09-后台订单即时提醒卡片UI
+操作路径：
+1. 确保 WebSocket 已连接。
+2. 触发模拟支付成功事件。
+3. 截图管理端页面右上角滑出的“您有新的绿果果订单”全局通知通知卡片 UI。
+建议文件：screenshots-real/S09-admin-notification-real.png
+
+S10-核心运营多维统计图表
+操作路径：
+1. 登录系统后台进入首页。
+2. 截图首页中包含销售额、订单、客户、商品品类、订单状态与热销商品的运营看板。
+建议文件：screenshots-real/S10-dashboard-real.png
+
+S11-Newman微服务接口测试报告
+操作路径：
+1. 运行接口自动化测试脚本：npx newman run tests/apifox-collection.json。
+2. 截图真实命令行输出，要求包含测试集合执行完成和失败数为 0 的结果。
+建议文件：screenshots-real/S11-newman-cli-real.png
+
+S12-Playwright端到端闭环测试结果
+操作路径：
+1. 在控制台执行：npx playwright test。
+2. 截图测试完成输出，包含 2 passed 的成功提示。
+建议文件：screenshots-real/S12-playwright-cli-real.png

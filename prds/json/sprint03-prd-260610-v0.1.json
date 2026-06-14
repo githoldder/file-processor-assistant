@@ -1,0 +1,256 @@
+{
+  "sprint": "03",
+  "version": "0.1",
+  "status": "Planned",
+  "lastUpdated": "2026-06-10",
+  "milestone": "CulCloud 课程设计 — 答辩文档与论文正文",
+  "objective": "填充 LaTeX 论文正文 6 章内容（绪论→相关技术→系统设计→系统实现→系统测试→总结），生成系统面试-Q&A.md 答辩辅助文档，整理参考文献和图表。LaTeX 模板和框架结构已就绪（thuthesis.cls + thusetup.tex + 封面），data/ 目录下 6 个章节 .tex 文件 + abstract.tex + acknowledgements.tex 全部为空文件。",
+  "datasetDefinition": {
+    "primary": "课程设计项目代码（Sprint01+02 + Phase1+2 所有产出）",
+    "auxiliary": [
+      "PySpark 管线数据质量报告（data/spark-output/data_quality_report.json）",
+      "22 个 Spark 输出 JSON 的统计图表",
+      "Sprint-01/02 PRD 文档",
+      "Docker Compose 配置和 PM2 架构图",
+      "前端 Analytics 大屏截图"
+    ]
+  },
+  "designPhilosophy": {
+    "reportStructure": "6 章标准课程设计论文结构，每章 2-4 节",
+    "defenseFocus": "系统架构图 + Spark 管线流程图 + 数据质量报告 + Demo 截图组成答辩核心",
+    "referenceStyle": "BibTeX 格式（已有 refs.bib 骨架，需补充课程设计相关引用）",
+    "figureSource": "figures-src/svg/ 存源码，编译时生成 figures-pdf/"
+  },
+  "keyDemoPoints": [
+    "LaTeX 编译后封面+目录+正文+参考文献完整 PDF",
+    "系统面试 Q&A 涵盖 15-20 个常见答辩问题",
+    "关键技术图表：系统架构图、数据流图、Spark 管线图、ECharts 截图",
+    "数据质量报告表格（清洗前后的行数、空值率、分布）",
+    "消融对比或 Pipeline 性能指标表格（Sprint-01/02 产出）"
+  ],
+  "strategy": {
+    "priority": "答辩文档优先于 LaTeX 正文（面试常问问题先梳理，为写论文提供骨架）",
+    "sequence": [
+      "先写系统面试-Q&A.md，梳理答辩可能问题的答案框架。",
+      "再填充 LaTeX 各章正文，按 chap01→02→03→04→05→06 顺序。",
+      "然后整理参考文献、图表和附录。",
+      "最后编译验证 + 修正。"
+    ]
+  },
+  "repoReality": {
+    "latexMain": "docs/02-process/document/latex/cit-template/thuthesis-example.tex — 完整主文件（封面/目录/正文6章/致谢/参考文献）。已包含课程名、题目、二级学院、专业、班级、学号姓名、指导教师等封面信息。",
+    "latexSetup": "docs/02-process/document/latex/cit-template/thusetup.tex — 57 行宏包加载（amsthm, threeparttable, multirow, siunitx, amsmath, booktabs, longtable, listings, xcolor, graphicx, subcaption, hyperref, bibunits, biblatex 等）。",
+    "latexClass": "docs/02-process/document/latex/cit-template/thuthesis.cls — 98KB，完整的 thuthesis 模板类。",
+    "latexChapters": "docs/02-process/document/latex/cit-template/data/ — 6 个空 .tex 文件（chap01-chap06）+ abstract.tex + acknowledgements.tex，全部 0 字节。",
+    "latexRefs": "docs/02-process/document/latex/cit-template/ref/refs.bib — 已有 1 条 @misc{springboot} 条目，无其他条目。",
+    "latexCover": "docs/02-process/document/latex/cit-template/cover/ — cit-cover-template.png（封面模板）、czu.png（常州工学院 Logo）、cit-name.pdf、cit.jpg、log.jpg、cit-cover-template.jpeg.bak。",
+    "latexFigures": "figures/ 目录含 README.md；figures-pdf/ 为空；figures-src/ 含 archive-noise/ 和 svg/ 子目录（内有 .DS_Store）。",
+    "defenseDoc": "目前无系统面试-Q&A.md 或其他答辩文档。",
+    "projectData": [
+      "Flask 分析服务位于 flask-analytics/，端口 5050，20+ 端点",
+      "PySpark 管线输出来自 data/spark-output/，22 个 JSON 文件",
+      "前端 7 视图：Analytics / Dashboard / MyFiles / ConvertCenter / PDFStudio / TaskMonitor / SystemStatus",
+      "Docker Compose 6 服务：redis / minio / gotenberg / api / flask-analytics / hadoop(spark-analytics",
+      "PM2 管理应用层：flask-analytics(:5050) + frontend(:5173)",
+      "数据类型覆盖：PYSpark 用户行为 95k 行 + 销售订单 9.9k 行",
+      "转换功能覆盖 18 种格式（PDF/Word/Excel/PPTX/MD/SVG/PNG/JPG 互转）"
+    ]
+  },
+  "keyResults": [
+    "KR-01: 系统面试-Q&A.md 完成（15+ 问题覆盖项目介绍/架构/技术栈/难点/数据流向）",
+    "KR-02: LaTeX chap01～chap06 全部填充，每个章节至少 3 节，总字数不低于 5000 字",
+    "KR-03: abstract.tex 中英文摘要各 200 字",
+    "KR-04: refs.bib 补充 8+ 参考文献条目（技术文档/论文/技术博客）",
+    "KR-05: 至少 5 张技术图表（架构图、数据流图、Spark 管线图、ECharts 截图、数据质量表）",
+    "KR-06: LaTeX 编译通过（xelatex + bibtex × 2），输出无警告的 final.pdf"
+  ],
+  "tasks": [
+    {
+      "id": "S03-T01",
+      "topic": "系统面试-Q&A.md 答辩文档",
+      "ownerAgentPrompt": "在 docs/ 下创建系统面试-Q&A.md，覆盖答辩中可能被问到的 15-20 个问题。每个问题包含『可能追问』和『建议回答要点』。以课程设计说明书答辩为场景。",
+      "targetFiles": [
+        "/Users/caolei/Desktop/culcloud platform/docs/系统面试-QA.md"
+      ],
+      "steps": [
+        "创建文档，按问题类型分 5 个板块：",
+        "板块 A — 项目概述（3 问）：",
+        "  Q1: 请简要介绍你们团队做的项目？",
+        "  Q2: 为什么选择在 CulCloud 平台基础上叠加分析层？",
+        "  Q3: 你的项目与课程『大数据分析与可视化』的核心关联是什么？",
+        "板块 B — 架构设计（4 问）：",
+        "  Q4: 系统的整体架构是怎样的？（准备架构图）",
+        "  Q5: 为什么采用 PM2 + Docker 混合部署方案？",
+        "  Q6: 前后端如何通信的？数据流向是怎样的？",
+        "  Q7: 使用 Spark local[*] 而非集群模式，是如何考虑的？",
+        "板块 C — 技术实现（5 问）：",
+        "  Q8: PySpark 预处理管线包含哪些阶段？",
+        "  Q9: 模拟数据是如何生成的？数据的量级和分布是怎样的？",
+        "  Q10: 数据清洗中对空值/重复项是如何处理的？清洗效果如何？",
+        "  Q11: Flask 分析服务提供了哪些接口？",
+        "  Q12: 前端 ECharts 图表对接了哪些数据源？",
+        "板块 D — 测试与验证（3 问）：",
+        "  Q13: 如何验证系统功能的正确性？",
+        "  Q14: 数据质量报告中的指标说明了什么？",
+        "  Q15: 系统在性能方面有哪些数据可以展示？",
+        "板块 E — 总结与展望（3 问）：",
+        "  Q16: 这个项目的创新点是什么？",
+        "  Q17: 如果给你更多时间，你会怎么改进？",
+        "  Q18: 项目中遇到了哪些困难，如何解决的？",
+        "每个问题包含：",
+        "  - 【可能追问】1-2 个更深的问题",
+        "  - 【建议回答】2-3 段要点描述，包含关键数据（行数、端口、框架版本等）",
+        "  - 【参考材料】指向 LaTeX 章节、截图文件或代码路径"
+      ],
+      "acceptance": [
+        "15+ 个问题完整覆盖项目各维度。",
+        "每个回答包含关键数据点和项目特异性细节（非通用回答）。",
+        "路径引用正确（可索引到对应代码/文档）。"
+      ]
+    },
+    {
+      "id": "S03-T02",
+      "topic": "LaTeX chap01 绪论 + chap02 相关技术",
+      "ownerAgentPrompt": "填充 docs/02-process/document/latex/cit-template/data/chap01.tex 和 chap02.tex。使用已有 thusetup.tex 中载入的宏包（graphicx, listings, booktabs 等）。",
+      "targetFiles": [
+        "docs/02-process/document/latex/cit-template/data/chap01.tex",
+        "docs/02-process/document/latex/cit-template/data/chap02.tex"
+      ],
+      "steps": [
+        "chap01 绪论（3 节，约 1200 字）：",
+        "  \section{项目背景}：企业级文档处理普遍面临文件格式转换耗时长、多格式不兼容等挑战。Spark 和 Flask 相结合的分析与可视化方案可行。",
+        "  \section{项目意义}：展示大数据从存储→处理→分析→可视化的完整技术栈。",
+        "  \section{项目概述}：CulCloud 平台功能框架（文件上传→转换→下载 + 大数据分析大屏）。",
+        "chap02 相关技术（4 节，约 1500 字）：",
+        "  \section{Apache Spark}：Spark 架构（Spark Core / SQL / Streaming / MLlib），PySpark API，local 模式适用场景。",
+        "  \section{Flask Web 框架}：轻量级 Python Web 框架，RESTful API 设计，与 Spark 输出 JSON 的对接方式。",
+        "  \section{数据存储技术}：MinIO（S3 兼容对象存储）、Redis（异步任务队列 + 缓存）。",
+        "  \section{前端可视化技术}：React + TypeScript + ECharts 技术栈，与后端 API 的数据交互。",
+        "每节使用 booktabs/longtable 宏包生成的表格展示技术对比，使用 listings 插入代码 snippet。"
+      ],
+      "acceptance": [
+        "两章总字数 ≥ 2700 字。",
+        "至少 2 个表格（技术对比表）和 1 个代码片段。",
+        "LaTeX 语法正确，'Missing \begin{document}' 之类错误为 0。"
+      ]
+    },
+    {
+      "id": "S03-T03",
+      "topic": "LaTeX chap03 系统设计 + chap04 系统实现",
+      "ownerAgentPrompt": "填充 docs/.../data/chap03.tex 和 chap04.tex。这是论文的核心章节，覆盖架构、模块划分、关键技术实现细节。",
+      "targetFiles": [
+        "docs/02-process/document/latex/cit-template/data/chap03.tex",
+        "docs/02-process/document/latex/cit-template/data/chap04.tex"
+      ],
+      "steps": [
+        "chap03 系统设计（4 节，约 1500 字）：",
+        "  \section{系统架构设计}：总体架构图描述（PM2+Docker 混合部署，6 层：前端→Flask→FastAPI→Spark→存储→基础设施）。需插入架构示意图。",
+        "  \section{功能模块划分}：8 个功能模块（Dashboard/Analytics/Files/Convert/PDF/TaskMonitor/SystemStatus/User）。",
+        "  \section{数据流设计}：文件上传→转换→Spark 分析→结果存储→前端渲染的数据流向。",
+        "  \section{数据库与存储设计}：MinIO 桶结构、Redis key 设计、Spark 输出 JSON schema。",
+        "chap04 系统实现（4 节，约 2000 字）：",
+        "  \section{PySpark 数据预处理}：generate\_data.py 生成 10 万用户行为 + 1 万销售数据，preprocess.py 6 阶段管线（加载→清洗→转换→聚合→统计→导出）。",
+        "  \section{Flask 分析服务}：20+ REST 端点，Spark 输出 JSON 直接加载为 API 响应，5 秒缓存。",
+        "  \section{文件转换服务}：FastAPI + Gotenberg 转换引擎，18 种格式互转，异步任务队列。",
+        "  \section{前端可视化大屏}：3 面板（用户行为分析/销售分析/管线信息），7 个 ECharts 图表。",
+        "每节至少 1 个代码片段或图/表。"
+      ],
+      "acceptance": [
+        "总字数 ≥ 3500 字。",
+        "至少 3 个代码片段（PySpark 代码/FastAPI 路由/ECharts 配置）。",
+        "至少 2 个表格（模块功能表/API 端点表）。",
+        "引用架构图和管线流程图。"
+      ]
+    },
+    {
+      "id": "S03-T04",
+      "topic": "LaTeX chap05 系统测试 + chap06 总结 + abstract + 致谢",
+      "ownerAgentPrompt": "填充 docs/.../data/chap05.tex、chap06.tex、abstract.tex、acknowledgements.tex。",
+      "targetFiles": [
+        "docs/02-process/document/latex/cit-template/data/chap05.tex",
+        "docs/02-process/document/latex/cit-template/data/chap06.tex",
+        "docs/02-process/document/latex/cit-template/data/abstract.tex",
+        "docs/02-process/document/latex/cit-template/data/acknowledgements.tex"
+      ],
+      "steps": [
+        "chap05 系统测试（3 节，约 1200 字）：",
+        "  \section{测试环境}：Docker 容器 vs 本机 PM2 进程，测试机器配置。",
+        "  \section{功能测试}：测试用例表（用例名称/输入/预期输出/实际结果/状态），包含文件上传、转换、Analytics 大屏展示、Pipeline 执行。",
+        "  \section{数据质量验证}：引用 data_quality_report.json 的数据（清洗前 vs 清洗后行数/空值数/重复数），展示空值比例表和清洗效果对比条。",
+        "chap06 总结与展望（2 节，约 800 字）：",
+        "  \section{项目总结}：实现了的八项功能，混合部署方案验证，Spark+Flask 技术栈有效性。",
+        "  \section{未来改进方向}：分布式 Spark 集群、实时流处理（Spark Streaming）、告警通知、多租户支持。",
+        "abstract.tex：中文摘要约 200 字（项目背景→方法→结果→意义），英文摘要约 200 words。",
+        "acknowledgements.tex：致谢指导教师和团队成员。"
+      ],
+      "acceptance": [
+        "总字数 ≥ 2000 字。",
+        "测试用例表至少 8 行。",
+        "数据质量表格引用真实 JSON 数据。",
+        "中英文摘要完整。"
+      ]
+    },
+    {
+      "id": "S03-T05",
+      "topic": "参考文献补充 + 图表整理 + 编译验证",
+      "ownerAgentPrompt": "补充 refs.bib 至 8+ 条参考文献，制作/整理项目图表到 figures/ 和 figures-pdf/，编译 LaTeX 并修复错误。",
+      "targetFiles": [
+        "docs/02-process/document/latex/cit-template/ref/refs.bib",
+        "docs/02-process/document/latex/cit-template/figures/",
+        "docs/02-process/document/latex/cit-template/figures-pdf/"
+      ],
+      "steps": [
+        "补充 refs.bib（至少 8 条）：",
+        "  ① @misc{springboot} — 已有",
+        "  ② @article{spark-sql} — Apache Spark SQL 文档",
+        "  ③ @misc{fastapi} — FastAPI 官方文档",
+        "  ④ @misc{minio} — MinIO S3 兼容存储文档",
+        "  ⑤ @misc{redis} — Redis 缓存文档",
+        "  ⑥ @article{pymupdf} — PyMuPDF 开源库",
+        "  ⑦ @misc{echarts} — Apache ECharts 可视化库",
+        "  ⑧ @misc{gotenberg} — Gotenberg 文档转换 API",
+        "  ⑨ @misc{react} — React 前端框架文档",
+        "图表制作（5+ 张）：",
+        "  - 系统架构图（可使用 mermaid 或 draw.io 导出 SVG → figures-src/svg/）",
+        "  - Spark 管线流程图（preprocess.py 6 阶段流程图）",
+        "  - 数据质量对比柱状图（清洗前后行数对比）",
+        "  - 前端 Analytics 大屏截图（浏览器截屏 → figures/）",
+        "  - ECharts 用户行为/销售数据分析图表截图",
+        "编译修复：",
+        "  - cd 到 latex 目录执行 xelatex + bibtex + xelatex + xelatex",
+        "  - 修复所有编译错误/warnings",
+        "  - 确认 final PDF 封面+目录+正文+参考文献完整",
+        "  - 确认中文正常显示（fontset=mac 已设置）"
+      ],
+      "acceptance": [
+        "refs.bib 包含至少 8 条条目，格式正确。",
+        "figures/ 目录下至少 5 张图表文件。",
+        "LaTeX 编译通过，输出无 fatal error。",
+        "PDF 中中文正常显示。"
+      ]
+    }
+  ],
+  "implementationOrder": [
+    "S03-T01",
+    "S03-T02",
+    "S03-T03",
+    "S03-T04",
+    "S03-T05"
+  ],
+  "guardrails": [
+    "LaTeX 内容使用 chn-jud 或 CJK 兼容方式，确保中文正常编译。",
+    "所有章节内容必须与项目实际实现一致（不虚构功能）。",
+    "数据质量报告数据从实际 spark-output JSON 中提取，不编造。",
+    "代码片段从项目实际代码中截取，不手写不能运行的示例代码。",
+    "截图先由浏览器打开确认后再放入 figures/。",
+    "参考文献格式统一使用 BibTeX @misc/@article 标准。"
+  ],
+  "exitCriteria": [
+    "系统面试-Q&A.md 完成（15+ 问题）。",
+    "LaTeX 6 章正文全部填充，总字数 ≥ 8000 字。",
+    "中英文摘要完成。",
+    "参考文献 8+ 条。",
+    "图表 5+ 张（含架构图/管线图/截图/数据质量图）。",
+    "LaTeX 编译通过，生成 final.pdf。"
+  ]
+}

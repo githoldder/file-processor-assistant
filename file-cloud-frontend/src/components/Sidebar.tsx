@@ -7,7 +7,8 @@ import {
   Settings2, 
   BookOpen, 
   HelpCircle,
-  LayoutDashboard
+  LayoutDashboard,
+  BarChart3
 } from 'lucide-react';
 import { ViewState } from '../types';
 import { cn } from '../lib/utils';
@@ -30,6 +31,7 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
     { id: 'pdf', label: t.sidebar.pdfStudio, icon: FileText },
     { id: 'task-monitor', label: t.sidebar.taskMonitor, icon: Monitor },
     { id: 'system-status', label: t.sidebar.systemStatus, icon: Settings2 },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   ];
 
   return (

@@ -1,0 +1,287 @@
+{
+  "sprint": "01",
+  "version": "1.0",
+  "status": "Planned",
+  "lastUpdated": "2026-06-10",
+  "milestone": "CulCloud · 系统后台基础设施层",
+  "projectName": "CulCloud — 对标 Convertio 的分布式文件处理分析与可视化平台",
+  "projectBrief": "CulCloud 是一个面向校园场景的轻量化文件处理平台，对标 Convertio（全球最大在线文件转换平台，累计处理 31.9 亿文件 / 58,299 TB 数据）。CulCloud 在架构上完整覆盖「文件托管 → 格式转换 → 数据处理 → 分析大屏」全链路，后端以 FastAPI + Gotenberg + MinIO + Redis 组成文件处理引擎，前端以 React + TypeScript + ECharts 构建数据可视化大屏。核心差异化在于：不同于常规课程设计仅使用随机生成 CSV 进行演示，CulCloud 的分析数据来源于 NASA-HTTP 公开数据集（350 万条真实 HTTP 请求日志）经语义重映射后的文件处理平台操作记录，使 Spark 的分析对象具备真实的业务语义和时间分布，答辩时数据来源可溯源、结论有据可查。",
+  "datasetNarrative": "CulCloud 的平台运营数据来源于 NASA-HTTP 公开 HTTP 服务器日志数据集（1995 年 8-9 月，约 350 万条请求记录），通过 PySpark 数据管线重映射为文件处理平台的操作日志——每个 HTTP 请求映射为一次文件上传/转换/下载操作，IP 地址哈希为匿名用户 ID，URL 路径提取为文件类型和操作类型，响应字节数映射为文件大小，状态码映射为操作成功/失败状态。这种处理方式保证了数据真实性的同时又赋予了业务语义，使 Spark 的清洗、聚合、统计分析输出具有实际参考价值。",
+  "systemHighlights": [
+    "真实数据驱动：使用 NASA 公开 HTTP 日志（350 万条）重映射为文件处理平台操作数据",
+    "完整技术栈：FastAPI 文件服务 + Flask Analytics 分析服务 + PySpark 数据处理 + ECharts 可视化",
+    "产品级架构：PM2 进程管理 + Docker 容器化 + MinIO 对象存储 + Redis 任务队列",
+    "双模式分析：实时模式（直读文件系统）和 Spark 模式（分布式批处理）双切换",
+    "商业对标：系统设计对标 Convertio，论文中通过技术对比表展示架构决策"
+  ],
+  "objective": "构建文件处理分布式平台的系统监控基础设施层——包括全服务健康检查（health_checker）、统一异步任务追踪（task_tracker）、操作日志采集器（log_collector），以及对应的后端 REST 路由（/api/v1/system/health, /api/v1/tasks/*, /api/v1/cluster/overview, /api/v1/logs/*）。为 Dashboard 和 Analytics 大屏提供实时的系统运行状态数据。",
+  "designPhilosophy": {
+    "health_checker": "每 30 秒轮询 Docker 容器（redis/minio/gotenberg/api）和 PM2 进程（flask-analytics）的健康状态，记录到 Redis，同时保留最近 24 小时的健康历史用于趋势展示",
+    "task_tracker": "统一的异步任务注册/状态更新/查询机制，所有转换操作（文件格式转换、PDF 合并拆分、Spark 分析任务）都通过 task_tracker 追踪全生命周期（queued→processing→completed/failed）",
+    "log_collector": "从 MinIO 事件、Redis 任务状态变更、FastAPI 请求日志三个来源汇聚操作事件，统一格式化后存储到 Redis 列表，提供时间线查询"
+  },
+  "repoReality": {
+    "backendRoot": "backend/",
+    "existingRouters": [
+      "backend/app/routers/files.py — 文件 CRUD（upload/list/download/stat/rename/delete），7 个端点",
+      "backend/app/routers/convert.py — 文件转换（convert/existing/task_status），支持 18 种格式互转",
+      "backend/app/routers/tasks.py — 仅 GET /api/v1/tasks/{task_id}"
+    ],
+    "existingServices": [
+      "backend/app/services/converter.py — 768 行，18 种转换类型（PDF/Word/Excel/PPTX/MD/SVG/PNG/JPG）",
+      "backend/app/services/minio_client.py — MinIO S3 客户端封装（上传/下载/列表/删除/预签名 URL）"
+    ],
+    "existingInfra": {
+      "redis": "端口 6380，用于任务队列和缓存",
+      "minio": "端口 9010（API）/ 9011（Console），bucket: culcloud-files",
+      "gotenberg": "端口 3000，文档转换引擎",
+      "fastapi": "端口 8000，主文件服务",
+      "flask": "端口 5050，Spark 分析 API（PM2 管理）",
+      "frontend": "端口 5173，React + Vite（PM2 管理）"
+    },
+    "frontendViews": [
+      "Dashboard.tsx — 166 行，仅 listFiles() 返回真实文件数+总量，6 个指标卡中 4 个为占位符",
+      "SystemStatus.tsx — Sprint-01 待对接，当前 mock 显示 HDFS/YARN 指标",
+      "TaskMonitor.tsx — Sprint-01 待对接，当前无后端数据",
+      "Analytics.tsx — 已完成重写，20+ 图表，对接 Flask 分析 API",
+      "MyFiles.tsx — 329 行，文件 CRUD 全部对接真实 API",
+      "ConvertCenter.tsx — 667 行，核心转换功能已对接",
+      "PDFStudio.tsx — 176 行，纯占位"
+    ],
+    "sprint01Dependency": "所有后续 Sprint 都依赖 task_tracker 的统一任务 ID 和 log_collector 的事件流"
+  },
+  "tasks": [
+    {
+      "id": "S01-T01",
+      "topic": "统一健康检查器 (health_checker.py)",
+      "ownerAgentPrompt": "在 backend/app/services/ 下创建 health_checker.py，实现全服务健康检查逻辑。检查范围覆盖 Docker 容器（redis/minio/gotenberg/api）和 PM2 进程（flask-analytics）。健康检查结果写入 Redis，保留 24 小时历史快照用于 Dashboard 趋势图。",
+      "targetFiles": [
+        "backend/app/services/health_checker.py"
+      ],
+      "steps": [
+        "创建 HealthChecker 类：",
+        "  __init__: 接受 checks 配置列表（每项含 name/type/host/port/endpoint），初始化 Redis 客户端",
+        "  check_service(service_config): 根据 type 执行不同检查策略——",
+        "    type='http': GET {host}:{port}{endpoint}，检查 HTTP 200 和响应体中的 status 字段",
+        "    type='tcp': socket.connect_ex({host}, {port})，超时 3 秒",
+        "    type='redis': 对 Redis 执行 PING，期望 PONG",
+        "    type='minio': 对 MinIO 执行 list_buckets，确认返回桶列表",
+        "  check_all(): 遍历所有服务执行检查，返回 [{name, status:'healthy'|'degraded'|'down', latency_ms, checked_at}]",
+        "  record_snapshot(): 将检查结果写入 Redis sorted set (key: health:history:{service_name})，score 为 timestamp",
+        "  get_history(service_name, hours=24): 返回指定时间窗口的健康快照列表",
+        "  run_loop(): asyncio 定时循环（默认 30 秒间隔），每次执行 check_all + record_snapshot",
+        "Redis 数据设计：",
+        "  health:current → JSON string，最新一次检查结果",
+        "  health:history:{service} → ZSET，member 为 JSON snapshot，score 为 unix timestamp",
+        "  health:history:{service}:max_age → 86400（24 小时 TTL）",
+        "在 FastAPI startup 事件中启动 health_checker.run_loop() 后台任务",
+        "异常处理：单个服务检查失败不影响其他服务，超时服务标记为 'down'"
+      ],
+      "acceptance": [
+        "手动关闭 gotenberg 容器后，health_checker 返回 gotenberg 状态为 'down'，其他服务正常",
+        "Redis 中存在 health:current 键，内容为最近一次检查的完整结果",
+        "health:history:redis 包含 24 小时内所有检查快照",
+        "health_checker.check_all() 同步调用也返回正确结果（除 run_loop 外支持按需调用）"
+      ]
+    },
+    {
+      "id": "S01-T02",
+      "topic": "统一任务追踪器 (task_tracker.py)",
+      "ownerAgentPrompt": "在 backend/app/services/ 下创建 task_tracker.py，实现统一的任务注册/状态更新/查询机制。所有异步操作（文件转换、PDF 处理、Spark 分析）都通过 task_tracker 注册和更新状态，前端通过轮询 endpoint 获取进度。",
+      "targetFiles": [
+        "backend/app/services/task_tracker.py"
+      ],
+      "steps": [
+        "创建 TaskTracker 类：",
+        "  create_task(task_type, metadata) → task_id:",
+        "    生成 UUID4 task_id",
+        "    写入 Redis hash: task:{task_id} → {id, type, status:'queued', created_at, updated_at, metadata}",
+        "    加入 Redis sorted set: tasks:by_status:{status}，score 为 created_at",
+        "    返回 task_id",
+        "  update_status(task_id, status, result=None, error=None):",
+        "    更新 Redis hash 中 status/updated_at/result/error 字段",
+        "    从旧状态 sorted set 移除，加入新状态 sorted set",
+        "    触发 log_collector.record_event('task_updated', task_data)",
+        "  get_task(task_id) → dict:",
+        "    读取 Redis hash 所有字段，返回完整 task 对象",
+        "  list_tasks(status=None, task_type=None, limit=50, offset=0) → [dict]:",
+        "    从 tasks:by_status:{status} 或全局索引分页查询",
+        "  get_queue_length() → int:",
+        "    返回 tasks:by_status:queued 中的任务数量",
+        "  get_cluster_overview() → dict:",
+        "    返回 {total_tasks, queued, processing, completed_24h, failed_24h, success_rate_24h, active_workers}",
+        "    active_workers 从 health:current 中提取运行中的 worker 服务数量",
+        "任务状态机：queued → processing → completed | failed",
+        "    只有 queued 状态允许转为 processing",
+        "    只有 processing 状态允许转为 completed/failed",
+        "    非法状态转换记录 warning 日志但不中断",
+        "任务类型枚举：'conversion'（格式转换）, 'pdf_merge'（PDF 合并）, 'pdf_split'（PDF 拆分）, 'spark_analysis'（Spark 分析）"
+      ],
+      "acceptance": [
+        "create_task('conversion', {source:'a.docx', target:'a.pdf'}) 返回 36 位 UUID",
+        "update_status 后 get_task 返回最新状态",
+        "list_tasks(status='queued') 只返回排队中任务",
+        "get_cluster_overview() 返回正确的统计摘要",
+        "非法状态转换（如 completed→processing）记录 warning 但不抛异常"
+      ]
+    },
+    {
+      "id": "S01-T03",
+      "topic": "操作日志采集器 (log_collector.py)",
+      "ownerAgentPrompt": "在 backend/app/services/ 下创建 log_collector.py，从多个来源汇聚操作事件并统一存储。事件来源：① MinIO bucket 变更（新文件上传/删除）② 任务状态变更（task_tracker 回调）③ API 请求日志（FastAPI middleware）。所有事件存储到 Redis list，前端通过 endpoint 查询时间线。",
+      "targetFiles": [
+        "backend/app/services/log_collector.py"
+      ],
+      "steps": [
+        "创建 LogCollector 类：",
+        "  record_event(event_type, data):",
+        "    事件类型枚举：'file_uploaded', 'file_deleted', 'conversion_started', 'conversion_completed', 'conversion_failed', 'service_restart', 'error'",
+        "    统一格式：{id: uuid, type, timestamp, data: {filename, file_size, user_id?, source_format?, target_format?, duration_ms?, error?}}",
+        "    LPUSH 到 Redis list: logs:recent",
+        "    LTRIM 保留最近 5000 条",
+        "    同时写入 ZSET: logs:timeline，score 为 timestamp",
+        "  get_recent_events(limit=50, event_type=None, since=None) → [event]:",
+        "    从 logs:recent 按条件查询，支持类型过滤和时间范围",
+        "  get_events_timeline(hours=24, limit=100) → [event]:",
+        "    从 logs:timeline ZSET 按时间范围查询",
+        "  get_event_stats(hours=24) → dict:",
+        "    返回近 N 小时各类型事件计数：{file_uploaded: 23, conversion_completed: 15, ...}",
+        "集成点：",
+        "  FastAPI middleware: 使用 @app.middleware(\"http\") 拦截请求，对 POST/PUT/DELETE 操作自动记录事件",
+        "  MinIO webhook（可选，低优先级）：通过 MinIO bucket notification 配置推送事件",
+        "  task_tracker 回调：在 task_tracker.update_status 中自动调用 log_collector.record_event",
+        "Redis 数据设计：",
+        "  logs:recent → LIST，最近 5000 条事件",
+        "  logs:timeline → ZSET，score=timestamp，member=event_json",
+        "  logs:stats:{YYYY-MM-DD} → HASH，每日事件统计"
+      ],
+      "acceptance": [
+        "record_event('file_uploaded', {filename:'test.pdf'}) 后 get_recent_events 能查到该事件",
+        "FastAPI POST /api/v1/files/upload 自动触发 file_uploaded 事件",
+        "task_tracker.update_status 自动触发 conversion_completed 事件",
+        "get_event_stats(24) 返回过去 24 小时的事件计数"
+      ]
+    },
+    {
+      "id": "S01-T04",
+      "topic": "后端路由：系统健康 + 任务 + 日志 + 集群总览端点",
+      "ownerAgentPrompt": "扩展 backend/app/routers/ 目录，新增 system.py 和更新 tasks.py（补全缺失端点）、新增 logs.py。所有端点对接 S01-T01/T02/T03 的服务层。",
+      "targetFiles": [
+        "backend/app/routers/system.py",
+        "backend/app/routers/tasks.py",
+        "backend/app/routers/logs.py",
+        "backend/app/main.py"
+      ],
+      "steps": [
+        "新建 backend/app/routers/system.py：",
+        "  GET /api/v1/system/health → 调用 health_checker.check_all()，返回所有服务状态列表",
+        "  GET /api/v1/system/health/history?service=redis&hours=24 → 返回指定服务 24 小时健康历史",
+        "  GET /api/v1/cluster/overview → 调用 task_tracker.get_cluster_overview() + health_checker，返回集群摘要",
+        "扩展 backend/app/routers/tasks.py：",
+        "  已有 GET /{task_id} → 调用 task_tracker.get_task(task_id)",
+        "  新增 GET / → 调用 task_tracker.list_tasks()，支持 ?status=&type=&limit=&offset=",
+        "  新增 GET /queue-length → 返回 {queue_length: N}",
+        "  新增 GET /stats → 返回 {total, queued, processing, completed, failed, success_rate}",
+        "新建 backend/app/routers/logs.py：",
+        "  GET /api/v1/logs/recent → 调用 log_collector.get_recent_events()，支持 ?limit=&type=",
+        "  GET /api/v1/logs/timeline → 调用 log_collector.get_events_timeline()，支持 ?hours=&limit=",
+        "  GET /api/v1/logs/stats → 调用 log_collector.get_event_stats()",
+        "修改 backend/app/main.py：",
+        "  注册 system_router → prefix='/api/v1/system', tags=['System']",
+        "  注册 logs_router → prefix='/api/v1/logs', tags=['Logs']",
+        "  更新 tasks_router → prefix='/api/v1/tasks', tags=['Tasks']",
+        "  startup 事件中初始化 health_checker.run_loop()"
+      ],
+      "acceptance": [
+        "GET /api/v1/system/health 返回 JSON {services: [{name, status, latency_ms}]}",
+        "GET /api/v1/tasks/queue-length 返回 {queue_length: 0}",
+        "GET /api/v1/logs/stats 返回 {events: {file_uploaded: ...}}",
+        "GET /api/v1/cluster/overview 返回 {total_tasks, active_workers, ...}"
+      ]
+    },
+    {
+      "id": "S01-T05",
+      "topic": "前端 TaskMonitor 视图：对接真实任务 API + ECharts 轮询",
+      "ownerAgentPrompt": "重写 file-cloud-frontend/src/views/TaskMonitor.tsx，从当前纯 mock 状态改造为对接 /api/v1/tasks/* 端点的实时任务监控面板。包含任务状态分布饼图、任务时间线、任务队列长度实时指示器。",
+      "targetFiles": [
+        "file-cloud-frontend/src/views/TaskMonitor.tsx",
+        "file-cloud-frontend/src/services/api.ts",
+        "file-cloud-frontend/src/types.ts"
+      ],
+      "steps": [
+        "在 types.ts 中新增 Task 类型（复用 Sprint-01 定义或补全）：{id, type, status:'queued'|'processing'|'completed'|'failed', created_at, updated_at, metadata: {}, result?: {}, error?: string}",
+        "在 services/api.ts 新增函数：getTasks(params?), getTaskStats(), getTaskQueueLength()",
+        "重写 TaskMonitor.tsx：",
+        "  顶部统计行：总任务数 / 排队中 / 处理中 / 已完成 / 失败，每项从 getTaskStats() 获取",
+        "  中部 ECharts 饼图：任务状态分布（queued/processing/completed/failed 四种颜色）",
+        "  下部任务列表：分页表格显示最近 20 个任务（id 缩略 / type / status 彩色标签 / created_at / 操作）",
+        "  任务状态自动轮询：useEffect 中 setInterval 每 5 秒调用 getTaskStats() + getTasks()",
+        "  单任务详情面板：点击表格行展开，显示完整 metadata / result / error",
+        "  覆盖 loading（骨架屏）/ error（横幅+重试按钮）/ empty（'暂无任务记录'空状态插图）",
+        "  彩色状态标签：queued=蓝色, processing=橙色(动画旋转), completed=绿色, failed=红色",
+        "删除所有硬编码 mock 数据"
+      ],
+      "acceptance": [
+        "页面挂载后顶部统计数字从 API 获取（非 mock）",
+        "ECharts 饼图正确渲染 4 种状态分布",
+        "表格每 5 秒自动刷新数据",
+        "后端关闭时显示错误横幅，不白屏",
+        "TypeScript 编译零错误"
+      ]
+    },
+    {
+      "id": "S01-T06",
+      "topic": "前端 SystemStatus 视图：从跑批改为实时 API",
+      "ownerAgentPrompt": "重写 file-cloud-frontend/src/views/SystemStatus.tsx，从当前静态 mock 改为对接 /api/v1/system/health 和 /api/v1/cluster/overview 端点的实时系统状态面板。展示 Docker 容器状态网格、服务响应延迟趋势折线图、24 小时健康历史。",
+      "targetFiles": [
+        "file-cloud-frontend/src/views/SystemStatus.tsx",
+        "file-cloud-frontend/src/services/api.ts",
+        "file-cloud-frontend/src/types.ts"
+      ],
+      "steps": [
+        "在 types.ts 中新增类型：ServiceHealth {name, status, latency_ms, checked_at}, ClusterOverview {total_tasks, active_workers, queued, ...}",
+        "在 services/api.ts 新增函数：getSystemHealth(), getHealthHistory(service, hours), getClusterOverview()",
+        "重写 SystemStatus.tsx：",
+        "  顶部服务状态网格（6 个卡片）：redis / minio / gotenberg / api / flask-analytics / frontend，每卡片显示 status（绿=healthy/黄=degraded/红=down）+ latency_ms + 最后检查时间",
+        "  中部折线图：过去 24 小时各服务响应延迟趋势（重叠多条线）",
+        "  下部集群总览卡片：活跃节点数 / 任务队列长度 / 24h 转换量 / 成功率 / 存储总量",
+        "  自动轮询：setInterval 每 10 秒刷新服务状态",
+        "  24 小时历史图初始加载后不轮询（数据量大），提供手动刷新按钮",
+        "  覆盖 loading/error/empty 三态",
+        "  移除硬编码的 HDFS/YARN 占位指标，改为 Docker 容器 + PM2 进程"
+      ],
+      "acceptance": [
+        "6 个服务卡片根据 /api/v1/system/health 返回的状态显示对应颜色",
+        "延迟趋势折线图正确渲染（对接 health history endpoint）",
+        "集群总览数据来自 /api/v1/cluster/overview，非 mock",
+        "服务卡片每 10 秒自动刷新状态",
+        "TypeScript 编译零错误"
+      ]
+    }
+  ],
+  "implementationOrder": [
+    "S01-T01 health_checker (基础，T03/T04 依赖)",
+    "S01-T02 task_tracker (基础，T03/T04/T05 依赖)",
+    "S01-T03 log_collector (依赖 T02 回调)",
+    "S01-T04 后端路由 (依赖 T01/T02/T03)",
+    "S01-T05 TaskMonitor 前端 (依赖 T04)",
+    "S01-T06 SystemStatus 前端 (依赖 T04)"
+  ],
+  "guardrails": [
+    "不破坏现有文件上传/转换/下载 7 个端点",
+    "不修改 converter.py 的核心转换逻辑（768 行稳定代码）",
+    "Redis 键设计统一前缀：health:, task:, logs:",
+    "所有异步循环使用 asyncio，不阻塞 FastAPI 事件循环",
+    "health_checker 单服务失败不影响全局状态（降级而非瘫痪）",
+    "TypeScript 编译零错误为底线"
+  ],
+  "exitCriteria": [
+    "6 个 Docker/PM2 服务全健康检查通过",
+    "所有任务操作通过 task_tracker 注册并追踪状态变更",
+    "上传/转换操作自动写入事件日志",
+    "TaskMonitor + SystemStatus 两视图全部对接真实 API",
+    "TaskMonitor 任务列表每 5 秒自动刷新",
+    "SystemStatus 服务网格每 10 秒自动刷新",
+    "TypeScript 编译零错误"
+  ]
+}

@@ -1,0 +1,84 @@
+《大数据与云计算（Q）》
+实验报告
+
+
+
+实验六	Hive数仓搭建以及基本使用
+
+
+
+学  院  计算机信息工程学院  
+班  级        23软一        
+学  号       23030301       
+姓  名         曹磊         
+
+
+
+
+
+实验六	Hive数仓搭建以及基本使用
+一、实验目的
+本实验旨在全方位地实践和运用大数据处理技术栈，涵盖以下关键点：
+1.Linux操作系统命令：涵盖文件操作、进程管理、网络配置等基础命令。
+2.Hadoop生态系统：深入理解HDFS（分布式文件系统）、YARN（资源调度系统）的工作原理与操作。
+3.MySQL数据库操作：包括数据库创建、表设计、基本SQL查询等。
+4.Hive与数据仓库理论：熟悉Hive SQL编写，理解数据仓库分层模型。
+通过将本地数据集上传至Hadoop的Hive数据仓库，学习如何在分布式存储系统（HDFS）中管理和组织大规模数据集，以及如何使用Hive进行数据的定义、存储和初步查询分析。
+二、实验环境
+操作系统：Linux发行版，如Ubuntu24.04.4LTS，用于部署Hadoop集群和MySQL服务。
+JDK：JDK 1.8或更高版本，确保与Hadoop兼容。
+Hadoop：Hadoop包含HDFS和YARN。
+MySQL：用于关系型数据库操作，版本5.7或8.0。
+Hive：Hive 3.1.3版本，用于数据仓库操作，需与Hadoop版本匹配。
+三、实验内容
+本实验的内容主要包括以下几个方面：
+1.下载与解压Hive：从Apache官网下载Hive的二进制包，解压缩到指定目录。
+2.配置Hive环境变量：在系统环境变量中设置HIVE_HOME并添加到PATH。
+3.配置Hive-site.xml：根据Hadoop配置和Metastore选择，适当修改Hive配置文件。
+4.初始化Metastore：根据所选配置模式，可能需要初始化Metastore数据库。
+5.启动Hive服务：使用适当的命令启动Hive服务。
+6.测试Hive安装：通过Hive命令行界面执行简单的HQL查询，比如创建数据库、表，并执行SELECT查询。
+四、实验预习和准备
+为了进行Hive数仓搭建以及基本使用，需要完成以下预习和准备工作：
+1.安装并配置好Docker操作系统。
+2.安装Java 1.8+，设置JAVA_HOME环境变量。
+3.完成Hadoop的安装与配置，并确保Hadoop集群正常运行。
+4.安装MySQL数据库，完成基础配置。
+5.准备好Hive的3.1.3版本的安装包。
+五、实验过程与结果
+本次实验采用 Docker 容器方式搭建 Hadoop 与 Hive 实验环境。先基于 eclipse-temurin:8-jdk-jammy 构建实验镜像，在镜像中安装 Hadoop 3.3.6 和 Hive 3.1.3，并配置 JAVA_HOME、HADOOP_HOME、HIVE_HOME、Hadoop 配置文件和 Hive 配置文件。Hadoop 安装包优先从清华大学 TUNA 镜像站下载，Hive 安装包、MySQL JDBC 驱动和 commons-collections 依赖使用本机实验目录中已准备好的文件，从而减少外网下载并提高构建稳定性。
+
+镜像构建完成后，使用 chaoliu123/myubuntu:hadoop-mapreduce-lab-topn 作为远端镜像名，并保留本地别名 myubuntu:hadoop-mapreduce-lab-topn。镜像中提供 start-hadoop-lab.sh 启动脚本，容器启动后会启动 ssh、格式化并启动 HDFS，再启动 YARN。通过 jps 命令检查进程，容器内可以看到 NameNode、DataNode、SecondaryNameNode、ResourceManager、NodeManager 等进程，说明单节点 Hadoop 实验环境启动正常。
+
+随后执行 Hive 初始化与基本操作测试。实验脚本 run-hive-exam6.sh 会创建 HDFS 中的 /user/hive/warehouse 和 /tmp/hive 目录，初始化 Hive metastore，并执行 HiveQL 建库、建表、加载数据和查询操作。Hive 使用 test_db 数据库，创建 user_info 表，字段包括 id、name、age、dt，表数据以逗号分隔的文本文件形式导入。
+
+本次导入 user_info 表的数据如下：
+1,zhangsan,22,2026-05-31
+2,lisi,25,2026-05-31
+3,wangwu,21,2026-05-31
+4,zhaoliu,28,2026-05-31
+5,qianqi,23,2026-05-31
+6,sunba,26,2026-05-31
+7,zhoujiu,24,2026-05-31
+8,wushi,27,2026-05-31
+
+执行 SHOW DATABASES 后，结果包含 default 和 test_db，说明数据库创建成功。执行 SHOW TABLES 后，结果包含 user_info，说明表创建成功。执行 SELECT * FROM user_info 后，可以查询到全部 8 条记录，说明数据加载成功。执行 SELECT name,age FROM user_info WHERE age > 24 后，返回 lisi 25、zhaoliu 28、sunba 26、wushi 27，说明条件查询正常。执行 SELECT dt,COUNT(*) AS total_user FROM user_info GROUP BY dt 后，返回 2026-05-31 8，说明分组聚合统计正常。
+
+实验过程中还保留了可复现实验镜像的管理方式。镜像已推送到 Docker Hub，远端地址为 chaoliu123/myubuntu:hadoop-mapreduce-lab-topn，远端 manifest digest 为 sha256:6552b3b4ec0a150195728741c97f086f4ac9e3086bfa20bc80a1965b9a25787d。以后需要重新实验时，可以先执行 docker pull chaoliu123/myubuntu:hadoop-mapreduce-lab-topn，再创建容器运行；如果在容器内继续修改实验环境，可以先 docker commit 保存新状态，再 docker push 推送到 Docker Hub，避免本地磁盘长期保存多个重复大镜像。
+
+六、实验结果分析与体会
+通过本次实验，可以看到 Hive 在 Hadoop 生态中的作用主要是把类 SQL 的查询语言转换为底层分布式存储与计算任务，使用户不必直接编写复杂的 MapReduce 程序也能完成数据仓库的建表、导入、查询和统计分析。实验中的 user_info 表数据量较小，但完整覆盖了数据库创建、表结构定义、文本数据加载、全表查询、条件过滤和分组聚合等基本流程。
+
+在环境搭建方面，Hive 对 Hadoop、JDK、依赖 jar 包和 metastore 配置都有一定要求。实验中如果 Hadoop 服务未正常启动，或者 Hive warehouse 目录权限不足，就会导致 Hive 初始化或查询失败。因此在启动 Hive 前，需要先确认 HDFS 和 YARN 进程状态，并提前创建 /user/hive/warehouse、/tmp/hive 等目录并设置合适权限。
+
+采用 Docker 镜像封装实验环境后，实验的可复现性明显提高。传统手工安装需要反复配置环境变量、解压软件包和复制依赖 jar，容易因为路径或版本差异导致错误；将 Hadoop、Hive、脚本和实验数据统一写入镜像后，只需要拉取镜像并启动容器，就可以快速恢复同一套实验状态。同时，实验完成后可以删除本地容器和镜像，需要时再从 Docker Hub 拉取，能够减少本机磁盘占用。
+
+本次实验进一步加深了对 Hive 数仓基本工作流程的理解：HDFS 负责数据存储，Hive 负责元数据管理和 SQL 层抽象，YARN 为计算任务提供资源调度。对于后续更复杂的数据仓库实验，可以在本次环境基础上继续扩展分区表、外部表、数据清洗和分层建模等内容。
+
+
+
+
+
+
+
+PAGE

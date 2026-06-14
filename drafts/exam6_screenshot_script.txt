@@ -1,0 +1,180 @@
+实验六 Hive数仓搭建以及基本使用 - 截图脚本
+
+用途说明：
+本文件用于手动完成实验报告截图。每一步都写明需要输入的命令、应该看到的关键结果、建议截图文件名，以及截图插入到 Word 文档中“五、实验过程与结果”的具体位置。
+
+截图保存目录：
+/Users/caolei/Desktop/308-大数据与云计算/02-process/figs/exam6
+
+开始前准备：
+打开终端，进入项目目录：
+cd "/Users/caolei/Desktop/culcloud platform"
+
+Step 1：拉取实验镜像
+输入命令：
+docker pull chaoliu123/myubuntu:hadoop-mapreduce-lab-topn
+
+应该看到的关键结果：
+Digest: sha256:6552b3b4ec0a150195728741c97f086f4ac9e3086bfa20bc80a1965b9a25787d
+Status: Image is up to date for chaoliu123/myubuntu:hadoop-mapreduce-lab-topn
+
+截图文件名：
+01-docker-pull.png
+
+插入位置：
+插入到“五、实验过程与结果”中“本次实验在 Docker 容器中完成 Hive 数仓环境搭建与基本使用测试”这一段之后，用来证明镜像已从 Docker Hub 拉取并可复用。
+
+Step 2：启动 Hadoop/Hive 实验容器
+输入命令：
+scripts/hadoop-image.sh run
+
+应该看到的关键结果：
+容器名称 hadoop-mapreduce-lab 出现在 docker ps 输出中，状态为 Up。
+
+如果端口被占用或已有同名容器，先输入：
+scripts/hadoop-image.sh clean
+然后重新执行：
+scripts/hadoop-image.sh run
+
+截图文件名：
+02-container-run.png
+
+插入位置：
+插入到“五、实验过程与结果”中“容器启动后，执行 jps 命令检查 Hadoop 相关进程”之前，用来证明实验环境容器已经启动。
+
+Step 3：查看 Hadoop 进程
+输入命令：
+docker exec hadoop-mapreduce-lab jps
+
+应该看到的关键结果：
+NameNode
+DataNode
+SecondaryNameNode
+ResourceManager
+NodeManager
+
+截图文件名：
+03-jps-hadoop-process.png
+
+插入位置：
+插入到“五、实验过程与结果”中“终端中可以看到 NameNode、DataNode、SecondaryNameNode、ResourceManager、NodeManager 等进程”这一句之后。
+
+Step 4：查看 Hadoop 和 Hive 版本
+输入命令：
+docker exec hadoop-mapreduce-lab hadoop version
+docker exec hadoop-mapreduce-lab hive --version
+
+应该看到的关键结果：
+Hadoop 3.3.6
+Hive 3.1.3
+
+截图文件名：
+04-hadoop-hive-version.png
+
+插入位置：
+插入到“五、实验过程与结果”中“通过 hive --version 命令确认 Hive 版本为 3.1.3，通过 hadoop version 命令确认 Hadoop 版本为 3.3.6”这一句之后。
+
+Step 5：运行实验六 Hive 脚本
+输入命令：
+docker exec hadoop-mapreduce-lab run-hive-exam6.sh
+
+应该看到的关键结果：
+执行过程中会出现 CREATE DATABASE、SHOW DATABASES、CREATE TABLE、SHOW TABLES、LOAD DATA、SELECT 查询等输出。
+
+截图文件名：
+05-run-hive-script-start.png
+
+截图时机：
+脚本刚开始执行并显示 Hive 初始化、建库或建表命令时截图。
+
+插入位置：
+插入到“五、实验过程与结果”中“接着进行 Hive 元数据初始化和建库测试”这一段之后。
+
+Step 6：截图 SHOW DATABASES 和 SHOW TABLES 结果
+输入命令：
+docker exec hadoop-mapreduce-lab hive -e "SHOW DATABASES; USE test_db; SHOW TABLES;"
+
+应该看到的关键结果：
+default
+test_db
+user_info
+
+截图文件名：
+06-show-databases-tables.png
+
+插入位置：
+插入到“五、实验过程与结果”中“查询结果中显示 default 和 test_db，说明 Hive 数据库创建成功”和“终端输出 user_info，说明表结构创建成功”之后。
+
+Step 7：截图全表查询结果
+输入命令：
+docker exec hadoop-mapreduce-lab hive -e "USE test_db; SELECT * FROM user_info;"
+
+应该看到的关键结果：
+1 zhangsan 22 2026-05-31
+2 lisi 25 2026-05-31
+3 wangwu 21 2026-05-31
+4 zhaoliu 28 2026-05-31
+5 qianqi 23 2026-05-31
+6 sunba 26 2026-05-31
+7 zhoujiu 24 2026-05-31
+8 wushi 27 2026-05-31
+
+截图文件名：
+07-select-all-user-info.png
+
+插入位置：
+插入到“五、实验过程与结果”中“终端输出 8 条记录，与导入的 user_data.csv 内容一致，说明数据加载成功”这一句之后。
+
+Step 8：截图条件查询结果
+输入命令：
+docker exec hadoop-mapreduce-lab hive -e "USE test_db; SELECT name,age FROM user_info WHERE age > 24;"
+
+应该看到的关键结果：
+lisi 25
+zhaoliu 28
+sunba 26
+wushi 27
+
+截图文件名：
+08-where-age-gt-24.png
+
+插入位置：
+插入到“五、实验过程与结果”中“输出结果为 lisi 25、zhaoliu 28、sunba 26、wushi 27，说明 Hive 可以按照字段条件正确过滤数据”这一句之后。
+
+Step 9：截图分组聚合结果
+输入命令：
+docker exec hadoop-mapreduce-lab hive -e "USE test_db; SELECT dt,COUNT(*) AS total_user FROM user_info GROUP BY dt;"
+
+应该看到的关键结果：
+2026-05-31 8
+
+截图文件名：
+09-group-by-count.png
+
+插入位置：
+插入到“五、实验过程与结果”中“输出结果为 2026-05-31 8，说明 Hive 的分组统计功能正常”这一句之后。
+
+Step 10：截图远端镜像校验
+输入命令：
+scripts/hadoop-image.sh verify-remote
+
+应该看到的关键结果：
+Name: docker.io/chaoliu123/myubuntu:hadoop-mapreduce-lab-topn
+Digest: sha256:6552b3b4ec0a150195728741c97f086f4ac9e3086bfa20bc80a1965b9a25787d
+Platform: linux/arm64
+
+截图文件名：
+10-dockerhub-manifest-verify.png
+
+插入位置：
+插入到“五、实验过程与结果”中“远端镜像地址为 chaoliu123/myubuntu:hadoop-mapreduce-lab-topn，远端 digest 为……”这一句之后。
+
+收尾清理：
+如果实验截图已经完成，可以停止或删除容器，但不要删除镜像：
+scripts/hadoop-image.sh stop
+
+如果要删除容器但保留镜像：
+scripts/hadoop-image.sh clean
+
+注意：
+不要在未确认镜像已推送和可拉取之前执行 docker image prune、docker rmi 或 docker system prune。

@@ -1,0 +1,6 @@
+object_name,size_bytes,size_mb,extension,content_type,last_modified,etag
+contract.docx,25000,0.024,docx,unknown,2026-06-10T06:46:47.922000+00:00,72613fe04a00380365164953845e494f
+data_export.xlsx,30000,0.029,xlsx,unknown,2026-06-10T06:46:47.914000+00:00,13ec284e3aeed44b5c129ce0c6d8c8fb
+logs_2024.txt,15000,0.014,txt,unknown,2026-06-10T06:46:47.923000+00:00,3b51b63a5d933ea4b145d50ceb6b37e3
+photo_team.jpg,80000,0.076,jpg,unknown,2026-06-10T06:46:47.919000+00:00,87c841b873fc8af2a3fc677f014a1be5
+report_2024.pdf,50000,0.048,pdf,unknown,2026-06-10T06:46:47.909000+00:00,b1a7de895f33fde6fba7a3029ef7db68

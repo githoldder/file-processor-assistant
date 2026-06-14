@@ -1,5 +1,14 @@
 # 项目上下文管理
 
+## Session Update: 2026-06-14
+### Repository Governance and Entropy Reduction
+- Confirmed the active repository path is `/Users/caolei/Desktop/culcloud-platform`.
+- Promoted `Agent.md` to the project Agent spec and aligned it with the decoupled workspace governance model.
+- Added a root `.gitignore` to block local env files, OS metadata, Python/Node caches, dependency folders, generated reports, logs and build outputs.
+- Created `docs/02-process/governance/entropy-audit-20260614.md` as the current structure diagnosis and maintenance plan.
+- Root process snapshots should be archived under `docs/02-process/archive-snapshots/`; future Sprint planning should use `prds/md/` plus `prds/json/`.
+- Git rule remains strict: run `git status --short`, stage explicit paths only, never use `git add .`, and push only after explicit human backup/release request.
+
 ## 最新交接：PRD08 文件预览、轻量转换集成与文件夹云盘能力
 
 - 当前日期：2026-05-12
@@ -155,5 +164,26 @@
 - [x] T1-T4: Backend S3 operations (Upload/List/Download/Delete) completed.
 - [ ] T5-T7: Frontend integration pending.
 
+
 ### Lessons Learned & Anti-patterns
 - (Pending execution)
+
+## Session Update: 2026-06-03
+### Docker Local Cleanup
+- Verified remote image: `chaoliu123/myubuntu:hadoop-mapreduce-lab-topn` with digest `sha256:6552b3b4ec0a150195728741c97f086f4ac9e3086bfa20bc80a1965b9a25787d`.
+- Deleted local inactive image: `6552b3b4ec0a`.
+- Cleaned builder cache: 6.557GB.
+
+## Session Update: 2026-06-14
+### Services Verification
+- Checked Docker services (API, Redis, MinIO, Gotenberg) status: All healthy.
+- Checked PM2 services (Flask Analytics, Frontend Dev Server) status: All running.
+- Fixed frontend compilation error: renamed `file-cloud-frontend/src/context/useDashboard.ts` to `.tsx` as it contains JSX.
+- Fixed white screen issue: implemented missing exports and TS interfaces in `file-cloud-frontend/src/services/api.ts` imported by `TaskMonitor.tsx` and `SystemStatus.tsx` (`listTasks`, `getQueueLength`, `getClusterOverview`, `getRecentFailures`, `getSystemHealth`, `getLogTimeline`, `getLogStats`).
+- Verified Web interface access: http://localhost:5173 is up and running.
+
+### Governance Consolidation
+- [Decision] `Agent.md` is the project spec and first-read file for future agents.
+- [Decision] External progress summary and Taste v3.0 governance are mirrored into repo-local context, PRD index and `.agent/workflows/`.
+- [Decision] Current sprint remains focused on analytics dashboard, PM2/Docker Compose defense logic, cluster status visualization and final report evidence.
+- [Risk] Full feature validation is still required after this governance checkpoint because many code files were already modified before this pass.

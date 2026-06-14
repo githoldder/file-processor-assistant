@@ -2,15 +2,18 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from app.routers import convert, files, tasks
+from app.routers import convert, files, tasks, system, logs
 from app.services.minio_client import init_minio
 from app.services.task_queue import init_redis, close_redis
+from app.services.health_checker import start_health_checker, stop_health_checker
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_minio()
     await init_redis()
+    await start_health_checker()
     yield
+    await stop_health_checker()
     await close_redis()
 
 app = FastAPI(title="CulCloud Platform API", lifespan=lifespan)
@@ -26,6 +29,8 @@ app.add_middleware(
 app.include_router(convert.router, prefix="/api/v1/convert", tags=["convert"])
 app.include_router(files.router, prefix="/api/v1/files", tags=["files"])
 app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["tasks"])
+app.include_router(system.router, prefix="/api/v1/system", tags=["system"])
+app.include_router(logs.router, prefix="/api/v1/logs", tags=["logs"])
 
 @app.get("/health")
 async def health_check():

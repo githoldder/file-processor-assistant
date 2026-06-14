@@ -1,54 +1,79 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
+import { useState, lazy, Suspense } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import Navbar from "./components/Navbar";
+import Sidebar from "./components/Sidebar";
+import { LanguageProvider } from "./context/LanguageContext";
+import { DashboardProvider } from "./context/useDashboard";
+import type { ViewState } from "./types";
 
-import React, { useState, lazy, Suspense } from 'react';
-import Navbar from './components/Navbar';
-import Sidebar from './components/Sidebar';
-import { ViewState } from './types';
-import { LanguageProvider } from './context/LanguageContext';
-import { Loader2 } from 'lucide-react';
+// Lazy-load all views
+const Dashboard = lazy(() => import("./views/Dashboard"));
+const MyFiles = lazy(() => import("./views/MyFiles"));
+const ConvertCenter = lazy(() => import("./views/ConvertCenter"));
+const PDFStudio = lazy(() => import("./views/PDFStudio"));
+const TaskMonitor = lazy(() => import("./views/TaskMonitor"));
+const SystemStatus = lazy(() => import("./views/SystemStatus"));
+const Analytics = lazy(() => import("./views/Analytics"));
 
-const Dashboard = lazy(() => import('./views/Dashboard'));
-const MyFiles = lazy(() => import('./views/MyFiles'));
-const TaskMonitor = lazy(() => import('./views/TaskMonitor'));
-const SystemStatus = lazy(() => import('./views/SystemStatus'));
-const ConvertCenter = lazy(() => import('./views/ConvertCenter'));
-const PDFStudio = lazy(() => import('./views/PDFStudio'));
+function ViewLoader({ activeView }: { activeView: ViewState }) {
+  const viewMap: Record<ViewState, React.LazyExoticComponent<React.ComponentType<any>>> = {
+    dashboard: Dashboard,
+    files: MyFiles,
+    convert: ConvertCenter,
+    "task-monitor": TaskMonitor,
+    "system-status": SystemStatus,
+    pdf: PDFStudio,
+    analytics: Analytics,
+  };
 
-const LoadingFallback = () => (
-  <div className="flex items-center justify-center h-[60vh]">
-    <div className="flex flex-col items-center gap-4">
-      <Loader2 className="w-12 h-12 text-primary animate-spin" />
-      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-outline">Loading Interface...</span>
-    </div>
-  </div>
-);
-
-export default function App() {
-  const [currentView, setCurrentView] = useState<ViewState>('dashboard');
+  const View = viewMap[activeView];
 
   return (
-    <LanguageProvider>
-      <div className="min-h-screen bg-surface selection:bg-primary/20 selection:text-primary">
-        <Navbar currentView={currentView} />
-        <div className="flex">
-          <Sidebar currentView={currentView} onViewChange={setCurrentView} />
-          <main className="flex-1 md:ml-20 pt-24 px-6 md:px-10 pb-20">
-            <div className="max-w-[1440px] mx-auto">
-              <Suspense fallback={<LoadingFallback />}>
-                {currentView === 'dashboard' && <Dashboard />}
-                {currentView === 'files' && <MyFiles />}
-                {currentView === 'convert' && <ConvertCenter />}
-                {currentView === 'pdf' && <PDFStudio />}
-                {currentView === 'task-monitor' && <TaskMonitor />}
-                {currentView === 'system-status' && <SystemStatus />}
-              </Suspense>
-            </div>
-          </main>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-64 text-gray-400">
+          加载中...
         </div>
-      </div>
+      }
+    >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeView}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -12 }}
+          transition={{ duration: 0.2 }}
+        >
+          <View />
+        </motion.div>
+      </AnimatePresence>
+    </Suspense>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <DashboardProvider>
+        <AppShell />
+      </DashboardProvider>
     </LanguageProvider>
+  );
+}
+
+function AppShell() {
+  const [activeView, setActiveView] = useState<ViewState>("dashboard");
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <Sidebar
+        currentView={activeView}
+        onViewChange={setActiveView}
+      />
+      <main className="md:ml-20 pt-16 min-h-screen">
+        <ViewLoader activeView={activeView} />
+      </main>
+    </div>
   );
 }

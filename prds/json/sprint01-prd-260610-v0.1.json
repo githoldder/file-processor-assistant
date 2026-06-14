@@ -1,0 +1,274 @@
+{
+  "sprint": "01",
+  "version": "0.1",
+  "status": "Planned",
+  "lastUpdated": "2026-06-10",
+  "milestone": "CulCloud 课程设计 — 系统后台监控面板",
+  "objective": "将 TaskMonitor 和 SystemStatus 两个前端视图从 mock 数据状态改造为对接真实后端 API 的可用监控面板。TaskMonitor 覆盖文档转换/Spark分析任务的实时追踪、Worker节点管理与系统日志汇聚。SystemStatus 覆盖FastAPI/Flask/Redis/MinIO/Gotenberg/PySpark六项服务的健康检查、存储资源可视化和事件告警时间线。两项共享 health_checker 和日志收集基础设施。",
+  "datasetDefinition": {
+    "primary": "后端微服务（FastAPI + Flask + Redis + MinIO + Gotenberg）实时运行指标",
+    "compute": "PySpark 4.1.2 local[*] 子进程执行状态与输出文件修改时间"
+  },
+  "designPhilosophy": {
+    "monitor": "多维度分钟级聚合（概览卡片 → 列表详情 → 实时日志）",
+    "health": "30s polling 并发检查全服务，状态绿黄红三级可视化",
+    "fallback": "真实指标不可用时不阻塞UI，标注来源并显示提示"
+  },
+  "keyDemoPoints": [
+    "任务列表按状态/类型过滤，行操作取消/重试",
+    "Worker 节点卡片组（活跃/空闲/离线三种样式）",
+    "系统日志终端实时推送（WebSocket 或 5s polling）",
+    "全服务健康看板（6 张服务卡片 + 状态指示灯）",
+    "MinIO 存储用量 + Redis 内存命中率双指标",
+    "服务依赖拓扑图（ECharts 力导向 DAG）",
+    "近 24h 事件时间线（严重级别着色）"
+  ],
+  "strategy": {
+    "priority": "先后端基建（health_checker + task_tracker），再后端 API（routers），最后前端改造",
+    "sequence": [
+      "先实现 health_checker.py 并发 ping 6 个服务，这是 SystemStatus 的依赖基础。",
+      "再实现 task_tracker.py + log_collector.py，为 TaskMonitor 提供数据源。",
+      "然后实现 FastAPI routers（system + task_monitor + cluster + logs）。",
+      "最后改造前端两个视图，替换 mock 数据，实现加载态/空态/错误态。"
+    ]
+  },
+  "repoReality": {
+    "taskMonitorFrontend": "file-cloud-frontend/src/views/TaskMonitor.tsx — 215 行，UI 完整（指标卡+表格+Worker分布+日志终端），但数据源为空 mock（constants.ts 中 TASKS=[]）。",
+    "systemStatusFrontend": "file-cloud-frontend/src/views/SystemStatus.tsx — 241 行，UI 完整（HDFS资源区+YARN卡片+心跳日志+服务拓扑），仅 listFiles() 返回真实对象数。",
+    "fastapi": "backend/app/main.py — FastAPI 已配置 CORS，3 个 router（convert/files/tasks），/health 只返回 {status: 'ok'}。无 system/health 批量检查、无 workers 端点、无 logs 端点。",
+    "frontendApiService": "file-cloud-frontend/src/services/api.ts — 已有 uploadFile/listFiles/deleteFile/convertFile/getTaskStatus/getHealth/convertExistingFile。无 system health、logs、workers 相关接口。",
+    "constants": "file-cloud-frontend/src/constants.ts — 所有 mock 数据为空数组（TASKS/WORKER_NODES/FILES/SYSTEM_LOGS），注释标注 'LEGACY MOCK DATA - To be replaced by API calls'。",
+    "types": "file-cloud-frontend/src/types.ts — 已有 Task（含 workerNode/processingTime/progress）、WorkerNode（含 load/memory/storage）、FileItem 类型定义。",
+    "translations": "file-cloud-frontend/src/translations.ts — tasks 和 status 两个分组的 zh/en 翻译已完整定义（title/subtitle/filter 等字段）。",
+    "dockerCompose": "docker-compose.demo.yml — 6 个服务：redis/minio/gotenberg/api/hadoop(spark-analytics/flask-analytics（后两个有 profiles: analytics）。api 容器名=culcloud-demo-api，flask-analytics 容器名=culcloud-flask-analytics。",
+    "flaskHealth": "flask-analytics/app.py — 已有 /health 端点（行39），返回 JSON，可通过 HTTP 检查。",
+    "redisHealth": "Docker 中 redis:7-alpine，可通过 Redis PING 检查。",
+    "minioHealth": "docker-compose 已配置 healthcheck: ['CMD', 'mc', 'ready', 'local']，外部可通过 /minio/health/live 检查。",
+    "gotenbergHealth": "Gotenberg 7 默认无 /health，需 TCP 端口连接或自定义。",
+    "pysparkHealth": "本地 subprocess 执行（无守护进程），通过 ps aux | grep spark 和 spark-output/ 最新修改时间判断。",
+    "taskQueue": "backend/app/services/task_queue.py — 基于 Redis async 实现，set/get 任务状态。缺少任务列表枚举/按状态过滤。",
+    "dockerArch": "PM2 管理 app 层（flask-analytics:5050 + frontend:5173），Docker 管理基础设施层。api 容器端口 8000（docker network 内）。"
+  },
+  "keyResults": [
+    "KR-01: TaskMonitor 数据源从 mock 迁移至 5 个真实 REST 端点",
+    "KR-02: SystemStatus 聚合 6 个服务的实时健康状态，30s 自动刷新",
+    "KR-03: 系统日志汇聚推送到前端终端（5s polling，可降级到 WebSocket）",
+    "KR-04: 服务健康异常时前端卡片变色 + 事件写入 incident 时间线",
+    "KR-05: 两种视图均覆盖 loading/error/empty 三态 UX",
+    "KR-06: 所有 mock 数据从 constants.ts 移除，加类型标注"
+  ],
+  "tasks": [
+    {
+      "id": "S01-T01",
+      "topic": "health_checker 服务健康检查引擎",
+      "ownerAgentPrompt": "在 backend/app/services/ 下创建 health_checker.py. 实现一个异步健康检查引擎，并发 ping 6 个服务（FastAPI自身、Flask Analytics、Redis、MinIO、Gotenberg、PySpark），返回统一格式的健康状态对象。使用 asyncio.gather 并发执行。",
+      "targetFiles": [
+        "backend/app/services/health_checker.py",
+        "backend/app/services/__init__.py"
+      ],
+      "steps": [
+        "创建 HealthChecker 类，接收各服务 URL 作为配置参数。",
+        "实现 _check_http(url, timeout=3) → (status, latency_ms) 用于 HTTP 服务。",
+        "实现 _check_redis() → (status, info_dict) 用已有 redis_client。",
+        "实现 _check_gotenberg() → TCP 连接检查（fallback）或 HTTP 尝试。",
+        "实现 _check_pyspark() → subprocess ps aux | grep spark + 最近 spark-output 修改时间。",
+        "实现 check_all() → asyncio.gather 并发调用所有检查，返回 ServiceHealth[]。",
+        "实现 is_healthy() 快捷函数返回整体状态（all healthy / any degraded / any down）。",
+        "结果缓存 10s，避免频繁 ping 影响服务。",
+        "错误安全：单个服务检查失败不阻断其他检查。"
+      ],
+      "acceptance": [
+        "check_all() 在 5s 内返回所有 6 个服务状态。",
+        "单个服务离线时不影响其他服务检查结果。",
+        "缓存生效：2 次连续调用，第二次不发起实际网络请求。",
+        "无异常冒泡到调用方。"
+      ]
+    },
+    {
+      "id": "S01-T02",
+      "topic": "task_tracker: 任务追踪与模拟生成器",
+      "ownerAgentPrompt": "在 backend/app/services/ 下创建 task_tracker.py. 实现一个轻量任务追踪器，能将现有转换任务自动注册 + 模拟 Worker 节点和集群概览数据（无真实 YARN 集群时使用）。所有数据存储在 Redis 中。",
+      "targetFiles": [
+        "backend/app/services/task_tracker.py",
+        "backend/app/services/minio_stats.py",
+        "backend/app/services/__init__.py"
+      ],
+      "steps": [
+        "实现 TaskTracker 类：list_tasks(filters)、get_task(task_id)、cancel_task(task_id)、retry_task(task_id)。",
+        "任务数据从现有 Redis task:xxx keys 中读取并补充模拟字段（worker_node、duration_sec 等）。",
+        "实现 mock_generator：每分钟生成一批模拟任务（包含 spark_analysis 和 file_convert 类型），写入 Redis list task_log。",
+        "实现 get_workers()：返回活跃/空闲 Worker 列表（首次调用创建 8 个模拟 Worker）。",
+        "Worker 心跳模拟：每个模拟 Worker 随机 15-30s 更新一次心跳。",
+        "实现 get_cluster_overview()：聚合计算队列长度/活跃 Worker/吞吐/成功率。",
+        "实现 MinioStatsCollector：get_storage_stats() 返回 objects_count/used_bytes/buckets。",
+        "注意：所有模拟数据标注 is_simulated: true 字段。"
+      ],
+      "acceptance": [
+        "list_tasks 支持 status 和 type 过滤，分页返回。",
+        "get_cluster_overview 返回完整概览字段。",
+        "get_workers 返回 8 个 Worker，部分 active 部分 standby，数据合理。",
+        "get_storage_stats 返回真实 MinIO 对象数和存储量。",
+        "模拟数据均标注 is_simulated。"
+      ]
+    },
+    {
+      "id": "S01-T03",
+      "topic": "log_collector: 系统日志收集器",
+      "ownerAgentPrompt": "在 backend/app/services/ 下创建 log_collector.py. 实现基于 Redis 环形缓冲的系统日志收集器。各服务写入日志条目，前端通过 API 或 WebSocket 拉取。",
+      "targetFiles": [
+        "backend/app/services/log_collector.py",
+        "backend/app/services/__init__.py"
+      ],
+      "steps": [
+        "实现 LogCollector：push(level, source, message, task_id?)，写入 Redis List system:logs（LLPUSH）。",
+        "Redis 缓冲上限 1000 条写入后 trim（LTRIM）。",
+        "实现 get_logs(since_id, level_filter, limit=50) 分页拉取。",
+        "实现 mock_log_stream：定时生成模拟系统日志（INFO/WARN/ERROR 按比例 7:2:1）。",
+        "在 health_checker 每次检查失败时自动 push 一条 WARN/ERROR 日志。",
+        "可选实现 WebSocket 推送：/ws/logs 订阅 Redis PubSub channel system:logstream。"
+      ],
+      "acceptance": [
+        "get_logs 返回按时间降序排列的日志列表。",
+        "日志缓冲区满后自动弹出旧条目。",
+        "health_checker 失败自动写入日志。",
+        "WebSocket（若实现）可实时接收新日志。"
+      ]
+    },
+    {
+      "id": "S01-T04",
+      "topic": "FastAPI 新增 system + task_monitor + cluster + logs 路由",
+      "ownerAgentPrompt": "在 backend/app/routers/ 下新增 3-4 个 router 文件 + 修改 main.py 注册。将 health_checker/task_tracker/log_collector 暴露为 REST API 端点。",
+      "targetFiles": [
+        "backend/app/routers/system.py",
+        "backend/app/routers/task_monitor.py",
+        "backend/app/routers/logs.py",
+        "backend/app/main.py"
+      ],
+      "steps": [
+        "创建 routers/system.py：",
+        "  GET /api/v1/system/health → 全服务健康状态",
+        "  GET /api/v1/system/health/:service → 单服务详情",
+        "  GET /api/v1/system/storage → MinIO 存储统计",
+        "  GET /api/v1/system/redis → Redis 运行状态",
+        "  GET /api/v1/system/incidents → 事件列表",
+        "创建 routers/task_monitor.py：",
+        "  GET /api/v1/tasks?status=&type=&page=&page_size= → 任务列表",
+        "  GET /api/v1/tasks/:task_id → 任务详情（已有，复用）",
+        "  POST /api/v1/tasks/:task_id/cancel → 取消",
+        "  POST /api/v1/tasks/:task_id/retry → 重试",
+        "  GET /api/v1/workers → Worker 节点列表",
+        "  GET /api/v1/workers/:node_id → Worker 详情",
+        "  GET /api/v1/cluster/overview → 集群总览",
+        "创建 routers/logs.py：",
+        "  GET /api/v1/logs?since=&level=&limit= → 系统日志",
+        "修改 main.py：注册 3 个新 router，增加生命周期钩子启动 mock_generator。"
+      ],
+      "acceptance": [
+        "所有新端点返回 HTTP 200 且结构统一：{ok: true, data: {...}}。",
+        "端点带认证（CORS 已开启，后续可按需加 token）。",
+        "修改 main.py 后 docker compose restart api 可正常启动。"
+      ]
+    },
+    {
+      "id": "S01-T05",
+      "topic": "前端 TaskMonitor 对接真实 API",
+      "ownerAgentPrompt": "重写 file-cloud-frontend/src/views/TaskMonitor.tsx，将所有 mock 数据替换为 5 个真实 API 调用：cluster overview、tasks list、workers list、logs list。实现 loading/error/empty 三态。保留现有 UI 骨架。",
+      "targetFiles": [
+        "file-cloud-frontend/src/views/TaskMonitor.tsx",
+        "file-cloud-frontend/src/services/api.ts"
+      ],
+      "steps": [
+        "在 services/api.ts 新增函数：getClusterOverview、getTaskList(filters)、getWorkerList、getLogs(since)。",
+        "重写 TaskMonitor.tsx：",
+        "  useEffect 挂载时并行请求 cluster overview + tasks list + workers。",
+        "  4 个指标卡绑定 overview 数据，带上 loading spinner。",
+        "  任务表格绑定 getTaskList 结果，保留过滤按钮功能。",
+        "  Worker 节点分布图保留骨架但数据源改为 workers 列表。",
+        "  系统日志终端绑定 getLogs，实现 5s polling 增量更新。",
+        "  所有 API 请求被 catch 后 UI 显示错误提示 + retry 按钮。",
+        "  保留 empty state 提示 'No tasks yet' / 'No workers online'。",
+        "  从 constants.ts 中移除 TASKS/SYSTEM_LOGS 引用。"
+      ],
+      "acceptance": [
+        "页面挂载时 4 个指标卡显示真实/模拟数据而非骨架屏。",
+        "任务表格行点击 '...' 按钮弹出操作菜单（取消/重试）。",
+        "日志终端 5s 自动刷新，新日志从顶部插入。",
+        "后端停掉时 UI 显示全局错误横幅，不白屏。"
+      ]
+    },
+    {
+      "id": "S01-T06",
+      "topic": "前端 SystemStatus 对接真实 API",
+      "ownerAgentPrompt": "重写 file-cloud-frontend/src/views/SystemStatus.tsx，将健康状态/存储/事件数据替换为真实 API 调用。实现 30s 自动轮询和状态渐变。",
+      "targetFiles": [
+        "file-cloud-frontend/src/views/SystemStatus.tsx",
+        "file-cloud-frontend/src/services/api.ts"
+      ],
+      "steps": [
+        "在 services/api.ts 新增函数：getSystemHealth、getStorageStats、getIncidents。",
+        "重写 SystemStatus.tsx：",
+        "  useEffect + setInterval 30s 轮询 getSystemHealth。",
+        "  服务卡片行（FastAPI / Flask / Redis / MinIO / Gotenberg / PySpark）动态生成而非硬编码。",
+        "  服务状态灯颜色：healthy=🟢, degraded=🟡, down=🔴, unknown=⚪。",
+        "  存储区块使用 getStorageStats + getRedisStats 真实数据。",
+        "  服务拓扑图保留占位区域，数据驱动的依赖关系。",
+        "  事件时间线绑定 getIncidents。",
+        "  所有请求 catch 后显示降级提示而非白屏。",
+        "  从 constants.ts 移除 WORKER_NODES 引用。"
+      ],
+      "acceptance": [
+        "6 个服务卡片 30s 自动刷新，状态灯实时变化。",
+        "存储区显示真实 MinIO 对象数和大小。",
+        "事件时间线可手动刷新。",
+        "任何服务离线不影响其他 5 个服务的显示。"
+      ]
+    },
+    {
+      "id": "S01-T07",
+      "topic": "基础设施补全：Docker healthcheck + 清理 constants",
+      "ownerAgentPrompt": "补全 Docker Compose 的 healthcheck 配置，移除 constants.ts 中未使用的 mock 数据，清理前端 TypeScript 类型。",
+      "targetFiles": [
+        "docker-compose.demo.yml",
+        "file-cloud-frontend/src/constants.ts",
+        "file-cloud-frontend/src/types.ts"
+      ],
+      "steps": [
+        "docker-compose.demo.yml 中 api 和 flask-analytics 增加 healthcheck 配置。",
+        "从 constants.ts 中移除 TASKS/WORKER_NODES/FILES/SYSTEM_LOGS 空数组声明。",
+        "检查 types.ts 中 Task/WorkerNode/FileItem 类型是否与后端一致，不一致则更新。",
+        "确认 TASKS/WORKER_NODES/FILES 在代码中已无引用（grep 验证）。"
+      ],
+      "acceptance": [
+        "docker compose ps 中所有服务 health status 为 healthy。",
+        "constants.ts 无未使用的 mock 数组。",
+        "types.ts 中类型字段与后端 API 响应结构一致。",
+        "npx tsc --noEmit 编译零错误。"
+      ]
+    }
+  ],
+  "implementationOrder": [
+    "S01-T01",
+    "S01-T02",
+    "S01-T03",
+    "S01-T04",
+    "S01-T05",
+    "S01-T06",
+    "S01-T07"
+  ],
+  "guardrails": [
+    "不破坏现有功能：文件上传/转换/下载/Analytics 大屏保持可用。",
+    "模拟数据必须标注 is_simulated 字段，不能伪装成真实数据。",
+    "health_checker 超时 3s，不能因单个服务慢拖垮整体检查。",
+    "前端 API 请求失败时显示降级提示而非空白/报错，不依赖后端就绪。",
+    "不多次硬编码服务地址：URL 统一从 config 或环境变量读取。",
+    "TypeScript 编译零错误为底线。"
+  ],
+  "exitCriteria": [
+    "TaskMonitor 和 SystemStatus 两个视图的 mock 数据全部替换为 API 调用。",
+    "6 个后端服务的健康检查在 5s 内完成并正确着色显示。",
+    "系统日志可实时查看，5s polling 推送。",
+    "覆盖 loading/error/empty 三态 UX。",
+    "TypeScript 编译通过，constants.ts 无未用 mock 数据。",
+    "Docker Compose 中所有关键服务配 healthcheck。"
+  ]
+}

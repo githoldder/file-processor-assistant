@@ -1,0 +1,354 @@
+{
+  "sprint": "02",
+  "version": "1.0",
+  "status": "Planned",
+  "lastUpdated": "2026-06-10",
+  "milestone": "CulCloud · 核心业务功能面板",
+  "projectName": "CulCloud — 对标 Convertio 的分布式文件处理分析与可视化平台",
+  "projectBrief": "同 Sprint-01",
+  "objective": "将 Dashboard 从零散的真实/mock 混合状态改造为完整的全指标数据面板，将 PDFStudio 从纯 UI mock 升级为对接后端 PDF 处理 API 的可用工具，修补 MyFiles 和 ConvertCenter 的 UX 体验。所有数据源统一对接 Sprint-01 基础设施（health_checker、task_tracker、log_collector）。Dashboard 不仅展示文件平台运维指标，同时作为「大数据分析平台运营看板」为后续 Spark 分析大屏提供上下文——它展示的是 CulCloud 平台自身的运营健康度，分析大屏展示的是平台数据的深层洞察。两屏互补。",
+  "designPhilosophy": {
+    "dashboard": "8 个指标卡按真实数据源填充：文件服务指标（MinIO 列表统计）+ 转换引擎指标（task_tracker 统计）+ 集群健康指标（health_checker）+ 实时活动流（log_collector）。不展示无意义的 0 或 '--'——数据不可用时区分『服务离线』和『确实为 0』。",
+    "pdfstudio": "先做本地 PyMuPDF 后端（不依赖 Gotenberg，Gotenberg 瓶颈留到未来优化）。PDF 操作全部异步（task_tracker 追踪），前端 polling。",
+    "ux": "四视图全部覆盖 loading/error/empty 三态。拖拽上传、文件类型图标、批量转换队列、polling 重试逐个修补。"
+  },
+  "repoReality": {
+    "existingDashboard": "Dashboard.tsx 166 行：8 个指标卡中仅文件数和存储量来自 listFiles()。Worker 节点显示『等待分布式节点数据』，LiveStream 显示『暂无实时任务』，RecentActivity 显示『暂无近期活动』。Profile 列正常。",
+    "existingPdfStudio": "PDFStudio.tsx 176 行：零 API 调用。5 页硬编码 demo（Title Page/Exec Summary/Analysis Graph/Financial Table/Conclusion），所有按钮 UI-only。高级工具 toggle 无实际作用。",
+    "existingMyFiles": "MyFiles.tsx 329 行：文件 CRUD 全对接真实 API，缺少拖拽上传区域、文件类型图标识别、上传进度百分比。",
+    "existingConvertCenter": "ConvertCenter.tsx 667 行：转换核心功能已对接，缺少多文件批量排队、polling 失败重试。",
+    "backendHealthCheckers": "Sprint-01 产出 health_checker / task_tracker / log_collector，提供 /api/v1/system/health、/api/v1/cluster/overview、/api/v1/logs/* 端点",
+    "backendConvert": "converter.py 768 行，18 种转换类型，依赖 Gotenberg",
+    "backendFiles": "files.py 7 个端点，MinIO 后端",
+    "backendPdf": "当前无 PDF 处理端点。converter.py 有 pdf 转换但无编排操作（merge/split/reorder）。PyMuPDF 已可用。",
+    "dockerCompose": "6 个 Docker 服务均在 docker-compose.demo.yml 中定义",
+    "pm2": "ecosystem.config.js 管理 flask-analytics + frontend"
+  },
+  "tasks": [
+    {
+      "id": "S02-T01",
+      "topic": "PDF 处理后端：合并/拆分/重排/统计",
+      "ownerAgentPrompt": "在 backend/app/services/ 下创建 pdf_processor.py，在 backend/app/routers/ 下创建 pdf.py。使用 PyMuPDF(fitz) 实现 PDF 的合并、按页号区间拆分、页序自由重排、基本信息统计四个能力。所有操作异步执行，通过 task_tracker 注册和追踪状态，输出文件存储到 MinIO。",
+      "targetFiles": [
+        "backend/app/services/pdf_processor.py",
+        "backend/app/routers/pdf.py",
+        "backend/app/main.py"
+      ],
+      "steps": [
+        "创建 backend/app/services/pdf_processor.py：",
+        "  merge_pdfs(source_keys: List[str]) → task_id:",
+        "    从 MinIO 下载每个源文件到 /tmp/",
+        "    用 fitz.open() 打开每个 PDF",
+        "    逐页插入到合并文档 (doc.insert_pdf(src_doc))",
+        "    保存到 /tmp/merged_{uuid}.pdf",
+        "    上传到 MinIO (bucket: culcloud-files, key: pdf-merged/{uuid}.pdf)",
+        "    返回 task_id",
+        "  split_pdf(source_key: str, page_ranges: List[{start:int, end:int}]) → task_id:",
+        "    从 MinIO 下载源文件",
+        "    对每个 page_range：创建新 doc，插入指定页，保存为 split_{idx}_{uuid}.pdf",
+        "    全部上传到 MinIO (key: pdf-split/{uuid}/split_{idx}.pdf)",
+        "    返回 task_id 和输出文件 key 列表",
+        "  reorder_pdf(source_key: str, page_order: List[int]) → task_id:",
+        "    从 MinIO 下载源文件",
+        "    按新顺序创建 doc，逐页插入，保存为 reordered_{uuid}.pdf",
+        "    上传到 MinIO (key: pdf-reordered/{uuid}.pdf)",
+        "    返回 task_id",
+        "  get_pdf_info(source_key: str) → {pages, size_bytes, is_encrypted, title, author}:",
+        "    同步操作，直接读取 MinIO 文件元数据 + fitz 文档属性",
+        "  get_page_thumbnails(source_key: str, pages: List[int]) → page_images:",
+        "    对指定页码生成缩略图（fitz page.get_pixmap(dpi=72)），返回 base64 PNG 列表",
+        "  所有修改型操作（merge/split/reorder）流程：",
+        "    task_id = task_tracker.create_task('pdf_merge', {source_keys})",
+        "    task_tracker.update_status(task_id, 'processing')",
+        "    try: 执行具体操作 → task_tracker.update_status(task_id, 'completed', result)",
+        "    except: task_tracker.update_status(task_id, 'failed', error=str(e))",
+        "创建 backend/app/routers/pdf.py：",
+        "  POST /api/v1/pdf/merge → body: {object_names: [string]} → {task_id, status}",
+        "  POST /api/v1/pdf/split → body: {object_name: string, page_ranges: [{start:int, end:int}]} → {task_id, status}",
+        "  POST /api/v1/pdf/reorder → body: {object_name: string, new_order: [int]} → {task_id, status}",
+        "  GET /api/v1/pdf/tasks/{task_id} → 返回 task_tracker.get_task(task_id)，前端轮询此端点",
+        "  GET /api/v1/pdf/info/{object_name} → 返回 get_pdf_info 结果",
+        "  GET /api/v1/pdf/thumbnails/{object_name}?pages=0,1,2 → 返回缩略图 base64 数组",
+        "修改 main.py：app.include_router(pdf.router, prefix='/api/v1/pdf', tags=['PDF'])"
+      ],
+      "acceptance": [
+        "POST /api/v1/pdf/merge 合并 2 个 PDF → 返回 task_id",
+        "轮询 GET /api/v1/pdf/tasks/{task_id} → status 从 queued→processing→completed",
+        "GET /api/v1/pdf/info/{name} 返回 {pages: 5, size_bytes: 123456, is_encrypted: false}",
+        "POST /api/v1/pdf/split 按 [{start:1,end:3},{start:4,end:5}] 拆分 → 返回 2 个输出文件 key",
+        "POST /api/v1/pdf/reorder 反转 5 页为 [5,4,3,2,1] → 返回新文件",
+        "合并/拆分/重排操作异常时 task status 为 'failed' 且 error 字段可读",
+        "Python 语法检查无错误"
+      ]
+    },
+    {
+      "id": "S02-T02",
+      "topic": "Dashboard 后端数据扩展：运营指标 + 转换趋势 + 文件分布 + 活动流",
+      "ownerAgentPrompt": "在 backend/app/services/ 下创建 dashboard_service.py，在 backend/app/routers/ 下创建 dashboard.py。实现 Dashboard 所需的 4 类运营数据聚合：平台指标（文件数+存储量+转换量+队列长度）、转换趋势（按天统计）、文件类型分布（按扩展名+大小分组）、实时活动流（最近事件）。数据源复用 MinIO 列表、task_tracker 统计、log_collector 事件流。",
+      "targetFiles": [
+        "backend/app/services/dashboard_service.py",
+        "backend/app/routers/dashboard.py",
+        "backend/app/main.py"
+      ],
+      "steps": [
+        "创建 backend/app/services/dashboard_service.py：",
+        "  get_platform_metrics() → {files_count, storage_bytes, conversions_24h, conversions_failed_24h, queue_length}:",
+        "    files_count / storage_bytes: 遍历 MinIO bucket 文件列表聚合",
+        "    conversions_24h: 从 task_tracker 统计过去 24 小时 type='conversion' 的任务数",
+        "    conversions_failed_24h: 同上过滤 status='failed'",
+        "    success_rate: completed / (completed + failed)，无数据时返回 null",
+        "    queue_length: task_tracker.get_queue_length()",
+        "  get_file_type_distribution() → [{extension, count, total_size}]:",
+        "    遍历 MinIO 文件列表，按扩展名分组聚合数量和总大小",
+        "    前 20 种扩展名 + 'other' 汇总",
+        "  get_conversion_trend(days=30) → [{date, count, total_size}]:",
+        "    从 tasks:by_status:completed ZSET 按 created_at 日期分组统计每日转换量",
+        "    空天补 0",
+        "  get_worker_nodes() → [{name, status, load}]:",
+        "    从 health_checker 最新快照提取：",
+        "    gotenberg（转换 worker）、flask-analytics（分析 worker）、api（API 服务）",
+        "    load 从 task_tracker 当前 processing 数量按比例分配",
+        "创建 backend/app/routers/dashboard.py：",
+        "  GET /api/v1/dashboard/metrics → get_platform_metrics()",
+        "  GET /api/v1/dashboard/file-types → get_file_type_distribution()",
+        "  GET /api/v1/dashboard/conversion-trend?days=30 → get_conversion_trend()",
+        "  GET /api/v1/dashboard/workers → get_worker_nodes()",
+        "  GET /api/v1/dashboard/activity?limit=20 → 转发到 log_collector.get_recent_events()",
+        "  所有端点添加 @cache(ttl=5) 装饰器（5 秒缓存，避免前端轮询击穿）",
+        "修改 main.py：app.include_router(dashboard.router, prefix='/api/v1/dashboard', tags=['Dashboard'])"
+      ],
+      "acceptance": [
+        "4 个端点均返回 HTTP 200，空数据返回空数组/0 而非 500",
+        "metrics 端点包含 files_count 和 conversions_24h（接近真实值）",
+        "file-types 端点按扩展名正确聚合分组",
+        "conversion-trend 端点按天统计，包含空天补 0",
+        "所有端点 5 秒内重复请求返回相同结果（缓存生效）"
+      ]
+    },
+    {
+      "id": "S02-T03",
+      "topic": "前端 Dashboard 重写：全指标面板 + 活动流 + Worker 网格",
+      "ownerAgentPrompt": "重写 file-cloud-frontend/src/views/Dashboard.tsx，8 个指标卡全部接入 S02-T02 的 Dashboard API + Sprint-01 的 cluster/overview。新增活动时间线和 Worker 节点状态网格。移除所有 mock 数据和占位符文案。",
+      "targetFiles": [
+        "file-cloud-frontend/src/views/Dashboard.tsx",
+        "file-cloud-frontend/src/services/api.ts",
+        "file-cloud-frontend/src/types.ts"
+      ],
+      "steps": [
+        "在 types.ts 新增：DashboardMetrics, FileTypeStat, ConversionTrend, WorkerNode, ActivityEvent",
+        "在 services/api.ts 新增：getDashboardMetrics(), getFileTypeDist(), getConvTrend(), getWorkers(), getDashboardActivity()",
+        "重写 Dashboard.tsx：",
+        "  ▶ 指标卡区（8 个）：",
+        "    左列 4 个主指标：",
+        "      ① 磁盘用量 → metrics.storage_bytes / (5GB)，含百分比进度条",
+        "      ② 文件总数 → metrics.files_count",
+        "      ③ 近 24h 转换 → metrics.conversions_24h",
+        "      ④ 转换成功率 → metrics.success_rate（百分比，无数据时显示 '-'）",
+        "    右列 4 个副指标（复用 DashboardService）：",
+        "      ⑤ 排队任务 → metrics.queue_length",
+        "      ⑥ 活跃 Worker → workers 中 status=healthy 数量",
+        "      ⑦ 文件类型 → file_types.length（种类数）",
+        "      ⑧ 转换失败 → metrics.conversions_failed_24h",
+        "  ▶ Worker 节点网格（替换原『等待分布式节点数据』）：",
+        "    3 个卡片（Gotenberg 转换引擎 / Flask 分析引擎 / API 服务），",
+        "    每卡片显示：名称、角色、状态颜色圆点、当前负载（processing 数）",
+        "    数据来源：/api/v1/dashboard/workers",
+        "  ▶ 实时转换流（替换原『暂无实时任务』）：",
+        "    从 /api/v1/dashboard/activity 获取最近 10 条事件，卡片滚动展示",
+        "    事件类型图标：上传📤 / 转换🔄(动画) / 完成✅ / 失败❌ / 下载📥",
+        "  ▶ 最近活动时间线（替换原『暂无近期活动』）：",
+        "    垂直时间线列表，每条显示：类型图标 + 文件名 + 时间 + 状态标签",
+        "    最多显示 5 条",
+        "  ▶ Profile 列保留不动",
+        "  ▶ 数据轮询：useEffect 中 setInterval 每 10 秒并行请求 metrics + workers + activity",
+        "  ▶ 覆盖 loading（骨架屏卡牌）/ error（全局横幅+重试按钮）/ empty（有意义的提示文字）",
+        "  移除所有 '--' 硬编码和 '等待数据' 文案"
+      ],
+      "acceptance": [
+        "Dashboard 挂载后 8 个指标卡全部显示数值",
+        "Worker 节点网格显示 3 个服务的实时状态",
+        "LiveStream 区域显示真实的文件上传/转换事件",
+        "RecentActivity 时间线显示最近 5 条事件",
+        "后端关闭时 8 个指标卡回退到 '-' 但不白屏",
+        "TypeScript 编译零错误"
+      ]
+    },
+    {
+      "id": "S02-T04",
+      "topic": "前端 PDFStudio 重写：云端 PDF 选取 + 操作触发后端",
+      "ownerAgentPrompt": "重写 file-cloud-frontend/src/views/PDFStudio.tsx，从当前纯 mock（5 页硬编码 demo）改造为对接 S02-T01 PDF 处理后端的完整 PDF 编辑工具。实现文件选择器、页序拖拽重排、拆分/合并/导出触发后端任务、任务状态轮询。",
+      "targetFiles": [
+        "file-cloud-frontend/src/views/PDFStudio.tsx",
+        "file-cloud-frontend/src/services/api.ts",
+        "file-cloud-frontend/src/types.ts"
+      ],
+      "steps": [
+        "在 types.ts 新增：PdfInfo {pages, size_bytes, is_encrypted, title}, PdfTaskResult",
+        "在 services/api.ts 新增：mergePdfs(names), splitPdf(name, ranges), reorderPdf(name, order), getPdfInfo(name), getPdfThumbnails(name, pages), getPdfTask(taskId)",
+        "重写 PDFStudio.tsx：",
+        "  ▶ 顶部文件选择器：",
+        "    下拉菜单或搜索框，从 listFiles() 中筛选 extension='pdf' 的文件",
+        "    选择后调用 getPdfInfo() 显示基本信息卡片（页数/大小/加密状态）",
+        "    调用 getPdfThumbnails() 显示所有页缩略图横排预览条",
+        "  ▶ 页序拖拽区（替换硬编码 5 页）：",
+        "    缩略图可拖拽排序，来源为 getPdfThumbnails 返回的真实页面",
+        "    拖拽后点击「应用排序」→ POST /api/v1/pdf/reorder → 轮询 task → 成功提示下载",
+        "  ▶ 操作按钮组：",
+        "    拆分：弹出区间输入框（多个 {start,end}）→ POST /api/v1/pdf/split → 轮询 → 显示输出文件列表",
+        "    合并：多选 PDF 文件列表 → POST /api/v1/pdf/merge → 轮询 → 显示下载链接",
+        "    导出：获取当前处理后 PDF 的预签名下载 URL",
+        "  ▶ 任务状态轮询：",
+        "    操作触发后显示进度条 overlay",
+        "    每 1 秒轮询 GET /api/v1/pdf/tasks/{task_id}",
+        "    completed → 绿色成功提示 + 下载按钮",
+        "    failed → 红色错误提示 + 重试按钮",
+        "  ▶ 覆盖 loading/error/empty 三态",
+        "  ▶ 保留高级工具 toggle UI（功能为课程设计演示占位，不改动）",
+        "  删除 5 页硬编码 demo pages 数组"
+      ],
+      "acceptance": [
+        "选择云端 PDF 后显示页数/大小信息卡片 + 缩略图预览条",
+        "拆分操作：输入区间 → POST → 轮询 → 显示 2+ 个输出文件",
+        "合并操作：多选文件 → POST → 轮询 → 单输出文件下载",
+        "拖拽排序 → 应用 → reorder → 轮询 → 新文件下载",
+        "后端离线时显示错误提示",
+        "TypeScript 编译零错误"
+      ]
+    },
+    {
+      "id": "S02-T05",
+      "topic": "MyFiles UX 修补：拖拽上传 + 文件图标 + 进度条",
+      "ownerAgentPrompt": "修补 file-cloud-frontend/src/views/MyFiles.tsx，增加拖拽上传区域、文件类型图标识别（PDF→📄、Word→📝、Excel→📊、CSV→📋、图片→🖼️、PPT→📑）、上传进度百分比动画、文件大小可读格式化。",
+      "targetFiles": [
+        "file-cloud-frontend/src/views/MyFiles.tsx",
+        "file-cloud-frontend/src/lib/fileIcons.tsx",
+        "file-cloud-frontend/src/services/api.ts"
+      ],
+      "steps": [
+        "创建 file-cloud-frontend/src/lib/fileIcons.tsx：",
+        "  getFileIcon(extension: string) → lucide-react 图标组件：",
+        "    pdf → FileText (红色)",
+        "    doc/docx → FileText (蓝色)",
+        "    xls/xlsx → Table2 (绿色)",
+        "    csv → Database (橙色)",
+        "    ppt/pptx → Presentation (紫色)",
+        "    png/jpg/jpeg/gif/svg → Image (粉色)",
+        "    other → File (灰色)",
+        "  formatFileSize(bytes: number) → '1.2 MB' / '345 KB' / '2.1 GB'",
+        "修改 services/api.ts：",
+        "  uploadFile 改为返回 {uploadId, cancel} 支持进度追踪",
+        "  内部使用 XMLHttpRequest 替代 fetch 以获取 onprogress 事件",
+        "  或保留 fetch + 额外包装（推荐后者，改动最小）",
+        "修改 MyFiles.tsx：",
+        "  文件列表每行左侧图标改为 {getFileIcon(ext)}",
+        "  文件大小列改为 {formatFileSize(size)}",
+        "  上传按钮区域添加 onDragOver/onDrop 事件处理：",
+        "    拖拽进入时高亮边框（蓝色虚线动画）",
+        "    drop 时取 e.dataTransfer.files，逐个调用 uploadFile",
+        "  上传进度条：",
+        "    上传中文件行显示进度条（0-100% 蓝色渐变）",
+        "    完成后进度条消失，文件出现在列表",
+        "  empty state（无文件时）添加拖拽提示：'将文件拖拽到此处或点击上传'"
+      ],
+      "acceptance": [
+        "PDF/Word/Excel/CSV/Image/PPT 文件各有对应颜色图标",
+        "拖拽文件到列表区域触发上传",
+        "上传中显示进度百分比进度条",
+        "文件大小以 KB/MB/GB 格式显示",
+        "TypeScript 编译零错误"
+      ]
+    },
+    {
+      "id": "S02-T06",
+      "topic": "ConvertCenter UX 修补：批量队列 + polling 重试",
+      "ownerAgentPrompt": "修补 file-cloud-frontend/src/views/ConvertCenter.tsx，增加多文件批量转换队列、polling 失败自动重试机制、转换历史持久化。",
+      "targetFiles": [
+        "file-cloud-frontend/src/views/ConvertCenter.tsx",
+        "file-cloud-frontend/src/services/api.ts"
+      ],
+      "steps": [
+        "修改 services/api.ts：convertFile 和 convertExistingFile 返回完整 task 对象（含 task_id/status）",
+        "修改 ConvertCenter.tsx：",
+        "  文件选择器改为 multiple 模式（支持多选）",
+        "  新增队列管理器（useReducer）：",
+        "    state = {queue: TaskItem[], history: TaskItem[], currentIndex: number}",
+        "    多选文件后一次性加入队列（status: 'pending'），依次执行",
+        "    当前任务完成/失败后自动 start 下一个",
+        "  polling 重试机制：",
+        "    单个任务 getTaskStatus(taskId) 返回 4xx/5xx 或超时时：",
+        "    自动重试，最多 3 次，间隔 1s → 3s → 5s（指数退避）",
+        "    3 次后仍失败则标记为 'failed'，显示「重试」按钮",
+        "    网络恢复后（任意一个 API 请求成功）自动重试所有 pending 任务",
+        "  队列面板：",
+        "    侧边栏或底部浮层显示转换队列进度条（已完成/总数）",
+        "    每项显示：名称、source_format → target_format 箭头、status、进度指示器",
+        "  转换历史（localStorage 持久化）：",
+        "    每次转换完成/失败后写入 localStorage: 'conv_history'",
+        "    历史面板显示最近 50 条，含 source/target/status/timestamp/操作",
+        "    提供「清除历史」按钮",
+        "  不破坏现有单文件转换功能（向后兼容）"
+      ],
+      "acceptance": [
+        "选择 3 个文件后依次排队转换，队列面板显示进度",
+        "polling 失败时自动重试，3 次后显示重试按钮",
+        "localStorage 持久化：刷新后历史记录仍可见",
+        "单文件转换功能正常（回归测试）",
+        "TypeScript 编译零错误"
+      ]
+    },
+    {
+      "id": "S02-T07",
+      "topic": "四视图三态 UX 收尾 + TypeScript 编译验证",
+      "ownerAgentPrompt": "统一检查 Dashboard / MyFiles / ConvertCenter / PDFStudio 四个视图的 loading、error、empty 三种状态覆盖。移除 constants.ts 中残留的 mock 数据。运行 npm run build 确认零错误。",
+      "targetFiles": [
+        "file-cloud-frontend/src/views/Dashboard.tsx",
+        "file-cloud-frontend/src/views/MyFiles.tsx",
+        "file-cloud-frontend/src/views/ConvertCenter.tsx",
+        "file-cloud-frontend/src/views/PDFStudio.tsx",
+        "file-cloud-frontend/src/constants.ts",
+        "file-cloud-frontend/src/types.ts"
+      ],
+      "steps": [
+        "逐视图检查 loading 状态：所有 async 操作有 spinner/skeleton（不是空白屏等待）",
+        "逐视图检查 error 状态：所有 catch 块有用户可见错误消息 + retry 按钮",
+        "逐视图检查 empty 状态：空列表/空数据有有意义的提示文字+插图（不是空白）",
+        "从 constants.ts 移除所有未使用的 mock 数组（TASKS / WORKER_NODES / FILES / SYSTEM_LOGS 等）",
+        "检查 types.ts 补充缺失的类型定义（DashboardMetrics / FileTypeStat / PdfInfo / ActivityEvent 等）",
+        "npm run build 确认零错误",
+        "npm run lint 确认零 warning（如有 lint 配置）"
+      ],
+      "acceptance": [
+        "后端完全离线时，4 个视图均显示错误横幅，无白屏",
+        "空数据场景 4 视图均显示 empty state（如 '暂无文件，拖拽上传'）",
+        "所有 async 加载显示 loading 指示器",
+        "constants.ts 无未使用 import 和 mock 数据",
+        "TypeScript 编译零错误"
+      ]
+    }
+  ],
+  "implementationOrder": [
+    "S02-T01 PDF 后端 (最底层依赖)",
+    "S02-T02 Dashboard 后端 (依赖 Sprint-01 task_tracker + log_collector)",
+    "S02-T03 Dashboard 前端 (依赖 T02 + Sprint-01 路由)",
+    "S02-T04 PDFStudio 前端 (依赖 T01)",
+    "S02-T05 MyFiles 修补 (独立，可并行)",
+    "S02-T06 ConvertCenter 修补 (独立，可并行)",
+    "S02-T07 三态收尾 (依赖 T03/T04/T05/T06)"
+  ],
+  "guardrails": [
+    "不破坏现有文件上传/转换/下载功能",
+    "PDF 处理使用 PyMuPDF(fitz)，不引入新 Python 依赖",
+    "Dashboard 指标卡在 service 不可用时显示 '-' 而非 0",
+    "PDF 操作全部异步 task polling，避免长时间 HTTP 连接",
+    "复用 Sprint-01 的 task_tracker/log_collector/health_checker，不重复造轮子",
+    "TypeScript 编译零错误为底线"
+  ],
+  "exitCriteria": [
+    "Dashboard 8 指标卡全真实数据",
+    "PDFStudio 可完成 PDF 拆分/合并/排序流程",
+    "MyFiles 支持文件拖拽上传和进度条",
+    "ConvertCenter 支持多文件排队和 polling 重试",
+    "四视图全部三态覆盖",
+    "TypeScript 编译零错误"
+  ]
+}

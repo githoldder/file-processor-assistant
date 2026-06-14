@@ -1,0 +1,42 @@
+\chapter{相关技术介绍}
+
+\section{Hadoop 生态}
+
+Apache Hadoop 是一个开源的分布式计算框架，其核心包括 Hadoop Distributed File System（HDFS）和 MapReduce 计算模型。HDFS 提供高可靠性的分布式存储能力，支持海量数据的存储与管理。
+
+在本项目中，HDFS 作为底层存储系统，负责存储原始数据文件和分析结果数据。通过 HDFS 的副本机制确保数据的可靠性，利用其数据本地性特性提升计算效率。
+
+\section{Spark 计算框架}
+
+Apache Spark 是一种基于内存的分布式计算框架，相比传统的 MapReduce 模型，Spark 在迭代计算和交互式查询方面具有显著优势。Spark 提供了丰富的 API，包括：
+
+\begin{itemize}
+  \item \textbf{Spark SQL}：用于结构化数据的查询与分析，支持 SQL 语法和 DataFrame API；
+  \item \textbf{Spark MLlib}：机器学习库，提供了分类、回归、聚类、协同过滤等常用算法；
+  \item \textbf{Spark Streaming}：实时流处理框架，支持准实时的数据处理。
+\end{itemize}
+
+在本项目中，使用 Spark SQL 进行数据的 ETL（Extract, Transform, Load）处理，使用 Spark MLlib 进行用户行为分析等挖掘任务。
+
+\section{Flask Web 框架}
+
+Flask 是一个轻量级的 Python Web 框架，具有简单易用、扩展性强等特点。通过 Flask-RESTful 扩展可以快速构建 RESTful API 服务。在本项目中，Flask 作为后端服务框架，负责：
+
+\begin{itemize}
+  \item 提供数据查询接口，支持前端按条件检索分析结果；
+  \item 提供统计分析接口，返回处理后的聚合数据；
+  \item 管理任务队列，支持异步提交 Spark 计算任务。
+\end{itemize}
+
+\section{数据可视化技术}
+
+数据可视化是大数据分析的重要环节，能够将复杂的数据以直观的图表形式呈现。本项目使用以下可视化技术：
+
+\begin{itemize}
+  \item \textbf{ECharts}：基于 JavaScript 的开源可视化库，支持丰富的图表类型，包括折线图、柱状图、饼图、散点图等；
+  \item \textbf{React}：用于构建用户界面的 JavaScript 库，组件化的开发方式便于构建复杂的可视化仪表盘。
+\end{itemize}
+
+\section{Docker 容器化}
+
+Docker 是一种轻量级的容器化技术，能够将应用及其依赖打包到标准化的容器中，实现环境的快速部署和一致性保障。在本项目中，所有服务均通过 Docker 容器部署，确保开发环境与生产环境的一致性。

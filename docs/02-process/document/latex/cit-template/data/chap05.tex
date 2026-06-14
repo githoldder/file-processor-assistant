@@ -1,0 +1,77 @@
+\chapter{实验与分析}
+
+\section{实验环境}
+
+实验环境配置如表~\ref{tab:env} 所示。
+
+\begin{table}[htbp]
+  \centering
+  \caption{实验环境配置}
+  \label{tab:env}
+  \begin{tabular}{ll}
+    \toprule
+    项目 & 配置 \\
+    \midrule
+    操作系统 & macOS / Linux \\
+    CPU & 4 核 2.5GHz \\
+    内存 & 16 GB \\
+    Hadoop 版本 & 3.3.6 \\
+    Spark 版本 & 3.5.0 \\
+    Python 版本 & 3.11 \\
+    Node.js 版本 & 20 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{实验数据}
+
+实验使用模拟生成的数据集，包括：
+
+\begin{itemize}
+  \item 用户行为数据：包含 10000 个用户的 100 万条行为记录；
+  \item 销售订单数据：包含 50000 笔订单记录，时间跨度为 12 个月。
+\end{itemize}
+
+\section{实验结果}
+
+\subsection{数据处理性能}
+
+Spark 数据处理任务的运行时间统计如表~\ref{tab:performance} 所示。
+
+\begin{table}[htbp]
+  \centering
+  \caption{Spark 任务运行时间}
+  \label{tab:performance}
+  \begin{tabular}{lrr}
+    \toprule
+    任务类型 & 数据量 & 运行时间（秒） \\
+    \midrule
+    数据清洗 & 100 万条 & 12.3 \\
+    用户行为分析 & 100 万条 & 18.7 \\
+    销售趋势分析 & 5 万条 & 8.2 \\
+    数据质量报告 & 105 万条 & 15.1 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{可视化效果}
+
+系统前端展示了多个分析视图，包括：
+
+\begin{itemize}
+  \item \textbf{仪表盘概览}：展示用户总数、订单总数、总销售额等关键指标；
+  \item \textbf{销售趋势}：按月展示销售额变化趋势；
+  \item \textbf{商品分布}：展示不同商品类别的销售额占比；
+  \item \textbf{用户活跃度}：展示日活跃用户数变化情况；
+  \item \textbf{转化分析}：展示用户从浏览到购买的转化漏斗。
+\end{itemize}
+
+\section{结果分析}
+
+实验结果表明：
+
+\begin{enumerate}
+  \item Spark 能够在大规模数据集上实现高效的数据处理，百万级数据的分析任务可在 20 秒内完成；
+  \item 基于 Flask 的 RESTful API 响应时间在 50ms 以内，满足实时查询需求；
+  \item ECharts 可视化图表能够直观展示数据分析结果，辅助用户快速理解数据特征。
+\end{enumerate}

@@ -2,6 +2,7 @@ from fastapi import APIRouter, UploadFile, File, Form, BackgroundTasks, HTTPExce
 from app.services.converter import DocumentConverter
 from app.models.schemas import ConversionType, ConvertResponse, TaskStatus
 from app.services.task_queue import set_task_status
+from app.services.log_collector import log_event, EventType
 from app.services.minio_client import get_minio_client
 from app.config import settings
 import uuid
@@ -51,6 +52,11 @@ async def async_convert_task(
     try:
         conversion_options = conversion_options or {}
         await set_task_status(task_id, TaskStatus.PROCESSING)
+        await log_event(
+            EventType.CONVERSION_STARTED,
+            f"开始转换: {target_format.value}",
+            task_id=task_id,
+        )
         result_bytes = None
         output_ext = "bin"
         
@@ -126,8 +132,18 @@ async def async_convert_task(
         # Always return the API proxy URL. Exposing MinIO presigned URLs can
         # navigate browsers to :9000 and render Office zip XML internals inline.
         await set_task_status(task_id, TaskStatus.SUCCESS, result_url=_api_download_url(object_name))
+        await log_event(
+            EventType.CONVERSION_COMPLETED,
+            f"转换完成: {target_format.value}",
+            task_id=task_id,
+        )
     except Exception as e:
         await set_task_status(task_id, TaskStatus.FAILED, error=str(e))
+        await log_event(
+            EventType.CONVERSION_FAILED,
+            f"转换失败: {target_format.value} — {str(e)}",
+            task_id=task_id,
+        )
 
 @router.post("", response_model=ConvertResponse)
 async def convert_file(
