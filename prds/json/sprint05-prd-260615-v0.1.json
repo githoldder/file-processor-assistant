@@ -1,0 +1,196 @@
+{
+  "sprint": "05",
+  "version": "0.1",
+  "status": "Ready",
+  "lastUpdated": "2026-06-15 00:20",
+  "object": "完成 CulCloud 用户端与管理员端的 UI 信息架构拆分：用户端蓝白文件服务系统，管理员端蓝黑大数据舱，并通过轻量演示鉴权进行角色切换。",
+  "key_results": [
+    "KR-1: 用户端和管理员端拥有不同的信息架构、默认首页和视觉风格。",
+    "KR-2: 用户端包含个人数据首页、云盘页、文件转换页、PDF 预览与轻量编辑页。",
+    "KR-3: 管理员端默认进入大数据舱 Dashboard，并可从大屏边缘展开模块入口。",
+    "KR-4: 使用轻量本地演示鉴权，不引入 Firebase 等外部云服务依赖。"
+  ],
+  "architecture_decisions": [
+    {
+      "id": "S05-ADR-01",
+      "decision": "不接入 Firebase，使用本地演示鉴权和角色切换。",
+      "reason": "答辩前仅剩约一周，外部鉴权会引入账号、网络、CLI、环境变量和部署风险；课程重点是系统闭环、数据可视化和架构解释。",
+      "production_note": "生产环境可替换为 OAuth/Firebase/Keycloak。"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "S05-T01",
+      "status": "todo",
+      "topic": "角色与路由信息架构",
+      "target_dir": "file-cloud-frontend/src",
+      "owned_files": [
+        "file-cloud-frontend/src/App.tsx",
+        "file-cloud-frontend/src/types.ts",
+        "file-cloud-frontend/src/components/Sidebar.tsx",
+        "file-cloud-frontend/src/components/Navbar.tsx",
+        "file-cloud-frontend/src/context/AuthContext.tsx"
+      ],
+      "out_of_scope": [
+        "不接 Firebase",
+        "不实现真实注册、找回密码、三方登录",
+        "不重构后端认证体系"
+      ],
+      "inputs": [
+        "file-cloud-frontend/src/App.tsx",
+        "file-cloud-frontend/src/components/Sidebar.tsx",
+        "file-cloud-frontend/src/views"
+      ],
+      "steps": [
+        {
+          "step_id": "S05-T01-STEP01",
+          "status": "todo",
+          "action": "define_roles",
+          "description": "定义 user/admin 两种角色和未登录状态。",
+          "expected_output": "AuthContext 或等价状态容器。"
+        },
+        {
+          "step_id": "S05-T01-STEP02",
+          "status": "todo",
+          "action": "split_route_maps",
+          "description": "用户端 route map 包含 dashboard/files/convert/pdf；管理员端 route map 包含 analytics/system-status/task-monitor。",
+          "expected_output": "AppShell 根据角色选择默认页面和导航。"
+        },
+        {
+          "step_id": "S05-T01-STEP03",
+          "status": "todo",
+          "action": "hide_admin_from_user",
+          "description": "普通用户导航不展示 Docker、PM2、集群、系统 Health 等管理入口。",
+          "expected_output": "用户端导航只保留服务型模块。"
+        }
+      ],
+      "acceptance_criteria": [
+        "用户默认进入个人数据首页。",
+        "管理员默认进入 Analytics 大数据舱。",
+        "用户端不出现集群/PM2/Docker 运维入口。"
+      ],
+      "verification": [
+        "npm run build",
+        "浏览器验证 user/admin 两种入口"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S05-T02",
+      "status": "todo",
+      "topic": "轻量登录与角色切换 UI",
+      "target_dir": "file-cloud-frontend/src",
+      "owned_files": [
+        "file-cloud-frontend/src/views/Login.tsx",
+        "file-cloud-frontend/src/context/AuthContext.tsx",
+        "file-cloud-frontend/src/components/Navbar.tsx"
+      ],
+      "out_of_scope": [
+        "不实现数据库用户表",
+        "不实现密码加密和真实安全审计",
+        "不引入远程鉴权服务"
+      ],
+      "inputs": [
+        "file-cloud-frontend/src/App.tsx",
+        "file-cloud-frontend/src/components/Navbar.tsx"
+      ],
+      "steps": [
+        {
+          "step_id": "S05-T02-STEP01",
+          "status": "todo",
+          "action": "create_login_view",
+          "description": "创建演示登录页，提供 demo_user 和 admin 两个入口。",
+          "expected_output": "Login.tsx"
+        },
+        {
+          "step_id": "S05-T02-STEP02",
+          "status": "todo",
+          "action": "persist_role",
+          "description": "使用 localStorage 保存角色，刷新页面后保持当前模式。",
+          "expected_output": "AuthContext 支持 login/logout/switchRole。"
+        },
+        {
+          "step_id": "S05-T02-STEP03",
+          "status": "todo",
+          "action": "add_logout_switch",
+          "description": "在 Navbar 或用户菜单加入退出和切换身份。",
+          "expected_output": "演示时可快速从用户端切到管理员端。"
+        }
+      ],
+      "acceptance_criteria": [
+        "刷新页面后角色保持。",
+        "退出后回到登录/演示选择页。",
+        "管理员入口不会被普通用户导航直接暴露。"
+      ],
+      "verification": [
+        "浏览器验证登录、刷新、退出、切换身份",
+        "npm run build"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S05-T03",
+      "status": "todo",
+      "topic": "双主题视觉基线",
+      "target_dir": "file-cloud-frontend/src",
+      "owned_files": [
+        "file-cloud-frontend/src/index.css",
+        "file-cloud-frontend/src/App.tsx",
+        "file-cloud-frontend/src/views/Dashboard.tsx",
+        "file-cloud-frontend/src/views/Analytics.tsx",
+        "file-cloud-frontend/src/components/Sidebar.tsx",
+        "file-cloud-frontend/src/components/Navbar.tsx"
+      ],
+      "out_of_scope": [
+        "不做全站动效大改",
+        "不引入新的 UI 框架",
+        "不重写所有组件"
+      ],
+      "inputs": [
+        "file-cloud-frontend/src/index.css",
+        "file-cloud-frontend/src/views/Dashboard.tsx",
+        "file-cloud-frontend/src/views/Analytics.tsx"
+      ],
+      "steps": [
+        {
+          "step_id": "S05-T03-STEP01",
+          "status": "todo",
+          "action": "define_theme_tokens",
+          "description": "定义 user-theme 蓝白变量和 admin-theme 蓝黑变量。",
+          "expected_output": "主题 CSS 类或 Tailwind class 约定。"
+        },
+        {
+          "step_id": "S05-T03-STEP02",
+          "status": "todo",
+          "action": "apply_user_theme",
+          "description": "用户端页面保持明亮、清爽、服务型界面。",
+          "expected_output": "Dashboard/MyFiles/Convert/PDF 视觉基线统一。"
+        },
+        {
+          "step_id": "S05-T03-STEP03",
+          "status": "todo",
+          "action": "apply_admin_theme",
+          "description": "管理端 Analytics/SystemStatus 使用蓝黑大屏主题。",
+          "expected_output": "管理端与用户端风格明显区分。"
+        }
+      ],
+      "acceptance_criteria": [
+        "用户端看起来像蓝白文件服务产品。",
+        "管理端看起来像蓝黑运营监控大屏。",
+        "切换角色后视觉风格明显不同但不割裂。"
+      ],
+      "verification": [
+        "桌面宽屏截图：用户端首页、管理员大屏",
+        "移动端基本可用检查",
+        "npm run build"
+      ],
+      "handoff_notes": ""
+    }
+  ],
+  "acceptance": [
+    "App.tsx 具备角色分流能力。",
+    "用户端和管理员端导航分离。",
+    "轻量登录/角色切换可演示。",
+    "不引入 Firebase 或其他外部登录依赖。"
+  ]
+}

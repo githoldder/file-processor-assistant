@@ -1,0 +1,320 @@
+{
+  "sprint": "04",
+  "version": "0.1",
+  "status": "Ready",
+  "lastUpdated": "2026-06-14 23:55",
+  "object": "打通 CulCloud 答辩可展示闭环：Analytics 大屏可演示、PM2 + Docker Compose 架构可解释、集群状态可刷新、报告证据链可追溯。",
+  "key_results": [
+    "KR-1: Analytics 大屏可以稳定展示真实或可追溯 demo 数据，并覆盖 loading、empty、error 和刷新状态。",
+    "KR-2: PM2 + Docker Compose 的分层部署决策在 README、Agent 规范、报告素材和答辩话术中保持一致。",
+    "KR-3: 集群/服务状态形成最小闭环：前端刷新按钮、后端状态接口、服务快照、页面红绿状态。",
+    "KR-4: 每个关键功能都有可追溯证据：代码路径、接口返回、截图或日志、报告段落。"
+  ],
+  "tasks": [
+    {
+      "id": "S04-T01",
+      "status": "todo",
+      "topic": "Analytics 大屏演示化",
+      "target_dir": "file-cloud-frontend/src/views",
+      "owned_files": [
+        "file-cloud-frontend/src/views/Analytics.tsx",
+        "file-cloud-frontend/src/components/EChartsWrapper.tsx",
+        "file-cloud-frontend/src/context/useDashboard.tsx",
+        "file-cloud-frontend/src/services/api.ts",
+        "docs/02-process/governance/analytics-dashboard-evidence-20260614.md"
+      ],
+      "out_of_scope": [
+        "不重写整个前端路由体系",
+        "不新增与答辩无关的大型动画或视觉实验",
+        "不替换现有 ECharts 技术栈"
+      ],
+      "inputs": [
+        "Agent.md",
+        "context/project-brief.md",
+        "docs/02-process/governance/project-progress-summary-20260614.md",
+        "file-cloud-frontend/src/views/Analytics.tsx"
+      ],
+      "tools": [
+        "npm run build 或现有前端类型检查命令",
+        "Browser/Playwright 人工截图验证",
+        ".agent/workflows/mvp-implementation.md"
+      ],
+      "steps": [
+        {
+          "step_id": "S04-T01-STEP01",
+          "status": "todo",
+          "action": "audit_analytics_view",
+          "description": "审查 Analytics 当前图表、数据请求、刷新逻辑和异常态。",
+          "expected_output": "列出图表清单、数据来源、缺失状态和最小修复点。"
+        },
+        {
+          "step_id": "S04-T01-STEP02",
+          "status": "todo",
+          "action": "implement_demo_states",
+          "description": "补齐 loading、empty、error、refreshing 状态，确保服务异常不白屏。",
+          "expected_output": "Analytics 页面在主要状态下都有稳定 UI。"
+        },
+        {
+          "step_id": "S04-T01-STEP03",
+          "status": "todo",
+          "action": "document_chart_story",
+          "description": "为至少 5 个核心图表/指标写清数据来源和答辩讲解口径。",
+          "expected_output": "docs/02-process/governance/analytics-dashboard-evidence-20260614.md"
+        },
+        {
+          "step_id": "S04-T01-STEP04",
+          "status": "todo",
+          "action": "verify_dashboard",
+          "description": "运行前端构建或类型检查，并通过浏览器打开页面验证非空渲染。",
+          "expected_output": "验证结果和截图路径记录到 handoff_notes。"
+        }
+      ],
+      "acceptance_criteria": [
+        "页面打开不白屏。",
+        "有数据、无数据、服务异常时都有合理状态。",
+        "至少 5 个核心图表/指标能解释数据来源和业务意义。"
+      ],
+      "verification": [
+        "npm run build（在 file-cloud-frontend/ 下）",
+        "Browser/Playwright 截图验证 Analytics 页面",
+        "人工检查 analytics-dashboard-evidence 文档"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S04-T02",
+      "status": "todo",
+      "topic": "PM2 + Docker Compose 架构统一",
+      "target_dir": "docs/02-process/governance",
+      "owned_files": [
+        "README.md",
+        "Agent.md",
+        "ecosystem.config.js",
+        "docker-compose.yml",
+        "docker-compose.demo.yml",
+        "docs/02-process/governance/architecture-decision-pm2-compose-20260614.md"
+      ],
+      "out_of_scope": [
+        "不把本地演示模式强行改成全 Docker Compose",
+        "不引入 Kubernetes 或生产级部署编排",
+        "不修改无关服务端口"
+      ],
+      "inputs": [
+        "README.md",
+        "Agent.md",
+        "ecosystem.config.js",
+        "docker-compose.yml",
+        "docker-compose.demo.yml"
+      ],
+      "tools": [
+        ".agent/workflows/devops-smoke-test.md",
+        "pm2 status",
+        "docker compose ps"
+      ],
+      "steps": [
+        {
+          "step_id": "S04-T02-STEP01",
+          "status": "todo",
+          "action": "audit_service_boundary",
+          "description": "核对 PM2 与 Docker Compose 当前管理的服务，识别文档和配置是否冲突。",
+          "expected_output": "服务分层表：PM2 管什么，Compose 管什么。"
+        },
+        {
+          "step_id": "S04-T02-STEP02",
+          "status": "todo",
+          "action": "write_architecture_decision",
+          "description": "写架构决策记录，固定本地演示层和基础设施层的分工。",
+          "expected_output": "architecture-decision-pm2-compose-20260614.md"
+        },
+        {
+          "step_id": "S04-T02-STEP03",
+          "status": "todo",
+          "action": "sync_readme_agent",
+          "description": "同步 README 和 Agent.md 中的部署口径。",
+          "expected_output": "人类入口和 Agent 入口对 PM2/Compose 的解释一致。"
+        },
+        {
+          "step_id": "S04-T02-STEP04",
+          "status": "todo",
+          "action": "prepare_defense_answer",
+          "description": "准备老师追问“为什么不全部 Docker Compose”的标准回答。",
+          "expected_output": "文档中包含可直接复述的答辩话术。"
+        }
+      ],
+      "acceptance_criteria": [
+        "PM2 管本地演示前端和 Flask analytics，Docker Compose 管状态性和集群式服务的口径统一。",
+        "README、Agent.md、架构决策文档不存在互相矛盾描述。",
+        "能回答为什么不是全 PM2 或全 Docker Compose。"
+      ],
+      "verification": [
+        "pm2 status（如本机已启动）",
+        "docker compose ps（如本机已启动）",
+        "人工检查 README/Agent/ADR 一致性"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S04-T03",
+      "status": "todo",
+      "topic": "集群与服务状态可视化闭环",
+      "target_dir": "backend/app",
+      "owned_files": [
+        "backend/app/routers/system.py",
+        "backend/app/services/health_checker.py",
+        "backend/app/services/log_collector.py",
+        "file-cloud-frontend/src/views/SystemStatus.tsx",
+        "file-cloud-frontend/src/services/api.ts",
+        "docs/02-process/governance/system-status-api-sample-20260614.md"
+      ],
+      "out_of_scope": [
+        "不实现复杂实时流式监控",
+        "不引入 Prometheus/Grafana",
+        "不要求所有 Hadoop/Spark 集群能力在本 Sprint 完整生产化"
+      ],
+      "inputs": [
+        "backend/app/routers/system.py",
+        "backend/app/services/health_checker.py",
+        "file-cloud-frontend/src/views/SystemStatus.tsx",
+        "docs/02-process/governance/project-progress-summary-20260614.md"
+      ],
+      "tools": [
+        "curl http://127.0.0.1:8000/api/v1/system/health 或实际状态端点",
+        "docker compose ps",
+        "Browser/Playwright 页面验证"
+      ],
+      "steps": [
+        {
+          "step_id": "S04-T03-STEP01",
+          "status": "todo",
+          "action": "confirm_status_api",
+          "description": "确认后端已有状态接口的路径、返回 schema 和失败兜底行为。",
+          "expected_output": "system-status-api-sample 文档中的接口样例。"
+        },
+        {
+          "step_id": "S04-T03-STEP02",
+          "status": "todo",
+          "action": "implement_partial_failure",
+          "description": "确保 Redis/MinIO/Gotenberg/API/Flask/frontend 任一服务异常时返回 partial 状态而非整体失败。",
+          "expected_output": "状态响应包含 status、message、checked_at、services 字段。"
+        },
+        {
+          "step_id": "S04-T03-STEP03",
+          "status": "todo",
+          "action": "wire_frontend_refresh",
+          "description": "前端刷新按钮调用状态接口，并显示红绿状态、最近日志或错误摘要。",
+          "expected_output": "SystemStatus 页面可触发刷新并展示最新状态。"
+        },
+        {
+          "step_id": "S04-T03-STEP04",
+          "status": "todo",
+          "action": "verify_status_flow",
+          "description": "执行接口 curl 和浏览器验证，记录结果。",
+          "expected_output": "状态接口返回样例和页面截图路径。"
+        }
+      ],
+      "acceptance_criteria": [
+        "点击刷新能触发接口请求。",
+        "Redis、MinIO、Gotenberg、API、Flask/frontend 至少有健康状态展示。",
+        "局部服务异常时页面显示局部异常，不整体崩溃。"
+      ],
+      "verification": [
+        "curl 状态接口",
+        "Browser/Playwright 验证 SystemStatus 页面",
+        "人工关闭或模拟一个服务异常后的 partial 状态检查"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S04-T04",
+      "status": "todo",
+      "topic": "报告证据链装配",
+      "target_dir": "docs/02-process/governance",
+      "owned_files": [
+        "docs/02-process/governance/evidence-chain-20260614.md",
+        "docs/02-process/Figure/screenshot-checklist.txt",
+        "docs/02-process/document/report-txt/README.md",
+        "docs/02-process/governance/walkthrough-sprint04.md"
+      ],
+      "out_of_scope": [
+        "不伪造截图",
+        "不把未验证功能写成已完成事实",
+        "不在本任务内大规模重写 LaTeX 模板"
+      ],
+      "inputs": [
+        "docs/02-process/governance/project-progress-summary-20260614.md",
+        "context/project-brief.md",
+        "README.md",
+        "backend/",
+        "file-cloud-frontend/",
+        "flask-analytics/",
+        "docker-compose*.yml",
+        "ecosystem.config.js"
+      ],
+      "tools": [
+        "rg",
+        "curl",
+        "Browser/Playwright 截图",
+        ".agent/workflows/release.md"
+      ],
+      "steps": [
+        {
+          "step_id": "S04-T04-STEP01",
+          "status": "todo",
+          "action": "build_evidence_matrix",
+          "description": "为 Spark、Flask、ECharts、Docker Compose、PM2、Hadoop、MinIO、Redis、FastAPI 建立证据矩阵。",
+          "expected_output": "evidence-chain-20260614.md 初稿。"
+        },
+        {
+          "step_id": "S04-T04-STEP02",
+          "status": "todo",
+          "action": "collect_api_examples",
+          "description": "为核心接口收集 curl 返回样例或截图。",
+          "expected_output": "证据链中包含接口路径、返回摘要和验证时间。"
+        },
+        {
+          "step_id": "S04-T04-STEP03",
+          "status": "todo",
+          "action": "sync_screenshot_checklist",
+          "description": "更新截图清单，标记必须补拍、已有、可选和不需要的截图。",
+          "expected_output": "docs/02-process/Figure/screenshot-checklist.txt 更新。"
+        },
+        {
+          "step_id": "S04-T04-STEP04",
+          "status": "todo",
+          "action": "write_walkthrough",
+          "description": "Sprint 结束后记录完成项、验证、未验证项、残余风险和是否允许 push。",
+          "expected_output": "docs/02-process/governance/walkthrough-sprint04.md"
+        }
+      ],
+      "acceptance_criteria": [
+        "每个关键技术点至少有代码路径和一种运行证据。",
+        "报告中的核心技术描述能追溯到仓库事实。",
+        "截图清单明确下一步要补拍哪些图。"
+      ],
+      "verification": [
+        "人工审查 evidence-chain 文档",
+        "抽查 3 个证据项是否能打开对应代码/API/截图",
+        "Sprint walkthrough 完成"
+      ],
+      "handoff_notes": ""
+    }
+  ],
+  "acceptance": [
+    "Analytics 和 SystemStatus 至少完成一次浏览器人工验证或截图验证。",
+    "docs/02-process/governance/evidence-chain-20260614.md 建立完成。",
+    "docs/02-process/governance/architecture-decision-pm2-compose-20260614.md 建立完成或已有文档更新到位。",
+    "PRD JSON 中所有任务状态、验证结果和残余风险有记录。"
+  ],
+  "walkthrough": {
+    "required": true,
+    "target_file": "docs/02-process/governance/walkthrough-sprint04.md",
+    "must_include": [
+      "完成的 Task ID",
+      "修改文件清单",
+      "验证命令和结果",
+      "未验证项",
+      "残余风险",
+      "是否允许 push"
+    ]
+  }
+}

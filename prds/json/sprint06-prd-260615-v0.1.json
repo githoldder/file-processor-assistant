@@ -1,0 +1,222 @@
+{
+  "sprint": "06",
+  "version": "0.1",
+  "status": "Ready",
+  "lastUpdated": "2026-06-15 00:25",
+  "object": "完成用户端核心业务闭环：个人数据首页、云盘服务、文件转换服务、PDF 预览与轻量编辑/导出，并让业务操作反哺管理员大屏数据。",
+  "key_results": [
+    "KR-1: 用户端蓝白业务系统可以完成上传、查看、下载、删除和任务查看。",
+    "KR-2: 文件转换按频率优先支持 Office/PDF/图片/文本相关场景。",
+    "KR-3: PDF Studio 至少支持预览、合并、拆分或重排和导出中的最小可演示闭环。",
+    "KR-4: 用户端关键操作能产生任务记录，并反哺管理员端大屏数据。"
+  ],
+  "conversion_priority": {
+    "P0": [
+      "DOCX/PPTX/XLSX -> PDF",
+      "JPG/PNG/WebP image conversion",
+      "TXT/MD -> PDF or previewable output",
+      "PDF preview + merge/split/reorder/export"
+    ],
+    "P1": [
+      "PDF -> images",
+      "image -> PDF",
+      "batch conversion",
+      "PDF rotate/simple annotation"
+    ],
+    "P2_out_of_scope": [
+      "production authentication",
+      "collaborative editing",
+      "online Office editor",
+      "billing/subscription"
+    ]
+  },
+  "tasks": [
+    {
+      "id": "S06-T01",
+      "status": "todo",
+      "topic": "用户个人数据首页",
+      "target_dir": "file-cloud-frontend/src/views",
+      "owned_files": [
+        "file-cloud-frontend/src/views/Dashboard.tsx",
+        "file-cloud-frontend/src/services/api.ts",
+        "backend/app/routers/files.py",
+        "backend/app/routers/tasks.py"
+      ],
+      "out_of_scope": [
+        "不展示管理员大屏图表",
+        "不展示 Docker/PM2/集群术语"
+      ],
+      "steps": [
+        {
+          "step_id": "S06-T01-STEP01",
+          "status": "todo",
+          "action": "define_user_metrics",
+          "description": "定义个人文件数量、最近上传、最近转换、存储占用、失败任务等指标。",
+          "expected_output": "用户首页数据模型。"
+        },
+        {
+          "step_id": "S06-T01-STEP02",
+          "status": "todo",
+          "action": "implement_service_dashboard",
+          "description": "将 Dashboard 做成用户个人服务首页，提供上传、转换、PDF Studio 快捷入口。",
+          "expected_output": "蓝白用户首页。"
+        }
+      ],
+      "acceptance_criteria": [
+        "页面服务感强，不出现集群/运维术语。",
+        "指标来自 API 或明确的 demo 数据源。"
+      ],
+      "verification": [
+        "npm run build",
+        "浏览器验证用户端 Dashboard"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S06-T02",
+      "status": "todo",
+      "topic": "云盘服务演示闭环",
+      "target_dir": "file-cloud-frontend/src/views",
+      "owned_files": [
+        "file-cloud-frontend/src/views/MyFiles.tsx",
+        "file-cloud-frontend/src/services/api.ts",
+        "backend/app/routers/files.py",
+        "backend/app/services/minio_client.py"
+      ],
+      "out_of_scope": [
+        "不做复杂协同",
+        "不做生产级权限控制"
+      ],
+      "steps": [
+        {
+          "step_id": "S06-T02-STEP01",
+          "status": "todo",
+          "action": "verify_file_crud",
+          "description": "验证上传、列表、下载、删除接口和前端交互。",
+          "expected_output": "文件服务可演示闭环。"
+        },
+        {
+          "step_id": "S06-T02-STEP02",
+          "status": "todo",
+          "action": "polish_states",
+          "description": "补齐空状态、加载状态、失败状态和文件操作反馈。",
+          "expected_output": "云盘页演示稳定。"
+        }
+      ],
+      "acceptance_criteria": [
+        "用 2 到 3 个样例文件能完整演示。",
+        "出错时页面能解释失败原因。"
+      ],
+      "verification": [
+        "上传/下载/删除样例文件",
+        "浏览器截图"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S06-T03",
+      "status": "todo",
+      "topic": "文件转换高频能力",
+      "target_dir": "backend/app/routers",
+      "owned_files": [
+        "file-cloud-frontend/src/views/ConvertCenter.tsx",
+        "file-cloud-frontend/src/services/api.ts",
+        "backend/app/routers/convert.py",
+        "backend/app/services/converter.py",
+        "backend/app/services/task_tracker.py"
+      ],
+      "out_of_scope": [
+        "不实现所有格式全集",
+        "不追求商业级批量转换"
+      ],
+      "steps": [
+        {
+          "step_id": "S06-T03-STEP01",
+          "status": "todo",
+          "action": "rank_formats",
+          "description": "按答辩演示频率确认 P0 格式：Office->PDF、图片互转、TXT/MD->PDF 或预览。",
+          "expected_output": "转换能力优先级清单。"
+        },
+        {
+          "step_id": "S06-T03-STEP02",
+          "status": "todo",
+          "action": "verify_p0_conversions",
+          "description": "每类 P0 转换至少准备一个样例文件并验证成功。",
+          "expected_output": "样例文件、转换结果、任务记录。"
+        },
+        {
+          "step_id": "S06-T03-STEP03",
+          "status": "todo",
+          "action": "record_failures",
+          "description": "失败任务进入任务监控，并展示失败原因。",
+          "expected_output": "ConvertCenter 与 TaskMonitor 联动。"
+        }
+      ],
+      "acceptance_criteria": [
+        "每类 P0 转换至少有一个样例文件演示成功。",
+        "失败任务能进入任务监控并展示原因。"
+      ],
+      "verification": [
+        "DOCX/PPTX/XLSX -> PDF 样例",
+        "JPG/PNG/WebP 样例",
+        "TXT/MD 样例",
+        "TaskMonitor 状态检查"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S06-T04",
+      "status": "todo",
+      "topic": "PDF 预览与轻量编辑/导出",
+      "target_dir": "file-cloud-frontend/src/views",
+      "owned_files": [
+        "file-cloud-frontend/src/views/PDFStudio.tsx",
+        "file-cloud-frontend/src/services/api.ts",
+        "backend/app/routers/convert.py",
+        "backend/app/services/converter.py"
+      ],
+      "out_of_scope": [
+        "不做复杂在线 PDF 编辑器",
+        "不做协同标注",
+        "不做 OCR"
+      ],
+      "steps": [
+        {
+          "step_id": "S06-T04-STEP01",
+          "status": "todo",
+          "action": "verify_preview",
+          "description": "验证 PDF 预览能力和失败兜底。",
+          "expected_output": "PDF 可预览。"
+        },
+        {
+          "step_id": "S06-T04-STEP02",
+          "status": "todo",
+          "action": "implement_minimal_editing",
+          "description": "完成合并、拆分或重排的最小可演示能力。",
+          "expected_output": "至少一个轻量编辑操作可演示。"
+        },
+        {
+          "step_id": "S06-T04-STEP03",
+          "status": "todo",
+          "action": "export_result",
+          "description": "导出处理后的 PDF 并生成任务记录。",
+          "expected_output": "上传 PDF -> 预览 -> 操作 -> 导出闭环。"
+        }
+      ],
+      "acceptance_criteria": [
+        "至少完成一次上传 PDF、预览、操作、导出的演示链路。",
+        "失败时有明确提示。"
+      ],
+      "verification": [
+        "浏览器演示 PDF Studio",
+        "下载导出文件检查"
+      ],
+      "handoff_notes": ""
+    }
+  ],
+  "acceptance": [
+    "用户端四个模块可以从导航进入并完成核心演示。",
+    "P0 转换能力有样例文件验证。",
+    "用户端业务操作能出现在任务/日志/大屏数据中。"
+  ]
+}

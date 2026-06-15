@@ -1,0 +1,204 @@
+{
+  "sprint": "07",
+  "version": "0.1",
+  "status": "Ready",
+  "lastUpdated": "2026-06-15 00:30",
+  "object": "将 Analytics 升级为管理员默认的大数据舱：蓝黑风格、全屏优先、业务数据 ECharts 主导、模块入口默认隐藏在四周，并接入集群状态与系统 Health。",
+  "key_results": [
+    "KR-1: 管理员登录后默认看到大数据舱，而不是传统首页。",
+    "KR-2: 大屏默认只显示关键业务指标和图表，模块入口隐藏到四周。",
+    "KR-3: 左右展开箭头或热键可打开对应模块入口。",
+    "KR-4: 大屏数据替换为真实业务/平台 demo 数据，不再使用不相关销售/用户行为数据。",
+    "KR-5: 集群状态与系统 Health 两个管理面板可从大屏进入。"
+  ],
+  "tasks": [
+    {
+      "id": "S07-T01",
+      "status": "todo",
+      "topic": "Analytics 改造为蓝黑大数据舱",
+      "target_dir": "file-cloud-frontend/src/views",
+      "owned_files": [
+        "file-cloud-frontend/src/views/Analytics.tsx",
+        "file-cloud-frontend/src/components/EChartsWrapper.tsx",
+        "file-cloud-frontend/src/index.css",
+        "file-cloud-frontend/src/App.tsx"
+      ],
+      "out_of_scope": [
+        "不做营销落地页",
+        "不使用大面积无意义渐变装饰",
+        "不把大屏塞进普通卡片页面"
+      ],
+      "steps": [
+        {
+          "step_id": "S07-T01-STEP01",
+          "status": "todo",
+          "action": "design_big_screen_grid",
+          "description": "定义 16:9 管理大屏布局：顶部状态、左列指标、中部主图、右列健康、底部事件。",
+          "expected_output": "Analytics 大屏布局结构。"
+        },
+        {
+          "step_id": "S07-T01-STEP02",
+          "status": "todo",
+          "action": "apply_admin_visual_style",
+          "description": "应用蓝黑主题、紧凑文字、稳定图表容器和适配宽屏的尺寸。",
+          "expected_output": "蓝黑大数据舱视觉。"
+        }
+      ],
+      "acceptance_criteria": [
+        "16:9 宽屏下信息密度合适。",
+        "默认状态没有传统侧边栏遮挡。",
+        "图表非空、文字不重叠。"
+      ],
+      "verification": [
+        "npm run build",
+        "浏览器 1440x900/1920x1080 截图"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S07-T02",
+      "status": "todo",
+      "topic": "业务数据替换与图表故事线",
+      "target_dir": "flask-analytics",
+      "owned_files": [
+        "flask-analytics/services/analytics.py",
+        "flask-analytics/app.py",
+        "file-cloud-frontend/src/services/api.ts",
+        "file-cloud-frontend/src/views/Analytics.tsx",
+        "scripts/spark/preprocess.py",
+        "data/spark-output/"
+      ],
+      "out_of_scope": [
+        "不展示无关销售订单数据",
+        "不展示与文件处理无关的用户行为图表"
+      ],
+      "steps": [
+        {
+          "step_id": "S07-T02-STEP01",
+          "status": "todo",
+          "action": "map_business_metrics",
+          "description": "将大屏指标映射为文件总量、转换次数、成功率、文件类型、转换矩阵、存储、任务队列。",
+          "expected_output": "业务指标映射表。"
+        },
+        {
+          "step_id": "S07-T02-STEP02",
+          "status": "todo",
+          "action": "replace_chart_data",
+          "description": "替换不相关销售/用户行为数据，统一使用文件处理平台业务数据或 Spark 输出。",
+          "expected_output": "Analytics 图表数据语义对齐 CulCloud。"
+        },
+        {
+          "step_id": "S07-T02-STEP03",
+          "status": "todo",
+          "action": "write_chart_story",
+          "description": "为每张图记录数据来源和答辩讲解口径。",
+          "expected_output": "docs/02-process/governance/analytics-dashboard-evidence-20260615.md"
+        }
+      ],
+      "acceptance_criteria": [
+        "图表讲的是 CulCloud 文件业务。",
+        "每张图有可解释的数据来源。",
+        "没有销售订单等无关业务名词残留。"
+      ],
+      "verification": [
+        "rg sales_orders user_behavior file-cloud-frontend/src/views/Analytics.tsx",
+        "curl Flask analytics 端点",
+        "浏览器截图"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S07-T03",
+      "status": "todo",
+      "topic": "隐藏式模块入口与热键",
+      "target_dir": "file-cloud-frontend/src",
+      "owned_files": [
+        "file-cloud-frontend/src/components/AdminDock.tsx",
+        "file-cloud-frontend/src/App.tsx",
+        "file-cloud-frontend/src/types.ts",
+        "file-cloud-frontend/src/views/Analytics.tsx"
+      ],
+      "out_of_scope": [
+        "不让模块入口遮挡核心图表",
+        "不做复杂拖拽布局"
+      ],
+      "steps": [
+        {
+          "step_id": "S07-T03-STEP01",
+          "status": "todo",
+          "action": "create_admin_dock",
+          "description": "创建大屏边缘隐藏入口，点击左右箭头展开。",
+          "expected_output": "AdminDock.tsx 或等价组件。"
+        },
+        {
+          "step_id": "S07-T03-STEP02",
+          "status": "todo",
+          "action": "bind_hotkeys",
+          "description": "绑定 1-7 热键跳转用户首页、云盘、转换、PDF、集群、Health、大屏。",
+          "expected_output": "管理员模式可通过键盘快速跳转。"
+        }
+      ],
+      "acceptance_criteria": [
+        "默认大屏不被菜单破坏。",
+        "点击左右箭头可展开模块入口。",
+        "热键可跳转 1-7 个核心模块。"
+      ],
+      "verification": [
+        "浏览器手动点击展开入口",
+        "键盘热键跳转检查"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S07-T04",
+      "status": "todo",
+      "topic": "集群状态与 Health 面板接入",
+      "target_dir": "backend/app",
+      "owned_files": [
+        "backend/app/routers/system.py",
+        "backend/app/services/health_checker.py",
+        "backend/app/services/log_collector.py",
+        "file-cloud-frontend/src/views/SystemStatus.tsx",
+        "file-cloud-frontend/src/views/TaskMonitor.tsx"
+      ],
+      "out_of_scope": [
+        "不引入 Prometheus/Grafana",
+        "不实现生产级告警系统"
+      ],
+      "steps": [
+        {
+          "step_id": "S07-T04-STEP01",
+          "status": "todo",
+          "action": "verify_compose_status",
+          "description": "展示 Docker Compose 服务状态和关键容器健康。",
+          "expected_output": "集群状态卡片。"
+        },
+        {
+          "step_id": "S07-T04-STEP02",
+          "status": "todo",
+          "action": "verify_pm2_api_health",
+          "description": "展示 PM2 服务、本地 API、Redis、MinIO、Gotenberg/FastAPI 健康状态。",
+          "expected_output": "系统 Health 面板。"
+        }
+      ],
+      "acceptance_criteria": [
+        "Docker Compose 服务状态可展示。",
+        "PM2 服务状态可展示或有明确兜底。",
+        "API 健康状态可刷新。"
+      ],
+      "verification": [
+        "docker compose ps",
+        "pm2 status",
+        "curl system health endpoint",
+        "浏览器截图"
+      ],
+      "handoff_notes": ""
+    }
+  ],
+  "acceptance": [
+    "管理员默认进入蓝黑大屏。",
+    "大屏模块入口默认隐藏，可展开。",
+    "Dashboard 数据语义全部对齐文件处理平台。",
+    "集群状态、系统 Health、任务监控可以从大屏快速进入。"
+  ]
+}

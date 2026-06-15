@@ -1,0 +1,325 @@
+{
+  "sprint": "08",
+  "version": "0.1",
+  "status": "Ready",
+  "lastUpdated": "2026-06-15 00:35",
+  "object": "完成课程设计文档工程交付：txt 分章节定稿、UML/工程图、技术栈 logo、UI 截图、LaTeX 注入、最终 PDF 编译与审计。",
+  "key_results": [
+    "KR-1: 报告内容先在 txt 分章节定稿，再注入 LaTeX。",
+    "KR-2: 工程图/UML 覆盖系统架构、数据流、模块关系、部署关系和核心流程。",
+    "KR-3: 技术栈 logo、UI 截图、接口样例和运行证据全部归档到 docs/02-process/。",
+    "KR-4: LaTeX 编译通过，无致命错误、无缺图、无明显 Markdown 泄漏。",
+    "KR-5: 最终 PDF 放入 docs/03-reports/，并完成 walkthrough 审计。"
+  ],
+  "reference_structure": [
+    "参考 /Users/caolei/Desktop/springboot-lgg/docs/02-process/document 的结构安排。",
+    "以本仓库 docs/02-process/document/report-txt/chapters/ 作为章节 txt 事实源。",
+    "以 docs/02-process/document/latex/cit-template/data/ 作为 LaTeX 注入目标。",
+    "以 docs/02-process/Figure/ 管理 UML、截图、图表和 logo。",
+    "以 docs/03-reports/ 存放最终 PDF。"
+  ],
+  "tasks": [
+    {
+      "id": "S08-T01",
+      "status": "todo",
+      "topic": "txt 分章节内容定稿",
+      "target_dir": "docs/02-process/document/report-txt/chapters",
+      "owned_files": [
+        "docs/02-process/document/report-txt/chapters/00-abstract.txt",
+        "docs/02-process/document/report-txt/chapters/01-introduction.txt",
+        "docs/02-process/document/report-txt/chapters/02-related-tech.txt",
+        "docs/02-process/document/report-txt/chapters/03-requirements.txt",
+        "docs/02-process/document/report-txt/chapters/04-design-implementation.txt",
+        "docs/02-process/document/report-txt/chapters/05-testing-results.txt",
+        "docs/02-process/document/report-txt/chapters/06-conclusion.txt",
+        "docs/02-process/document/report-txt/chapters/99-acknowledgements.txt"
+      ],
+      "out_of_scope": [
+        "不直接在 tex 中无记录扩写",
+        "不伪造引用或数据",
+        "不把未验证功能写成已完成事实"
+      ],
+      "inputs": [
+        "docs/02-process/governance/evidence-chain-20260614.md",
+        "docs/02-process/governance/project-progress-summary-20260614.md",
+        "README.md",
+        "Agent.md",
+        "source code and screenshots"
+      ],
+      "steps": [
+        {
+          "step_id": "S08-T01-STEP01",
+          "status": "todo",
+          "action": "outline_chapters",
+          "description": "建立章节 txt 文件和章节目标。",
+          "expected_output": "report-txt/chapters 下的完整章节骨架。"
+        },
+        {
+          "step_id": "S08-T01-STEP02",
+          "status": "todo",
+          "action": "write_fact_based_content",
+          "description": "按证据链填充正文，所有技术描述可追溯到代码、接口、截图或参考资料。",
+          "expected_output": "每章正文初稿。"
+        },
+        {
+          "step_id": "S08-T01-STEP03",
+          "status": "todo",
+          "action": "anti_markdown_check",
+          "description": "检查最终 txt 不含 Markdown 结构泄漏。",
+          "expected_output": "Anti-MD 检查记录。"
+        }
+      ],
+      "acceptance_criteria": [
+        "每章都有事实来源和证据链。",
+        "不出现 Markdown 结构泄漏到最终 txt。",
+        "核心技术描述与源码一致。"
+      ],
+      "verification": [
+        "rg '^#|^[-*] |^\\d+\\. ' docs/02-process/document/report-txt/chapters",
+        "人工审查章节事实来源"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S08-T02",
+      "status": "todo",
+      "topic": "UML 与工程图生成",
+      "target_dir": "docs/02-process/Figure",
+      "owned_files": [
+        "docs/02-process/Figure/uml-sources/",
+        "docs/02-process/Figure/pdf-pages/",
+        "docs/02-process/Figure/screenshot-checklist.txt"
+      ],
+      "out_of_scope": [
+        "不使用无法复现的手工截图冒充工程图",
+        "不生成与源码不一致的架构图"
+      ],
+      "inputs": [
+        "README.md",
+        "docker-compose.yml",
+        "docker-compose.demo.yml",
+        "ecosystem.config.js",
+        "backend/",
+        "file-cloud-frontend/",
+        "flask-analytics/",
+        "scripts/spark/"
+      ],
+      "steps": [
+        {
+          "step_id": "S08-T02-STEP01",
+          "status": "todo",
+          "action": "create_architecture_diagram",
+          "description": "生成系统总体架构图。",
+          "expected_output": "architecture diagram source and exported image。"
+        },
+        {
+          "step_id": "S08-T02-STEP02",
+          "status": "todo",
+          "action": "create_data_flow_diagram",
+          "description": "生成前后端数据流和 Spark/Flask/ECharts 管线图。",
+          "expected_output": "data flow and analytics pipeline diagrams。"
+        },
+        {
+          "step_id": "S08-T02-STEP03",
+          "status": "todo",
+          "action": "create_deployment_diagram",
+          "description": "生成 Docker Compose + PM2 部署关系图。",
+          "expected_output": "deployment diagram。"
+        }
+      ],
+      "acceptance_criteria": [
+        "每张图有源文件和导出图片。",
+        "LaTeX 中引用路径稳定。",
+        "图内容与源码和配置一致。"
+      ],
+      "verification": [
+        "检查图片文件存在",
+        "人工对照源码/compose/PM2 配置"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S08-T03",
+      "status": "todo",
+      "topic": "技术栈 logo 与 UI 截图归档",
+      "target_dir": "docs/02-process/Figure",
+      "owned_files": [
+        "docs/02-process/Figure/logo/",
+        "docs/02-process/Figure/screenshots/",
+        "docs/02-process/Figure/screenshot-checklist.txt"
+      ],
+      "out_of_scope": [
+        "不使用占位图冒充运行截图",
+        "不截取不完整或明显报错的页面作为成功证据"
+      ],
+      "inputs": [
+        "running frontend",
+        "running backend",
+        "docs/02-process/Figure/screenshot-checklist.txt"
+      ],
+      "steps": [
+        {
+          "step_id": "S08-T03-STEP01",
+          "status": "todo",
+          "action": "collect_logos",
+          "description": "归档 React、Vite、TypeScript、ECharts、FastAPI、Flask、Spark、Docker、Redis、MinIO、Gotenberg、PM2 logo。",
+          "expected_output": "logo 文件夹和来源记录。"
+        },
+        {
+          "step_id": "S08-T03-STEP02",
+          "status": "todo",
+          "action": "capture_ui_screenshots",
+          "description": "截取用户首页、云盘、转换、PDF Studio、管理员大屏、集群监控、Health、任务监控。",
+          "expected_output": "真实运行 UI 截图。"
+        },
+        {
+          "step_id": "S08-T03-STEP03",
+          "status": "todo",
+          "action": "update_screenshot_checklist",
+          "description": "标记每张截图的状态、路径、用途和报告章节。",
+          "expected_output": "截图清单完成。"
+        }
+      ],
+      "acceptance_criteria": [
+        "图片命名清晰。",
+        "截图来自真实运行页面。",
+        "每张图片有用途说明。"
+      ],
+      "verification": [
+        "浏览器截图检查",
+        "图片路径检查"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S08-T04",
+      "status": "todo",
+      "topic": "LaTeX 注入与格式对齐",
+      "target_dir": "docs/02-process/document/latex/cit-template",
+      "owned_files": [
+        "docs/02-process/document/latex/cit-template/data/abstract.tex",
+        "docs/02-process/document/latex/cit-template/data/chap01.tex",
+        "docs/02-process/document/latex/cit-template/data/chap02.tex",
+        "docs/02-process/document/latex/cit-template/data/chap03.tex",
+        "docs/02-process/document/latex/cit-template/data/chap04.tex",
+        "docs/02-process/document/latex/cit-template/data/chap05.tex",
+        "docs/02-process/document/latex/cit-template/data/chap06.tex",
+        "docs/02-process/document/latex/cit-template/data/acknowledgements.tex",
+        "docs/02-process/document/latex/cit-template/ref/refs.bib",
+        "docs/02-process/script/inject_latex.py"
+      ],
+      "out_of_scope": [
+        "不直接复制 Markdown 到 tex",
+        "不保留无效图片引用",
+        "不伪造参考文献"
+      ],
+      "inputs": [
+        "docs/02-process/document/report-txt/chapters/",
+        "docs/02-process/Figure/",
+        "docs/02-process/document/latex/cit-template/"
+      ],
+      "steps": [
+        {
+          "step_id": "S08-T04-STEP01",
+          "status": "todo",
+          "action": "inject_chapters",
+          "description": "从 txt 章节生成或注入 LaTeX 章节文件。",
+          "expected_output": "data/*.tex 更新。"
+        },
+        {
+          "step_id": "S08-T04-STEP02",
+          "status": "todo",
+          "action": "wire_figures_tables_refs",
+          "description": "插入图表、表格和 BibTeX 引用。",
+          "expected_output": "图片、表格、引用路径正确。"
+        },
+        {
+          "step_id": "S08-T04-STEP03",
+          "status": "todo",
+          "action": "latex_style_check",
+          "description": "检查 Markdown 泄漏、本地绝对路径、缺图和章节结构。",
+          "expected_output": "LaTeX 静态检查记录。"
+        }
+      ],
+      "acceptance_criteria": [
+        "chap01.tex 至少到 chap06.tex 与章节结构一致。",
+        "图片、表格、引用、交叉引用路径正确。",
+        "无 Markdown 语法泄漏。"
+      ],
+      "verification": [
+        "rg '```|^#|^- ' docs/02-process/document/latex/cit-template/data",
+        "检查 refs.bib",
+        "检查图片路径"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S08-T05",
+      "status": "todo",
+      "topic": "最终 PDF 编译、视觉检查与交付",
+      "target_dir": "docs/02-process/document/latex/cit-template",
+      "owned_files": [
+        "docs/02-process/document/latex/cit-template/output/",
+        "docs/03-reports/",
+        "docs/02-process/governance/walkthrough-final-delivery.md"
+      ],
+      "out_of_scope": [
+        "不把编译中间产物作为最终交付事实源",
+        "不跳过 PDF 视觉检查"
+      ],
+      "inputs": [
+        "docs/02-process/document/latex/cit-template/",
+        "docs/02-process/Figure/",
+        "docs/02-process/document/report-txt/chapters/"
+      ],
+      "steps": [
+        {
+          "step_id": "S08-T05-STEP01",
+          "status": "todo",
+          "action": "compile_pdf",
+          "description": "运行 LaTeX 编译脚本生成 PDF。",
+          "expected_output": "PDF 文件生成。"
+        },
+        {
+          "step_id": "S08-T05-STEP02",
+          "status": "todo",
+          "action": "inspect_log",
+          "description": "检查 fatal error、缺图、undefined citation/reference、明显 overfull。",
+          "expected_output": "编译日志审计记录。"
+        },
+        {
+          "step_id": "S08-T05-STEP03",
+          "status": "todo",
+          "action": "visual_check_pdf",
+          "description": "渲染或打开 PDF 检查空白页、图片错位、表格越界和页眉页脚。",
+          "expected_output": "PDF 页面视觉检查结果。"
+        },
+        {
+          "step_id": "S08-T05-STEP04",
+          "status": "todo",
+          "action": "copy_final_report",
+          "description": "将最终 PDF 放入 docs/03-reports/ 并生成最终 walkthrough。",
+          "expected_output": "docs/03-reports/final.pdf 和 walkthrough-final-delivery.md。"
+        }
+      ],
+      "acceptance_criteria": [
+        "PDF 编译通过。",
+        "日志无 fatal error、缺图、明显未定义引用。",
+        "页面截图检查无明显溢出、空白页、图片错位。",
+        "最终 PDF 放入 docs/03-reports/。"
+      ],
+      "verification": [
+        "运行 LaTeX build 脚本",
+        "检查 .log",
+        "PDF 渲染或截图检查"
+      ],
+      "handoff_notes": ""
+    }
+  ],
+  "acceptance": [
+    "docs/02-process/document/report-txt/chapters/ 有定稿章节。",
+    "docs/02-process/Figure/ 有 UML、logo、UI 截图和清单。",
+    "LaTeX 编译通过并生成最终 PDF。",
+    "docs/02-process/governance/walkthrough-final-delivery.md 完成。"
+  ]
+}
