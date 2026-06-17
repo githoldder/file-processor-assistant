@@ -1,19 +1,19 @@
 """
-课程设计数据分析 API — Spark + Flask + ECharts
+CulCloud 文件处理遥测分析 API — Spark + Flask + ECharts
 
-基于 PySpark 预处理的模拟数据集（用户行为 + 销售数据），
+基于 PySpark 预处理的 CulCloud 文件处理遥测数据，
 提供 RESTful API 供 ECharts 前端大屏展示。
 
 API 设计：
-  /api/analytics/ub/*    — 用户行为分析
-  /api/analytics/sales/* — 销售数据分析
-  /api/analytics/dashboard?dataset=ub|sales  — 一键看板
+  /api/analytics/telemetry/*   — 文件处理遥测分析
+  /api/analytics/quality/*     — 数据质量报告
+  /api/analytics/cockpit       — 全局态势感知视图
 """
 
 import os
 import logging
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 from flask_cors import CORS
 
 from services.analytics import AnalyticsService
@@ -40,278 +40,170 @@ analytics = AnalyticsService(spark_output_dir=SPARK_OUTPUT_DIR)
 def health():
     return jsonify({
         "status": "ok",
-        "service": "课程设计数据分析平台",
-        "tech_stack": "Spark + Flask + ECharts",
+        "service": "CulCloud Telemetry Analytics",
+        "tech_stack": "PySpark + Flask + ECharts",
     })
 
 
-# ==================== 数据概览 ====================
+# ==================== 文件处理遥测总览 ====================
 
-@app.route("/api/analytics/ub/overview")
-def ub_overview():
+@app.route("/api/analytics/telemetry/overview")
+def telemetry_overview():
     try:
-        data = analytics.get_ub_overview()
+        data = analytics.get_telemetry_overview()
         return jsonify({"ok": True, "data": data or {}})
     except Exception as e:
-        logger.error(f"ub/overview: {e}")
+        logger.error(f"telemetry/overview: {e}")
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-# ==================== 用户行为分析 ====================
-
-@app.route("/api/analytics/ub/event-types")
-def ub_event_types():
+@app.route("/api/analytics/telemetry/format-distribution")
+def telemetry_format_dist():
     try:
-        return jsonify({"ok": True, "data": analytics.get_ub_event_types() or []})
+        return jsonify({"ok": True, "data": analytics.get_format_distribution() or []})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/analytics/ub/daily-trend")
-def ub_daily_trend():
+@app.route("/api/analytics/telemetry/action-distribution")
+def telemetry_action_dist():
     try:
-        return jsonify({"ok": True, "data": analytics.get_ub_daily_trend() or []})
+        return jsonify({"ok": True, "data": analytics.get_action_distribution() or []})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/analytics/ub/time-periods")
-def ub_time_periods():
+@app.route("/api/analytics/telemetry/conversion-stats")
+def telemetry_conversion():
     try:
-        return jsonify({"ok": True, "data": analytics.get_ub_time_period() or []})
+        return jsonify({"ok": True, "data": analytics.get_conversion_stats() or {}})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/analytics/ub/devices")
-def ub_devices():
+@app.route("/api/analytics/telemetry/traffic-trend")
+def telemetry_traffic():
     try:
-        return jsonify({"ok": True, "data": analytics.get_ub_device() or []})
+        return jsonify({"ok": True, "data": analytics.get_traffic_trend() or []})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/analytics/ub/top-pages")
-def ub_top_pages():
+@app.route("/api/analytics/telemetry/hourly-pattern")
+def telemetry_hourly():
     try:
-        return jsonify({"ok": True, "data": analytics.get_ub_top_pages() or []})
+        return jsonify({"ok": True, "data": analytics.get_hourly_pattern() or []})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/analytics/ub/referrers")
-def ub_referrers():
+@app.route("/api/analytics/telemetry/daily-trend")
+def telemetry_daily():
     try:
-        return jsonify({"ok": True, "data": analytics.get_ub_referrer() or []})
+        return jsonify({"ok": True, "data": analytics.get_daily_trend() or []})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/analytics/ub/conversion")
-def ub_conversion():
+@app.route("/api/analytics/telemetry/storage-growth")
+def telemetry_storage():
     try:
-        return jsonify({"ok": True, "data": analytics.get_ub_conversion() or []})
+        return jsonify({"ok": True, "data": analytics.get_storage_growth() or []})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/analytics/ub/duration-buckets")
-def ub_duration_buckets():
+@app.route("/api/analytics/telemetry/user-activity")
+def telemetry_user_activity():
     try:
-        return jsonify({"ok": True, "data": analytics.get_ub_duration_buckets() or []})
+        return jsonify({"ok": True, "data": analytics.get_user_activity() or []})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/analytics/ub/heatmap")
-def ub_heatmap():
+@app.route("/api/analytics/telemetry/error-analysis")
+def telemetry_errors():
     try:
-        return jsonify({"ok": True, "data": analytics.get_ub_heatmap() or []})
+        return jsonify({"ok": True, "data": analytics.get_error_analysis() or {}})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/analytics/ub/sample")
-def ub_sample():
+@app.route("/api/analytics/telemetry/conversion-matrix")
+def telemetry_conv_matrix():
     try:
-        return jsonify({"ok": True, "data": analytics.get_ub_sample() or []})
+        return jsonify({"ok": True, "data": analytics.get_conversion_matrix() or {}})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-# ==================== 销售数据分析 ====================
-
-@app.route("/api/analytics/sales/overview")
-def sales_overview():
+@app.route("/api/analytics/telemetry/quality-report")
+def telemetry_quality():
     try:
-        return jsonify({"ok": True, "data": analytics.get_sales_overview() or {}})
+        return jsonify({"ok": True, "data": analytics.get_quality_report() or {}})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/analytics/sales/categories")
-def sales_categories():
+@app.route("/api/analytics/telemetry/region-distribution")
+def telemetry_region():
     try:
-        return jsonify({"ok": True, "data": analytics.get_sales_category() or []})
+        return jsonify({"ok": True, "data": analytics.get_region_distribution() or []})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/analytics/sales/monthly-trend")
-def sales_monthly_trend():
+@app.route("/api/analytics/telemetry/device-distribution")
+def telemetry_device():
     try:
-        return jsonify({"ok": True, "data": analytics.get_sales_monthly_trend() or []})
+        return jsonify({"ok": True, "data": analytics.get_device_distribution() or []})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/analytics/sales/payments")
-def sales_payments():
+@app.route("/api/analytics/telemetry/sample")
+def telemetry_sample():
     try:
-        return jsonify({"ok": True, "data": analytics.get_sales_payment() or []})
+        return jsonify({"ok": True, "data": analytics.get_sample() or []})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/analytics/sales/order-status")
-def sales_order_status():
+@app.route("/api/analytics/telemetry/error-heatmap")
+def telemetry_error_heatmap():
     try:
-        return jsonify({"ok": True, "data": analytics.get_sales_order_status() or []})
+        return jsonify({"ok": True, "data": analytics.get_error_heatmap() or {}})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/analytics/sales/regions")
-def sales_regions():
+# ==================== 全局态势感知 ====================
+
+@app.route("/api/analytics/cockpit")
+def cockpit():
+    """管理员大数据舱聚合接口。"""
     try:
-        return jsonify({"ok": True, "data": analytics.get_sales_regional() or []})
+        return jsonify({"ok": True, "data": analytics.get_cockpit() or {}})
     except Exception as e:
+        logger.error(f"cockpit failed: {e}")
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/analytics/sales/price-buckets")
-def sales_price_buckets():
-    try:
-        return jsonify({"ok": True, "data": analytics.get_sales_price_buckets() or []})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-
-@app.route("/api/analytics/sales/gender")
-def sales_gender():
-    try:
-        return jsonify({"ok": True, "data": analytics.get_sales_gender() or []})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-
-@app.route("/api/analytics/sales/top-products")
-def sales_top_products():
-    try:
-        return jsonify({"ok": True, "data": analytics.get_sales_top_products() or []})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-
-@app.route("/api/analytics/sales/quarterly")
-def sales_quarterly():
-    try:
-        return jsonify({"ok": True, "data": analytics.get_sales_quarterly() or []})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-
-@app.route("/api/analytics/sales/sample")
-def sales_sample():
-    try:
-        return jsonify({"ok": True, "data": analytics.get_sales_sample() or []})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-
-# ==================== 数据质量 ====================
-
-@app.route("/api/analytics/quality-report")
-def quality_report():
-    try:
-        return jsonify({"ok": True, "data": analytics.get_data_quality_report() or {}})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-
-# ==================== 一键看板 ====================
-
-@app.route("/api/analytics/dashboard")
-def dashboard():
-    """一键获取看板全部数据（前端加载时调用一次即可）"""
-    dataset = request.args.get("dataset", "ub")
-    try:
-        data = analytics.get_dashboard(dataset)
-        if data is None:
-            return jsonify({"ok": False, "error": f"unknown dataset: {dataset}"}), 400
-        return jsonify({"ok": True, "dataset": dataset, "data": data})
-    except Exception as e:
-        logger.error(f"dashboard failed: {e}")
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-
-# ==================== Spark 简述（答辩用）====================
+# ==================== Spark 管线元数据（答辩用）====================
 
 @app.route("/api/analytics/pipeline-info")
 def pipeline_info():
-    """返回 Spark 管线处理信息，用于答辩展示"""
-    report = analytics.get_data_quality_report()
-    ub_ov = analytics.get_ub_overview() or {}
-    sales_ov = analytics.get_sales_overview() or {}
-
-    if report:
-        ub_raw = report.get("user_behavior_raw", {})
-        sales_raw = report.get("sales_raw", {})
-    else:
-        ub_raw = sales_raw = {}
-
-    return jsonify({
-        "ok": True,
-        "pipeline": {
-            "framework": "PySpark 4.1.2 (local[*])",
-            "engine": "Apache Spark 4.x",
-            "mode": "local cluster (auto-parallelism)",
-
-            "user_behavior": {
-                "raw_rows": ub_raw.get("total_rows", "?"),
-                "duplicates_found": ub_raw.get("duplicate_count", "?"),
-                "null_cells_total": ub_raw.get("nulls", "?"),
-                "cleaned_rows": ub_ov.get("total_events", "?"),
-                "unique_users": ub_ov.get("unique_users", "?"),
-                "conversion_rate": f"{ub_ov.get('overall_conversion_rate', '?')}%",
-            },
-
-            "sales_orders": {
-                "raw_rows": sales_raw.get("total_rows", "?"),
-                "duplicates_found": sales_raw.get("duplicate_count", "?"),
-                "null_cells_total": sales_raw.get("nulls", "?"),
-                "cleaned_rows": sales_ov.get("total_orders", "?"),
-                "total_revenue": f"¥{sales_ov.get('total_revenue', '?'):,.2f}",
-            },
-
-            "pipeline_stages": [
-                "1. Data Loading (CSV + JSON multipFormat)",
-                "2. Data Quality Report (nulls, duplicates, schema)",
-                "3. Data Cleaning (null fill, anomaly filter, dedup)",
-                "4. Feature Engineering (time split, bucket, field merge/split)",
-                "5. Multi-dimensional Statistical Aggregation (groupBy, agg)",
-                "6. Result Export (22 JSON files)",
-            ],
-
-            "note": "演示 Spark 分布式计算流程，非集群演示使用 local[*] 模式",
-        }
-    })
+    try:
+        return jsonify({"ok": True, "data": analytics.get_pipeline_info()})
+    except Exception as e:
+        logger.error(f"pipeline-info: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 # ==================== 启动 ====================
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 5050))
     debug = os.environ.get("FLASK_DEBUG", "0") == "1"
-    logger.info(f"Analytics API starting on :{port}")
+    logger.info(f"CulCloud Analytics API starting on :{port}")
     app.run(host="0.0.0.0", port=port, debug=debug)

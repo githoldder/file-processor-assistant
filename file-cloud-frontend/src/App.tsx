@@ -1,41 +1,32 @@
-import { useState, lazy, Suspense } from "react";
+import React, { lazy, Suspense, useState, useEffect, ComponentType, LazyExoticComponent } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import { LanguageProvider } from "./context/LanguageContext";
-import { DashboardProvider } from "./context/useDashboard";
+import { DashboardProvider, useDashboard } from "./context/useDashboard";
 import type { ViewState } from "./types";
+import { cn } from "./lib/utils";
 
-// Lazy-load all views
+// 用户端视图
 const Dashboard = lazy(() => import("./views/Dashboard"));
 const MyFiles = lazy(() => import("./views/MyFiles"));
 const ConvertCenter = lazy(() => import("./views/ConvertCenter"));
 const PDFStudio = lazy(() => import("./views/PDFStudio"));
-const TaskMonitor = lazy(() => import("./views/TaskMonitor"));
-const SystemStatus = lazy(() => import("./views/SystemStatus"));
+// 大屏（管理端唯一入口）
 const Analytics = lazy(() => import("./views/Analytics"));
 
+const viewMap: Record<ViewState, LazyExoticComponent<ComponentType<any>>> = {
+  dashboard: Dashboard,
+  files: MyFiles,
+  convert: ConvertCenter,
+  pdf: PDFStudio,
+  analytics: Analytics,
+};
+
 function ViewLoader({ activeView }: { activeView: ViewState }) {
-  const viewMap: Record<ViewState, React.LazyExoticComponent<React.ComponentType<any>>> = {
-    dashboard: Dashboard,
-    files: MyFiles,
-    convert: ConvertCenter,
-    "task-monitor": TaskMonitor,
-    "system-status": SystemStatus,
-    pdf: PDFStudio,
-    analytics: Analytics,
-  };
-
   const View = viewMap[activeView];
-
   return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center h-64 text-gray-400">
-          加载中...
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">加载中...</div>}>
       <AnimatePresence mode="wait">
         <motion.div
           key={activeView}
@@ -62,16 +53,55 @@ export default function App() {
 }
 
 function AppShell() {
-  const [activeView, setActiveView] = useState<ViewState>("dashboard");
+  const ctx = useDashboard();
+  const [activeView, setActiveView] = useState<ViewState>(() => ctx.activeView);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const isImmersiveAdminCockpit = ctx.role === "admin" && ctx.activeView === "analytics";
+
+  useEffect(() => {
+    setActiveView(ctx.activeView);
+  }, [ctx.activeView]);
+
+  const changeView = (view: ViewState) => {
+    setActiveView(view);
+    ctx.setActiveView(view);
+  };
+
+  // 大屏进入/退出
+  const toggleCockpit = () => {
+    if (ctx.role === "admin") {
+      // 退出大屏回到用户端
+      ctx.setRole("user");
+      changeView("dashboard");
+    } else {
+      // 进入大屏
+      ctx.setRole("admin");
+      changeView("analytics");
+    }
+    setIsSidebarOpen(false);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <Sidebar
-        currentView={activeView}
-        onViewChange={setActiveView}
-      />
-      <main className="md:ml-20 pt-16 min-h-screen">
+    <div className={cn(
+      "min-h-screen transition-colors duration-300",
+      isImmersiveAdminCockpit ? "theme-admin theme-admin-bg" : "bg-gray-50 text-slate-800"
+    )}>
+      {!isImmersiveAdminCockpit && (
+        <>
+          <Navbar onToggleCockpit={toggleCockpit} />
+          <Sidebar
+            currentView={activeView}
+            onViewChange={changeView}
+            isOpen={isSidebarOpen}
+            onToggleOpen={() => setIsSidebarOpen(!isSidebarOpen)}
+          />
+        </>
+      )}
+      <main className={cn(
+        "min-h-screen transition-all duration-300",
+        isImmersiveAdminCockpit ? "p-0" : "pt-24 pb-8 px-6 md:px-10",
+        !isImmersiveAdminCockpit && "md:ml-20"
+      )}>
         <ViewLoader activeView={activeView} />
       </main>
     </div>
