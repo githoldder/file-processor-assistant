@@ -82,3 +82,23 @@
 ### Service Verification
 - Front-end build -- `npm run build` compiles successfully in 9.19s with zero errors.
 - Back-end restart -- `culcloud-demo-api-1` successfully restarted and logs confirm application startup complete.
+
+## Session Update: 2026-06-18 — Analytics Sankey DAG Fix & Demo Hardening
+
+### Completed
+- [Archive] Created baseline commit `01f19ea chore: archive pre-sankey-fix state` before touching the fix, preserving the existing backend/data/docs changes.
+- [Bug] Fixed the Analytics cockpit conversion Sankey white-screen caused by ECharts requiring Sankey data to be a DAG.
+- [Decision] Re-modeled conversion links as two layers: `source:<format>` to `target:<format>`, so bidirectional format statistics remain visible without creating graph cycles.
+- [UX] Replaced raw ECharts red monospace error output with a product-state fallback message to avoid exposing implementation errors during defense/demo.
+- [Polish] Adjusted the processing scatter plot x-axis label spacing so `Avg Size (MB)` no longer hugs the chart edge.
+- [Docs] Updated Sprint 09 PRD markdown and JSON with the Sankey DAG decision and chart fallback acceptance criteria.
+
+### Service Verification
+- Front-end build -- `npm run build` completed successfully.
+
+### Changed Files
+- `file-cloud-frontend/src/views/Analytics.tsx`
+- `file-cloud-frontend/src/components/EChartsWrapper.tsx`
+- `prds/md/sprint09-prd-260615-v0.1.md`
+- `prds/json/sprint09-prd-260615-v0.1.json`
+- `context/context.txt`

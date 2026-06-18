@@ -66,8 +66,13 @@ export default function EChartsWrapper({ option, style, className, loading, them
   if (error) {
     return (
       <div className={className} style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative', ...style }}>
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f87171', fontFamily: 'monospace', fontSize: '11px', background: '#0f1117', textAlign: 'center', padding: '8px', overflow: 'auto', whiteSpace: 'pre-wrap' }}>
-          <b>ECharts Error:</b><br/>{error}
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#020617', textAlign: 'center', padding: '12px' }}>
+          <div style={{ maxWidth: 260 }}>
+            <div style={{ color: '#f87171', fontSize: 12, fontWeight: 800, marginBottom: 6 }}>图表暂不可用</div>
+            <div style={{ color: '#64748b', fontSize: 10, lineHeight: 1.5 }}>
+              当前聚合数据无法直接渲染，系统已保留页面其它指标。
+            </div>
+          </div>
         </div>
       </div>
     );

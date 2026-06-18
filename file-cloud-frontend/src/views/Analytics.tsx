@@ -116,6 +116,67 @@ function MiniChartCard({ title, chart, loading, className }: any) {
   );
 }
 
+const formatNodeLabel = (name: string) => name.replace(/^(source|target):/, '').toUpperCase();
+
+function buildSankeyOption(convData: any[], nodeColorMap: Record<string, string>) {
+  const links = convData
+    .map((item: any) => ({
+      sourceFormat: String(item.source_format || '').toLowerCase(),
+      targetFormat: String(item.target_format || '').toLowerCase(),
+      value: Number(item.count || 0),
+    }))
+    .filter((item) => item.sourceFormat && item.targetFormat && item.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 12);
+
+  if (links.length === 0) {
+    return {
+      graphic: {
+        type: 'text',
+        left: 'center',
+        top: 'middle',
+        style: { text: '暂无转换链路数据', fill: '#64748b', fontSize: 11, fontWeight: 700 },
+      },
+    };
+  }
+
+  const nodeNames = Array.from(new Set(links.flatMap((item) => [`source:${item.sourceFormat}`, `target:${item.targetFormat}`])));
+
+  return {
+    tooltip: {
+      trigger: 'item',
+      formatter: (p: any) => {
+        if (p.dataType === 'edge') {
+          return `${formatNodeLabel(p.data.source)} → ${formatNodeLabel(p.data.target)}<br/>${p.value} 次`;
+        }
+        return formatNodeLabel(p.name);
+      },
+    },
+    series: [{
+      type: 'sankey',
+      layoutIterations: 32,
+      emphasis: { focus: 'adjacency' },
+      nodeAlign: 'left',
+      nodeWidth: 12,
+      nodeGap: 9,
+      data: nodeNames.map((name) => {
+        const format = name.replace(/^(source|target):/, '');
+        return {
+          name,
+          itemStyle: { color: nodeColorMap[format] || '#38bdf8', borderColor: '#1e293b' },
+        };
+      }),
+      links: links.map((item) => ({
+        source: `source:${item.sourceFormat}`,
+        target: `target:${item.targetFormat}`,
+        value: item.value,
+      })),
+      label: { fontSize: 8, color: '#94a3b8', formatter: (p: any) => formatNodeLabel(p.name) },
+      lineStyle: { color: 'gradient', opacity: 0.45, curveness: 0.45 },
+    }],
+  };
+}
+
 function LoggerConsole({ logs }: { logs: any[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -282,27 +343,13 @@ function SlideProcessing({ data, loading }: any) {
   };
 
   const convData = convStats?.by_type || [];
-  // 桑葚图节点颜色映射
+  // 桑基图采用“来源层 -> 目标层”的双层节点，避免双向转换统计形成 ECharts 不支持的环。
   const nodeColorMap: Record<string, string> = {
     pdf: '#ef4444', docx: '#3b82f6', xlsx: '#10b981', pptx: '#f59e0b',
     png: '#8b5cf6', jpg: '#ec4899', txt: '#6366f1', html: '#f97316',
     csv: '#14b8a6', json: '#06b6d4', xml: '#a855f7',
   };
-  const formatNames = [...new Set(convData.flatMap((c: any) => [c.source_format, c.target_format]))] as string[];
-  const sankeyOpt = convData.length > 0 ? {
-    tooltip: { trigger: 'item', formatter: (p: any) => `${p.data.source || p.name} → ${p.data.target || ''}<br/>${p.value} 次` },
-    series: [{
-      type: 'sankey',
-      layoutIterations: 32,
-      emphasis: { focus: 'adjacency' },
-      nodeAlign: 'left',
-      nodeWidth: 14, nodeGap: 8,
-      data: formatNames.map((name: string) => ({ name, itemStyle: { color: nodeColorMap[name] || '#38bdf8', borderColor: '#1e293b' } })),
-      links: convData.slice(0, 12).map((c: any) => ({ source: c.source_format, target: c.target_format, value: c.count })),
-      label: { fontSize: 8, color: '#94a3b8', position: 'right' },
-      lineStyle: { color: 'gradient', opacity: 0.4, curveness: 0.5 },
-    }],
-  } : {};
+  const sankeyOpt = buildSankeyOption(convData, nodeColorMap);
 
   const errAnalysis = data?.errorAnalysis || {};
   const errorTypes = Array.isArray(errAnalysis.by_error_type) ? errAnalysis.by_error_type : [];
@@ -364,8 +411,8 @@ function SlideProcessing({ data, loading }: any) {
       const d = p.data;
       return `${d[3]}<br/>Avg: ${(d[0]/1024/1024).toFixed(2)} MB<br/>Count: ${d[1]}<br/>Success: ${d[2]}%`;
     }},
-    grid: { top: 15, bottom: 25, left: 40, right: 10 },
-    xAxis: { type: 'value', name: 'Avg Size (MB)', nameTextStyle: { fontSize: 8, color: '#64748b' }, axisLabel: { fontSize: 8, color: '#94a3b8', formatter: (v: number) => (v/1024/1024).toFixed(0) } },
+    grid: { top: 15, bottom: 34, left: 40, right: 26 },
+    xAxis: { type: 'value', name: 'Avg Size (MB)', nameLocation: 'middle', nameGap: 22, nameTextStyle: { fontSize: 8, color: '#64748b' }, axisLabel: { fontSize: 8, color: '#94a3b8', formatter: (v: number) => (v/1024/1024).toFixed(0) } },
     yAxis: { type: 'value', name: 'Count', nameTextStyle: { fontSize: 8, color: '#64748b' }, axisLabel: { fontSize: 8, color: '#94a3b8' } },
     series: [{
       type: 'scatter',
