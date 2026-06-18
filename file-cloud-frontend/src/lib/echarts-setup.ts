@@ -10,6 +10,7 @@ import {
   LinesChart,
   PieChart,
   RadarChart,
+  SankeyChart,
   ScatterChart,
 } from 'echarts/charts';
 import {
@@ -35,6 +36,7 @@ echarts.use([
   LinesChart,
   PieChart,
   RadarChart,
+  SankeyChart,
   ScatterChart,
   TitleComponent,
   TooltipComponent,
