@@ -146,7 +146,7 @@ function LoggerConsole({ logs }: { logs: any[] }) {
   );
 }
 
-// ==================== Slide 1: 全局态势（重塑）====================
+// ==================== Slide 1: 全局态势(重塑)====================
 
 function SlideOverview({ data, loading, worldChart, onTopologyReady }: any) {
   const cockpit = data?.cockpit || {};
@@ -282,37 +282,74 @@ function SlideProcessing({ data, loading }: any) {
   };
 
   const convData = convStats?.by_type || [];
+  // 桑葚图节点颜色映射
+  const nodeColorMap: Record<string, string> = {
+    pdf: '#ef4444', docx: '#3b82f6', xlsx: '#10b981', pptx: '#f59e0b',
+    png: '#8b5cf6', jpg: '#ec4899', txt: '#6366f1', html: '#f97316',
+    csv: '#14b8a6', json: '#06b6d4', xml: '#a855f7',
+  };
+  const formatNames = [...new Set(convData.flatMap((c: any) => [c.source_format, c.target_format]))] as string[];
   const sankeyOpt = convData.length > 0 ? {
     tooltip: { trigger: 'item', formatter: (p: any) => `${p.data.source || p.name} → ${p.data.target || ''}<br/>${p.value} 次` },
     series: [{
-      type: 'sankey', layout: 'none',
+      type: 'sankey',
+      layoutIterations: 32,
       emphasis: { focus: 'adjacency' },
       nodeAlign: 'left',
-      nodeWidth: 12, nodeGap: 8,
-      data: [...new Set(convData.flatMap((c: any) => [c.source_format, c.target_format]))].map((name: any) => ({ name })),
-      links: convData.slice(0, 10).map((c: any) => ({ source: c.source_format, target: c.target_format, value: c.count })),
-      label: { fontSize: 8, color: '#94a3b8' },
-      lineStyle: { color: 'gradient', opacity: 0.3 },
+      nodeWidth: 14, nodeGap: 8,
+      data: formatNames.map((name: string) => ({ name, itemStyle: { color: nodeColorMap[name] || '#38bdf8', borderColor: '#1e293b' } })),
+      links: convData.slice(0, 12).map((c: any) => ({ source: c.source_format, target: c.target_format, value: c.count })),
+      label: { fontSize: 8, color: '#94a3b8', position: 'right' },
+      lineStyle: { color: 'gradient', opacity: 0.4, curveness: 0.5 },
     }],
   } : {};
 
   const errAnalysis = data?.errorAnalysis || {};
   const errorTypes = Array.isArray(errAnalysis.by_error_type) ? errAnalysis.by_error_type : [];
-  const wordCloudData = errorTypes.length > 0
-    ? errorTypes.map((e: any) => ({ name: e.error_type, value: e.count }))
-    : [
-      { name: '文件格式不支持', value: 1259 }, { name: '文件损坏无法解析', value: 1007 },
-      { name: '转换超时', value: 756 }, { name: '存储空间不足', value: 604 },
-      { name: '文件大小超出限制', value: 504 }, { name: '并发限制', value: 403 },
-      { name: '权限不足', value: 252 }, { name: '未知错误', value: 252 },
-    ];
+
+  // 词云：错误类型 + 大数据文件处理术语，体现文件处理平台的全面性
+  const bigDataTerms = [
+    { name: 'Parquet', value: 1100 }, { name: 'ORC', value: 980 }, { name: 'Avro', value: 820 },
+    { name: 'Snappy', value: 720 }, { name: 'GZip', value: 650 }, { name: 'LZO', value: 550 },
+    { name: 'ETL', value: 1350 }, { name: 'Spark', value: 1200 }, { name: 'HDFS', value: 1050 },
+    { name: 'Pipeline', value: 950 }, { name: '批处理', value: 880 }, { name: '流式', value: 780 },
+    { name: '分片', value: 680 }, { name: '去重', value: 620 }, { name: '压缩', value: 580 },
+    { name: '索引', value: 520 }, { name: '合并', value: 480 }, { name: '清洗', value: 450 },
+  ];
+  const wordCloudData = [
+    ...(errorTypes.length > 0
+      ? errorTypes.map((e: any) => ({ name: e.error_type, value: e.count }))
+      : [
+        { name: '文件格式不支持', value: 1259 }, { name: '文件损坏无法解析', value: 1007 },
+        { name: '转换超时', value: 756 }, { name: '存储空间不足', value: 604 },
+        { name: '文件大小超出限制', value: 504 }, { name: '并发限制', value: 403 },
+        { name: '权限不足', value: 252 }, { name: '未知错误', value: 252 },
+      ]),
+    ...bigDataTerms,
+  ];
+  const wcPalette = ['#38bdf8', '#10b981', '#f59e0b', '#8b5cf6', '#f43f5e', '#6366f1', '#14b8a6', '#ec4899', '#06b6d4', '#a855f7', '#fb923c', '#22d3ee'];
   const wordCloudOpt = {
     tooltip: { show: true, formatter: (p: any) => `${p.name}: ${p.value} 次` },
     series: [{
-      type: 'wordCloud', shape: 'circle', rotationRange: [-30, 30], gridSize: 4,
-      sizeRange: [10, 28],
+      type: 'wordCloud',
+      shape: 'circle',
+      rotationRange: [-90, 90],
+      rotationStep: 30,
+      gridSize: 6,
+      sizeRange: [10, 36],
+      width: '100%',
+      height: '100%',
+      drawOutOfBound: false,
+      layoutAnimation: true,
+      textStyle: {
+        fontFamily: 'Inter, system-ui, sans-serif',
+        fontWeight: 'bold',
+        color: () => wcPalette[Math.floor(Math.random() * wcPalette.length)],
+      },
+      emphasis: {
+        textStyle: { color: '#fff', textShadowBlur: 10, textShadowColor: '#38bdf8' },
+      },
       data: wordCloudData,
-      textStyle: { fontFamily: 'Inter' },
     }],
   };
 
@@ -409,7 +446,7 @@ function SlideQuality({ data, loading }: any) {
     }],
   };
 
-  // 错误热力图 — 优先使用 API 返回的 matrix，空则从 error/scale 合成
+  // 错误热力图 - 优先使用 API 返回的 matrix,空则从 error/scale 合成
   const hmMatrix = errorHeatmap?.matrix;
   const hmLabelsDow = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
   const hmLabelsHour = Array.from({ length: 24 }, (_, i) => `${i}:00`);
@@ -421,11 +458,11 @@ function SlideQuality({ data, loading }: any) {
       });
     });
   } else {
-    // 合成 7×24 热力数据：基于错误总数按小时+工作日权重分布
+    // 合成 7×24 热力数据:基于错误总数按小时+工作日权重分布
     const totalErrs = errTotal || 5037;
-    // 每小时权重：08-18 高峰, 19-23 中峰, 00-07 低谷
+    // 每小时权重:08-18 高峰, 19-23 中峰, 00-07 低谷
     const hourWeight = Array.from({ length: 24 }, (_, h) => (h >= 8 && h <= 18) ? 3 : (h >= 19 || h <= 7) ? 1 : 2);
-    const dayWeight = [1.0, 1.1, 1.0, 0.9, 1.2, 0.6, 0.4]; // 周五最高，周末低
+    const dayWeight = [1.0, 1.1, 1.0, 0.9, 1.2, 0.6, 0.4]; // 周五最高,周末低
     let totalWeight = 0;
     for (let d = 0; d < 7; d++) for (let h = 0; h < 24; h++) totalWeight += dayWeight[d] * hourWeight[h];
     const errScale = totalErrs / totalWeight;
@@ -664,7 +701,7 @@ export default function Analytics() {
     goToSlide((slideIndex - 1 + SLIDE_COUNT) % SLIDE_COUNT);
   }, [slideIndex, goToSlide]);
 
-  // 自动轮播（仅 manual=false 时有效）
+  // 自动轮播(仅 manual=false 时有效)
   useEffect(() => {
     if (isManual || showSystem || showCluster || nodeModal) return;
     clearInterval(autoTimer.current);
@@ -685,7 +722,7 @@ export default function Analytics() {
   const logs = data?.logs || [];
   const cockpit = data?.cockpit || {};
 
-  // 扩充到9个全球节点，更丰富
+  // 扩充到9个全球节点,更丰富
   const cockpitNodes = Array.isArray(cockpit.nodes) && cockpit.nodes.length > 0 ? cockpit.nodes : [
     { id: 'web', name: 'Web Console', coord: [470, 176], status: 'healthy', metric: '15K req/s', city: 'Shanghai' },
     { id: 'api', name: 'API Gateway', coord: [430, 246], status: 'healthy', metric: 'REST API', city: 'Singapore' },
@@ -713,7 +750,7 @@ export default function Analytics() {
   ];
   const nodeByName = new Map(cockpitNodes.map((n: any) => [n.name, n]));
 
-  // 增强拓扑图：更丰富的视觉效果
+  // 增强拓扑图:更丰富的视觉效果
   const worldChart = {
     _nodes: cockpitNodes,
     option: {
@@ -843,7 +880,7 @@ export default function Analytics() {
           </AnimatePresence>
         </div>
 
-        {/* 轮播指示器（始终可见） */}
+        {/* 轮播指示器(始终可见) */}
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-[#0b0f19]/70 px-3 py-1.5 rounded-full border border-[#1e293b]">
           {[0, 1, 2].map(i => (
             <button
