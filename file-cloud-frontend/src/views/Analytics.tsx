@@ -613,12 +613,12 @@ function ServiceHealthPanel({ services }: { services: any[] }) {
             </span>
           ))}
         </div>
-        <div className="min-h-0 flex-1 space-y-1 overflow-hidden">
+        <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1 scrollbar-none">
           {displayServices.slice(0, 7).map((svc: any) => {
             const meta = statusMeta(svc.status);
             const latency = Number(svc.latency_ms || 0);
             return (
-              <div key={svc.name || svc.label} className="grid grid-cols-[1fr_82px_56px] items-center gap-2 rounded border border-slate-800/70 bg-[#020617]/38 px-2 py-1.5">
+              <div key={svc.name || svc.label} className="grid min-h-[42px] grid-cols-[1fr_82px_56px] items-center gap-2 rounded border border-slate-800/70 bg-[#020617]/38 px-2 py-1">
                 <div className="min-w-0">
                   <div className="truncate text-[9px] font-black text-slate-200">{svc.label || svc.name}</div>
                   <div className="truncate text-[7px] font-bold uppercase tracking-wider text-slate-600">{svc.category || svc.type || 'service'}</div>
@@ -637,11 +637,24 @@ function ServiceHealthPanel({ services }: { services: any[] }) {
             );
           })}
         </div>
-        <div className="grid grid-cols-4 gap-2 shrink-0">
-          <MetricPill label="App" value={categoryCounts.application || 0} sub="应用层" color="#60a5fa" />
-          <MetricPill label="Infra" value={categoryCounts.infrastructure || 0} sub="基础设施" color="#2dd4bf" />
-          <MetricPill label="Worker" value={categoryCounts.worker || 0} sub="转换层" color="#f59e0b" />
-          <MetricPill label="Max Latency" value={`${maxLatency.toFixed(1)} ms`} sub="最慢探针" color="#f43f5e" />
+        <div className="grid grid-cols-4 gap-1.5 shrink-0 rounded border border-slate-800/80 bg-[#020617]/35 p-1">
+          {[
+            ['APP', categoryCounts.application || 0, '应用层', '#60a5fa'],
+            ['INFRA', categoryCounts.infrastructure || 0, '基础设施', '#2dd4bf'],
+            ['WORKER', categoryCounts.worker || 0, '转换层', '#f59e0b'],
+            ['MAX', `${maxLatency.toFixed(1)} ms`, '最慢探针', '#f43f5e'],
+          ].map(([label, value, sub, color]) => (
+            <div key={String(label)} className="min-w-0 rounded bg-[#0d1222]/70 px-2 py-1">
+              <div className="flex items-center gap-1 text-[7px] font-black text-slate-500">
+                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: String(color) }} />
+                <span className="truncate">{label}</span>
+              </div>
+              <div className="mt-0.5 flex items-baseline gap-1">
+                <span className="truncate text-[11px] font-black leading-none text-slate-100 tabular-nums">{value}</span>
+                <span className="truncate text-[7px] font-bold text-slate-600">{sub}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </PanelShell>
