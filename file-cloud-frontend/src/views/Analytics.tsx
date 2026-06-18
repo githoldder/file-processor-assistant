@@ -3,13 +3,14 @@ import {
   BarChart3, RefreshCw, AlertTriangle, FileText,
   HardDrive, CheckCircle2, XCircle,
   RadioTower, Globe2, X,
-  Server, ShieldCheck,
+  Server, ShieldCheck, LogOut,
   Monitor, Settings2, ChevronLeft, ChevronRight,
   Layers, Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import EChartsWrapper from '../components/EChartsWrapper';
 import { cn } from '../lib/utils';
+import { useDashboard } from '../context/useDashboard';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const FLASK_API = import.meta.env.VITE_ANALYTICS_API || 'http://localhost:5050';
@@ -735,6 +736,8 @@ export default function Analytics() {
     chart.on('click', (params: any) => { if (params.data?.id) setNodeModal(params.data); });
   }, []);
 
+  const { toggleCockpit } = useDashboard();
+
   return (
     <div className="h-screen w-full flex flex-col overflow-hidden select-none bg-[#0b0f19]">
       {/* 顶部标题栏 */}
@@ -759,8 +762,13 @@ export default function Analytics() {
             <Monitor className="w-3.5 h-3.5" />
           </button>
           <button onClick={refresh}
-            className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#12182d] hover:bg-[#1b233d] text-slate-400 hover:text-white transition-colors cursor-pointer" title="刷新">
+            className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#12182d] hover:bg-[#1b233d] border border-[#1e293b] text-slate-400 hover:text-white transition-colors cursor-pointer" title="刷新">
             <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
+          </button>
+          <button onClick={toggleCockpit}
+            className="flex items-center gap-1.5 px-3 h-7 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/50 text-rose-400 hover:text-rose-300 text-[10px] font-black transition-colors cursor-pointer" title="退出大屏">
+            <LogOut className="w-3 h-3" />
+            退出
           </button>
         </div>
       </div>

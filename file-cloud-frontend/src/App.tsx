@@ -67,17 +67,9 @@ function AppShell() {
     ctx.setActiveView(view);
   };
 
-  // 大屏进入/退出
+  // 大屏进入/退出（委托给 context 统一管理 localStorage 持久化）
   const toggleCockpit = () => {
-    if (ctx.role === "admin") {
-      // 退出大屏回到用户端
-      ctx.setRole("user");
-      changeView("dashboard");
-    } else {
-      // 进入大屏
-      ctx.setRole("admin");
-      changeView("analytics");
-    }
+    ctx.toggleCockpit();
     setIsSidebarOpen(false);
   };
 
