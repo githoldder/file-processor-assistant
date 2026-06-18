@@ -3,11 +3,13 @@ import * as echarts from 'echarts/core';
 import {
   BarChart,
   EffectScatterChart,
+  GaugeChart,
   GraphChart,
   HeatmapChart,
   LineChart,
   LinesChart,
   PieChart,
+  RadarChart,
   ScatterChart,
 } from 'echarts/charts';
 import {
@@ -26,11 +28,13 @@ import { CanvasRenderer } from 'echarts/renderers';
 echarts.use([
   BarChart,
   EffectScatterChart,
+  GaugeChart,
   GraphChart,
   HeatmapChart,
   LineChart,
   LinesChart,
   PieChart,
+  RadarChart,
   ScatterChart,
   TitleComponent,
   TooltipComponent,
