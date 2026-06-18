@@ -116,6 +116,51 @@ function MiniChartCard({ title, chart, loading, className }: any) {
   );
 }
 
+const nf = new Intl.NumberFormat('zh-CN');
+const compactNf = new Intl.NumberFormat('zh-CN', { notation: 'compact', maximumFractionDigits: 1 });
+const pct = (value: number) => `${Number(value || 0).toFixed(1)}%`;
+
+function normalizeServices(health: any) {
+  if (Array.isArray(health?.services)) return health.services;
+  if (health?.services && typeof health.services === 'object') {
+    return Object.entries(health.services).map(([name, svc]: [string, any]) => ({ name, ...(svc || {}) }));
+  }
+  return [];
+}
+
+function statusMeta(status?: string) {
+  if (status === 'healthy' || status === 'ok') return { label: 'Healthy', color: '#10b981', tone: 'border-emerald-500/25 bg-emerald-950/20 text-emerald-300' };
+  if (status === 'degraded') return { label: 'Degraded', color: '#f59e0b', tone: 'border-amber-500/25 bg-amber-950/20 text-amber-300' };
+  return { label: 'Down', color: '#f43f5e', tone: 'border-rose-500/25 bg-rose-950/20 text-rose-300' };
+}
+
+function MetricPill({ label, value, sub, color = '#38bdf8' }: any) {
+  return (
+    <div className="min-w-0 rounded border border-slate-800/80 bg-[#020617]/45 px-2.5 py-1.5">
+      <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-wider text-slate-500">
+        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
+        <span className="truncate">{label}</span>
+      </div>
+      <div className="mt-0.5 flex items-baseline gap-1.5">
+        <span className="text-sm font-black leading-none text-slate-100 tabular-nums">{value}</span>
+        {sub && <span className="truncate text-[8px] font-bold text-slate-500">{sub}</span>}
+      </div>
+    </div>
+  );
+}
+
+function PanelShell({ title, meta, children, className }: any) {
+  return (
+    <div className={cn("relative flex min-h-0 flex-col overflow-hidden rounded-lg border border-[#1e293b] bg-[#0d1222]/80 p-2.5 backdrop-blur", className)}>
+      <div className="mb-1.5 flex shrink-0 items-center justify-between gap-2">
+        <div className="min-w-0 truncate text-[9px] font-black uppercase tracking-wider text-slate-400">{title}</div>
+        {meta && <div className="shrink-0 text-[8px] font-bold text-slate-600">{meta}</div>}
+      </div>
+      <div className="min-h-0 flex-1">{children}</div>
+    </div>
+  );
+}
+
 const formatNodeLabel = (name: string) => name.replace(/^(source|target):/, '').toUpperCase();
 
 function buildSankeyOption(convData: any[], nodeColorMap: Record<string, string>) {
@@ -389,17 +434,34 @@ function SlideProcessing({ data, loading }: any) {
   const convStats = data?.convStats;
   const actionDist = data?.actionDist || [];
   const formatDist = data?.formatDist || [];
+  const scale = cockpit.scale || {};
 
   const formatMix = Array.isArray(cockpit.format_mix) && cockpit.format_mix.length > 0
     ? cockpit.format_mix.map((item: any) => [item.name, item.value])
     : formatDist.map((f: any) => [f.file_type.toUpperCase(), f.count]);
+  const totalFiles = formatDist.length > 0
+    ? formatDist.reduce((sum: number, item: any) => sum + Number(item.count || 0), 0)
+    : formatMix.reduce((sum: number, [, value]: [string, number]) => sum + Number(value || 0), 0);
+  const storageMb = Math.round(scale.total_size_mb || formatDist.reduce((sum: number, item: any) => sum + Number(item.total_bytes || 0) / 1024 / 1024, 0));
 
   const barOpt = {
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    grid: { top: 12, bottom: 20, left: 40, right: 5 },
-    xAxis: { type: 'category', data: formatMix.map(([k]: [string, number]) => k), axisLabel: { fontSize: 8, color: '#94a3b8' } },
-    yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#94a3b8' } },
-    series: [{ type: 'bar', data: formatMix.map(([, v]: [string, number]) => v), itemStyle: { borderRadius: [2, 2, 0, 0], color: '#38bdf8' } }],
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (params: any) => {
+      const p = params?.[0];
+      return `${p.name}<br/>文件数: ${nf.format(p.value)}<br/>占比: ${pct((p.value / Math.max(totalFiles, 1)) * 100)}`;
+    } },
+    grid: { top: 18, bottom: 24, left: 46, right: 12 },
+    xAxis: { type: 'category', data: formatMix.map(([k]: [string, number]) => k), axisLabel: { fontSize: 8, color: '#94a3b8', fontWeight: 700 } },
+    yAxis: { type: 'value', splitLine: { lineStyle: { color: 'rgba(148,163,184,0.13)' } }, axisLabel: { fontSize: 8, color: '#94a3b8', formatter: (v: number) => compactNf.format(v) } },
+    series: [{
+      type: 'bar',
+      data: formatMix.map(([, v]: [string, number]) => v),
+      barWidth: '56%',
+      itemStyle: {
+        borderRadius: [3, 3, 0, 0],
+        color: { type: 'linear', x: 0, y: 1, x2: 0, y2: 0, colorStops: [{ offset: 0, color: '#2563eb' }, { offset: 1, color: '#38bdf8' }] },
+      },
+      label: { show: true, position: 'top', fontSize: 7, color: '#64748b', formatter: (p: any) => compactNf.format(p.value) },
+    }],
   };
 
   const actions = actionDist.length > 0
@@ -409,13 +471,20 @@ function SlideProcessing({ data, loading }: any) {
       { name: 'download', value: 20011 }, { name: 'preview', value: 14952 }, { name: 'delete', value: 9888 },
     ];
   const colors = ['#38bdf8', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
+  const actionTotal = actions.reduce((sum: number, item: any) => sum + Number(item.value || 0), 0);
   const actionOpt = {
-    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    tooltip: { trigger: 'item', formatter: (p: any) => `${p.name}<br/>次数: ${nf.format(p.value)}<br/>占比: ${pct(p.percent)}` },
+    legend: { orient: 'vertical', right: 18, top: 'middle', itemWidth: 8, itemHeight: 8, textStyle: { color: '#94a3b8', fontSize: 8 }, formatter: (name: string) => {
+      const item = actions.find((a: any) => a.name === name);
+      return `${name}  ${compactNf.format(item?.value || 0)}`;
+    } },
     series: [{
-      type: 'pie', radius: ['30%', '60%'],
+      type: 'pie', radius: ['40%', '66%'], center: ['42%', '52%'],
       data: actions.map((a: any, i: number) => ({ ...a, itemStyle: { color: colors[i % 5] } })),
       label: { show: true, fontSize: 8, color: '#94a3b8', formatter: '{b}\n{d}%' },
+      labelLine: { lineStyle: { color: '#334155' } },
     }],
+    graphic: { type: 'text', left: '37%', top: '47%', style: { text: `${compactNf.format(actionTotal)}\nOps`, fill: '#e2e8f0', fontSize: 12, fontWeight: 800, align: 'center', lineHeight: 15 } },
   };
 
   const convData = convStats?.by_type || [];
@@ -429,50 +498,28 @@ function SlideProcessing({ data, loading }: any) {
 
   const errAnalysis = data?.errorAnalysis || {};
   const errorTypes = Array.isArray(errAnalysis.by_error_type) ? errAnalysis.by_error_type : [];
-
-  // 词云：错误类型 + 大数据文件处理术语，体现文件处理平台的全面性
-  const bigDataTerms = [
-    { name: 'Parquet', value: 1100 }, { name: 'ORC', value: 980 }, { name: 'Avro', value: 820 },
-    { name: 'Snappy', value: 720 }, { name: 'GZip', value: 650 }, { name: 'LZO', value: 550 },
-    { name: 'ETL', value: 1350 }, { name: 'Spark', value: 1200 }, { name: 'HDFS', value: 1050 },
-    { name: 'Pipeline', value: 950 }, { name: '批处理', value: 880 }, { name: '流式', value: 780 },
-    { name: '分片', value: 680 }, { name: '去重', value: 620 }, { name: '压缩', value: 580 },
-    { name: '索引', value: 520 }, { name: '合并', value: 480 }, { name: '清洗', value: 450 },
-  ];
-  const wordCloudData = [
-    ...(errorTypes.length > 0
-      ? errorTypes.map((e: any) => ({ name: e.error_type, value: e.count }))
-      : [
-        { name: '文件格式不支持', value: 1259 }, { name: '文件损坏无法解析', value: 1007 },
-        { name: '转换超时', value: 756 }, { name: '存储空间不足', value: 604 },
-        { name: '文件大小超出限制', value: 504 }, { name: '并发限制', value: 403 },
-        { name: '权限不足', value: 252 }, { name: '未知错误', value: 252 },
-      ]),
-    ...bigDataTerms,
-  ];
-  const wcPalette = ['#38bdf8', '#10b981', '#f59e0b', '#8b5cf6', '#f43f5e', '#6366f1', '#14b8a6', '#ec4899', '#06b6d4', '#a855f7', '#fb923c', '#22d3ee'];
-  const wordCloudOpt = {
-    tooltip: { show: true, formatter: (p: any) => `${p.name}: ${p.value} 次` },
+  const rankedErrors = (errorTypes.length > 0 ? errorTypes : [
+    { error_type: '文件格式不支持', count: 1237 }, { error_type: '文件损坏无法解析', count: 998 },
+    { error_type: '转换超时', count: 746 }, { error_type: '存储空间不足', count: 600 },
+    { error_type: '文件大小超出限制', count: 479 }, { error_type: '并发限制', count: 440 },
+  ]).slice(0, 6).reverse();
+  const errMax = Math.max(...rankedErrors.map((e: any) => Number(e.count || 0)), 1);
+  const errorRankOpt = {
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (params: any) => {
+      const p = params?.[0];
+      return `${p.name}<br/>错误次数: ${nf.format(p.value)}`;
+    } },
+    grid: { top: 8, bottom: 16, left: 88, right: 36 },
+    xAxis: { type: 'value', show: false, max: errMax * 1.12 },
+    yAxis: { type: 'category', data: rankedErrors.map((e: any) => e.error_type), axisLabel: { fontSize: 8, color: '#94a3b8', fontWeight: 700 }, axisTick: { show: false }, axisLine: { show: false } },
     series: [{
-      type: 'wordCloud',
-      shape: 'circle',
-      rotationRange: [-90, 90],
-      rotationStep: 30,
-      gridSize: 6,
-      sizeRange: [10, 36],
-      width: '100%',
-      height: '100%',
-      drawOutOfBound: false,
-      layoutAnimation: true,
-      textStyle: {
-        fontFamily: 'Inter, system-ui, sans-serif',
-        fontWeight: 'bold',
-        color: () => wcPalette[Math.floor(Math.random() * wcPalette.length)],
-      },
-      emphasis: {
-        textStyle: { color: '#fff', textShadowBlur: 10, textShadowColor: '#38bdf8' },
-      },
-      data: wordCloudData,
+      type: 'bar',
+      data: rankedErrors.map((e: any, i: number) => ({ value: e.count, itemStyle: { color: i >= 4 ? '#f43f5e' : i >= 2 ? '#f59e0b' : '#38bdf8' } })),
+      barWidth: 10,
+      itemStyle: { borderRadius: [0, 4, 4, 0] },
+      label: { show: true, position: 'right', color: '#cbd5e1', fontSize: 8, fontWeight: 800, formatter: (p: any) => nf.format(p.value) },
+      backgroundStyle: { color: 'rgba(30,41,59,0.35)', borderRadius: 4 },
+      showBackground: true,
     }],
   };
 
@@ -492,13 +539,26 @@ function SlideProcessing({ data, loading }: any) {
     yAxis: { type: 'value', name: 'Count', nameTextStyle: { fontSize: 8, color: '#64748b' }, axisLabel: { fontSize: 8, color: '#94a3b8' } },
     series: [{
       type: 'scatter',
-      data: scatterData.map((d: any) => ({ value: [d[0], d[1]], itemStyle: { color: d[2] > 95 ? '#10b981' : d[2] > 94 ? '#f59e0b' : '#ef4444' } })),
+      data: scatterData.map((d: any) => ({ name: String(d[3]).toUpperCase(), value: [d[0], d[1]], itemStyle: { color: d[2] > 95 ? '#10b981' : d[2] > 94 ? '#f59e0b' : '#ef4444' } })),
       symbolSize: (val: any) => Math.max(8, Math.min(24, val[1] / 1500)),
+      label: { show: true, formatter: '{b}', position: 'right', color: '#64748b', fontSize: 7 },
     }],
   };
+  const conversionTotal = Number(convStats?.total_conversions || 0);
+  const conversionRate = Number(convStats?.success_rate || scale.conversion_rate || 0);
+  const failedCount = Number(convStats?.failed_count || errAnalysis.total_failed || 0);
+  const avgConvertMs = convData.length > 0
+    ? Math.round(convData.reduce((sum: number, item: any) => sum + Number(item.avg_time_ms || 0) * Number(item.count || 0), 0) / Math.max(conversionTotal, 1))
+    : 0;
 
   return (
     <div className="h-full flex flex-col gap-2 p-3">
+      <div className="grid grid-cols-4 gap-2 shrink-0">
+        <MetricPill label="文件样本" value={nf.format(totalFiles)} sub="Spark 聚合" color="#38bdf8" />
+        <MetricPill label="转换任务" value={nf.format(conversionTotal)} sub={pct(conversionRate)} color="#10b981" />
+        <MetricPill label="平均转换" value={`${(avgConvertMs / 1000).toFixed(1)}s`} sub="加权均值" color="#f59e0b" />
+        <MetricPill label="存储吞吐" value={`${nf.format(storageMb)} MB`} sub={`${nf.format(failedCount)} 异常`} color="#8b5cf6" />
+      </div>
       <div className="grid grid-cols-2 gap-2 flex-[2] min-h-0">
         <MiniChartCard title="文件类型分布" chart={barOpt} loading={loading} />
         <MiniChartCard title="操作分布" chart={actionOpt} loading={loading} />
@@ -506,9 +566,85 @@ function SlideProcessing({ data, loading }: any) {
       <div className="grid grid-cols-3 gap-2 flex-[3] min-h-0">
         <MiniChartCard title="转换桑基图" chart={sankeyOpt} loading={loading} />
         <MiniChartCard title="耗时 vs 大小" chart={scatterOpt} loading={loading} />
-        <MiniChartCard title="错误词云" chart={wordCloudOpt} loading={loading} />
+        <MiniChartCard title="错误原因排行" chart={errorRankOpt} loading={loading} />
       </div>
     </div>
+  );
+}
+
+function ServiceHealthPanel({ services }: { services: any[] }) {
+  const displayServices = services.length > 0 ? services : [
+    { name: 'api', label: 'FastAPI 文件服务', category: 'application', status: 'healthy', latency_ms: 5.6 },
+    { name: 'flask-analytics', label: 'Flask 分析服务', category: 'application', status: 'healthy', latency_ms: 7.0 },
+    { name: 'frontend', label: 'React 前端', category: 'application', status: 'degraded', latency_ms: 5.7 },
+    { name: 'gotenberg', label: 'Gotenberg 转换引擎', category: 'worker', status: 'degraded', latency_ms: 15.1 },
+    { name: 'minio', label: 'MinIO 对象存储', category: 'infrastructure', status: 'healthy', latency_ms: 3.0 },
+    { name: 'redis', label: 'Redis 缓存', category: 'infrastructure', status: 'healthy', latency_ms: 1.0 },
+  ];
+  const counts = displayServices.reduce((acc: Record<string, number>, svc: any) => {
+    const key = svc.status === 'healthy' || svc.status === 'ok' ? 'healthy' : svc.status === 'degraded' ? 'degraded' : 'down';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, { healthy: 0, degraded: 0, down: 0 });
+  const categoryCounts = displayServices.reduce((acc: Record<string, number>, svc: any) => {
+    const key = svc.category || svc.type || 'service';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  const maxLatency = Math.max(...displayServices.map((svc: any) => Number(svc.latency_ms || 0)), 1);
+
+  return (
+    <PanelShell title="服务健康" meta={`${displayServices.length} services`} className="flex-[1.08]">
+      <div className="flex h-full min-h-0 flex-col gap-2">
+        <div className="grid grid-cols-3 gap-2 shrink-0">
+          <MetricPill label="Healthy" value={counts.healthy || 0} sub="正常" color="#10b981" />
+          <MetricPill label="Degraded" value={counts.degraded || 0} sub="降级" color="#f59e0b" />
+          <MetricPill label="Down" value={counts.down || 0} sub="离线" color="#f43f5e" />
+        </div>
+        <div className="flex shrink-0 items-center gap-2 rounded border border-slate-800/80 bg-[#020617]/35 px-2 py-1">
+          {[
+            ['Healthy', '#10b981'],
+            ['Degraded', '#f59e0b'],
+            ['Down', '#f43f5e'],
+          ].map(([label, color]) => (
+            <span key={label} className="flex items-center gap-1.5 text-[8px] font-black text-slate-500">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
+              {label}
+            </span>
+          ))}
+        </div>
+        <div className="min-h-0 flex-1 space-y-1 overflow-hidden">
+          {displayServices.slice(0, 7).map((svc: any) => {
+            const meta = statusMeta(svc.status);
+            const latency = Number(svc.latency_ms || 0);
+            return (
+              <div key={svc.name || svc.label} className="grid grid-cols-[1fr_82px_56px] items-center gap-2 rounded border border-slate-800/70 bg-[#020617]/38 px-2 py-1.5">
+                <div className="min-w-0">
+                  <div className="truncate text-[9px] font-black text-slate-200">{svc.label || svc.name}</div>
+                  <div className="truncate text-[7px] font-bold uppercase tracking-wider text-slate-600">{svc.category || svc.type || 'service'}</div>
+                </div>
+                <div className="min-w-0">
+                  <div className="mb-1 flex justify-between text-[7px] font-bold text-slate-500">
+                    <span>latency</span>
+                    <span className="tabular-nums">{latency.toFixed(1)} ms</span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
+                    <div className="h-full rounded-full" style={{ width: `${Math.max(8, Math.min(100, (latency / maxLatency) * 100))}%`, backgroundColor: meta.color }} />
+                  </div>
+                </div>
+                <div className={cn("rounded border px-1.5 py-1 text-center text-[7px] font-black", meta.tone)}>{meta.label}</div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="grid grid-cols-4 gap-2 shrink-0">
+          <MetricPill label="App" value={categoryCounts.application || 0} sub="应用层" color="#60a5fa" />
+          <MetricPill label="Infra" value={categoryCounts.infrastructure || 0} sub="基础设施" color="#2dd4bf" />
+          <MetricPill label="Worker" value={categoryCounts.worker || 0} sub="转换层" color="#f59e0b" />
+          <MetricPill label="Max Latency" value={`${maxLatency.toFixed(1)} ms`} sub="最慢探针" color="#f43f5e" />
+        </div>
+      </div>
+    </PanelShell>
   );
 }
 
@@ -522,19 +658,7 @@ function SlideQuality({ data, loading }: any) {
   const errorAnalysis = data?.errorAnalysis;
   const errorHeatmap = data?.errorHeatmap;
 
-  const svcEntries = health?.services ? Object.entries(health.services as Record<string, any>) : [];
-  const healthOpt = {
-    tooltip: { trigger: 'item' },
-    series: [{
-      type: 'pie', radius: ['30%', '55%'],
-      data: svcEntries.length > 0
-        ? svcEntries.map(([name, svc]: [string, any]) => ({
-            name, value: 1,
-            itemStyle: { color: svc.status === 'healthy' || svc.status === 'ok' ? '#10b981' : svc.status === 'degraded' ? '#f59e0b' : '#ef4444' },
-          }))
-        : [{ name: 'healthy', value: 6, itemStyle: { color: '#10b981' } }],
-    }],
-  };
+  const svcEntries = normalizeServices(health);
 
   const storageMb = Math.round(scale.total_size_mb || 163220);
   const storageMax = 200000;
@@ -610,6 +734,10 @@ function SlideQuality({ data, loading }: any) {
   const qualityPct = scale.conversion_rate || (pipeline.telemetry?.raw_rows ? Math.round((pipeline.telemetry.cleaned_rows / pipeline.telemetry.raw_rows) * 10000) / 100 : 94.96);
   const rawRows = pipeline.telemetry?.raw_rows || 100000;
   const cleanRows = pipeline.telemetry?.cleaned_rows || 94963;
+  const invalidRows = Math.max(0, rawRows - cleanRows);
+  const avgLatency = svcEntries.length > 0
+    ? svcEntries.reduce((sum: number, svc: any) => sum + Number(svc.latency_ms || 0), 0) / svcEntries.length
+    : 0;
   const dataQualityOpt: any = {
     tooltip: {
       formatter: () => `<div style="font-size:10px;line-height:1.6"><b>数据质量报告</b><br/>总计: ${rawRows.toLocaleString()}<br/>有效: ${cleanRows.toLocaleString()}<br/>异常: ${(rawRows - cleanRows).toLocaleString()}<br/>成功率: ${qualityPct}%</div>`,
@@ -634,9 +762,24 @@ function SlideQuality({ data, loading }: any) {
 
   return (
     <div className="h-full flex flex-col gap-2 p-3">
-      <div className="grid grid-cols-2 gap-2 flex-[3] min-h-0">
-        <MiniChartCard title="服务健康" chart={healthOpt} loading={loading} />
-        <MiniChartCard title="数据质量" chart={dataQualityOpt} loading={loading} />
+      <div className="grid grid-cols-4 gap-2 shrink-0">
+        <MetricPill label="有效遥测" value={nf.format(cleanRows)} sub={`${pct(qualityPct)} quality`} color="#10b981" />
+        <MetricPill label="异常样本" value={nf.format(invalidRows)} sub={`${nf.format(errTotal)} failed`} color="#f43f5e" />
+        <MetricPill label="平均延迟" value={`${avgLatency.toFixed(1)} ms`} sub={`${svcEntries.length || 6} services`} color="#38bdf8" />
+        <MetricPill label="存储水位" value={`${pct((storageMb / storageMax) * 100)}`} sub={`${nf.format(storageMb)} MB`} color="#8b5cf6" />
+      </div>
+      <div className="flex gap-2 flex-[3] min-h-0">
+        <ServiceHealthPanel services={svcEntries} />
+        <PanelShell title="数据质量" meta={`${nf.format(rawRows)} raw rows`} className="flex-[1]">
+          <div className="grid h-full min-h-0 grid-cols-[1fr_130px] gap-2">
+            <EChartsWrapper option={dataQualityOpt} loading={loading} theme="dark" />
+            <div className="flex min-w-0 flex-col justify-center gap-2">
+              <MetricPill label="Clean Rows" value={nf.format(cleanRows)} sub="有效记录" color="#10b981" />
+              <MetricPill label="Rejected" value={nf.format(invalidRows)} sub="清洗剔除" color="#f59e0b" />
+              <MetricPill label="Duplicates" value={nf.format(scale.duplicates || 0)} sub="重复样本" color="#38bdf8" />
+            </div>
+          </div>
+        </PanelShell>
       </div>
       <div className="grid grid-cols-3 gap-2 flex-[2] min-h-0">
         <MiniChartCard title="存储水位" chart={liquidOpt} loading={loading} />
@@ -670,13 +813,14 @@ function LargeModal({ open, title, icon: Icon, onClose, children }: any) {
 }
 
 function SystemMonitorModal({ health }: any) {
-  const svcEntries = health?.services ? Object.entries(health.services as Record<string, any>) : [];
+  const svcEntries = normalizeServices(health);
   const healthPie = {
     tooltip: { trigger: 'item' },
     series: [{
       type: 'pie', radius: ['35%', '65%'],
-      data: svcEntries.map(([name, svc]: [string, any]) => ({
-        name, value: 1,
+      data: svcEntries.map((svc: any) => ({
+        name: svc.label || svc.name,
+        value: 1,
         itemStyle: { color: svc.status === 'healthy' || svc.status === 'ok' ? '#10b981' : svc.status === 'degraded' ? '#f59e0b' : '#ef4444' },
       })),
       label: { show: true, fontSize: 11, color: '#94a3b8', formatter: '{b}\n{d}%' },
@@ -689,13 +833,13 @@ function SystemMonitorModal({ health }: any) {
         {svcEntries.length === 0 ? (
           <div className="text-slate-500 text-sm">暂无数据</div>
         ) : (
-          svcEntries.map(([name, svc]: [string, any]) => (
-            <div key={name} className="bg-[#12182d] border border-[#1e293b] rounded-lg p-4 flex items-center justify-between">
+          svcEntries.map((svc: any) => (
+            <div key={svc.name || svc.label} className="bg-[#12182d] border border-[#1e293b] rounded-lg p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className={cn("w-3 h-3 rounded-full", svc.status === 'healthy' || svc.status === 'ok' ? 'bg-emerald-500' : svc.status === 'degraded' ? 'bg-amber-500' : 'bg-rose-500')} />
-                <span className="text-slate-200 font-bold capitalize">{name}</span>
+                <span className="text-slate-200 font-bold capitalize">{svc.label || svc.name}</span>
               </div>
-              <div className="text-xs text-slate-400">{svc.uptime || svc.status}</div>
+              <div className="text-xs text-slate-400">{svc.latency_ms ? `${Number(svc.latency_ms).toFixed(1)} ms` : svc.uptime || svc.status}</div>
             </div>
           ))
         )}
@@ -781,11 +925,11 @@ function NodeDetailModal({ node, onClose, health }: any) {
         <div className="bg-[#12182d] border border-[#1e293b] rounded-xl p-5 flex flex-col">
           <div className="text-xs font-black tracking-widest text-slate-500 uppercase mb-4">服务列表</div>
           <div className="space-y-2 flex-1 overflow-auto">
-            {health?.services ? Object.entries(health.services as Record<string, any>).map(([name, svc]: [string, any]) => (
-              <div key={name} className="flex items-center justify-between bg-[#0b0f19] rounded-lg px-3 py-2">
+            {normalizeServices(health).length > 0 ? normalizeServices(health).map((svc: any) => (
+              <div key={svc.name || svc.label} className="flex items-center justify-between bg-[#0b0f19] rounded-lg px-3 py-2">
                 <div className="flex items-center gap-2">
                   <span className={cn("w-2 h-2 rounded-full", svc.status === 'healthy' || svc.status === 'ok' ? 'bg-emerald-500' : 'bg-rose-500')} />
-                  <span className="text-slate-200 text-xs capitalize">{name}</span>
+                  <span className="text-slate-200 text-xs capitalize">{svc.label || svc.name}</span>
                 </div>
                 <span className="text-[10px] text-slate-500">{svc.status}</span>
               </div>

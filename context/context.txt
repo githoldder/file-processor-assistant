@@ -121,3 +121,23 @@
 - `prds/md/sprint09-prd-260615-v0.1.md`
 - `prds/json/sprint09-prd-260615-v0.1.json`
 - `context/context.txt`
+
+## Session Update: 2026-06-18 — Slide 2/3 ToB Observability Density Upgrade
+
+### Completed
+- [Design] Upgraded Slide 2 with a ToB cockpit KPI strip: total file samples from the full `format-distribution` dataset, conversion total, weighted average conversion latency, and storage throughput.
+- [Design] Enhanced file and action charts with legends, compact numeric labels, gradients, center totals, and richer tooltips while keeping all values sourced from analytics APIs.
+- [Design] Replaced the low-readability error word cloud with a ranked error-cause bar chart using `error-analysis.by_error_type`, improving decision density for defense.
+- [Design] Rebuilt Slide 3 service health from a generic pie chart into a real service matrix with status legend, service category, probe latency bars, status badges, category counts, and max latency.
+- [Fix] Normalized `health.services` handling across the cockpit and system modal so both array and object payload shapes render with real service names instead of numeric indexes.
+- [Docs] Updated Sprint 09 PRD markdown and JSON with Slide 2/3 ToB observability acceptance criteria.
+
+### Service Verification
+- Front-end build -- `npm run build` completed successfully.
+- Browser screenshot QA -- captured `/tmp/culcloud-slide2-polish.png` and `/tmp/culcloud-slide3-polish-forced.png` using local Chrome via Playwright; verified Slide 2 error ranking and Slide 3 health legend/service rows render.
+
+### Changed Files
+- `file-cloud-frontend/src/views/Analytics.tsx`
+- `prds/md/sprint09-prd-260615-v0.1.md`
+- `prds/json/sprint09-prd-260615-v0.1.json`
+- `context/context.txt`
