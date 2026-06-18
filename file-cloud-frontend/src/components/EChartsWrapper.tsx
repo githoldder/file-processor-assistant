@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { echarts } from '../lib/echarts-setup';
 
 interface EChartsProps {
@@ -13,6 +13,7 @@ interface EChartsProps {
 export default function EChartsWrapper({ option, style, className, loading, theme, onReady }: EChartsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -25,8 +26,13 @@ export default function EChartsWrapper({ option, style, className, loading, them
     const observer = new ResizeObserver(() => chartRef.current?.resize());
     observer.observe(containerRef.current);
 
-    if (option) {
-      chartRef.current?.setOption(option);
+    try {
+      if (option) {
+        chartRef.current?.setOption(option);
+      }
+    } catch (e: any) {
+      setError(e?.message || String(e));
+      console.error('[EChartsWrapper init]', e);
     }
 
     if (onReady) {
@@ -47,15 +53,30 @@ export default function EChartsWrapper({ option, style, className, loading, them
       chartRef.current?.showLoading();
     } else {
       chartRef.current?.hideLoading();
-      chartRef.current?.setOption(option, { notMerge: true });
+      try {
+        chartRef.current?.setOption(option, { notMerge: true });
+        setError(null);
+      } catch (e: any) {
+        setError(e?.message || String(e));
+        console.error('[EChartsWrapper setOption]', e);
+      }
     }
   }, [option, loading]);
 
+  if (error) {
+    return (
+      <div className={className} style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative', ...style }}>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f87171', fontFamily: 'monospace', fontSize: '11px', background: '#0f1117', textAlign: 'center', padding: '8px', overflow: 'auto', whiteSpace: 'pre-wrap' }}>
+          <b>ECharts Error:</b><br/>{error}
+        </div>
+      </div>
+    );
+  }
   return (
     <div
       ref={containerRef}
       className={className}
-      style={{ width: '100%', height: '100%', aspectRatio: '4 / 3', ...style }}
+      style={{ width: '100%', height: '100%', overflow: 'hidden', ...style }}
     />
   );
 }

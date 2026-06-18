@@ -1,4 +1,4 @@
-export type ViewState = 'dashboard' | 'files' | 'convert' | 'task-monitor' | 'system-status' | 'pdf' | 'analytics';
+export type ViewState = 'dashboard' | 'files' | 'convert' | 'pdf' | 'analytics';
 export type Language = 'en' | 'zh';
 
 export interface Task {

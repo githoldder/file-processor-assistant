@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { useDashboard } from "../context/useDashboard";
+import { cn } from "../lib/utils";
 import {
   getSystemHealth,
   getLogTimeline,
@@ -21,14 +21,29 @@ function healthDot(status: string) {
   switch (status) {
     case "healthy":
     case "ok":
-      return "🟢";
+      return "●";
     case "degraded":
-      return "🟡";
+      return "●";
     case "down":
     case "unhealthy":
-      return "🔴";
+      return "●";
     default:
-      return "⚪";
+      return "○";
+  }
+}
+
+function healthColor(status: string) {
+  switch (status) {
+    case "healthy":
+    case "ok":
+      return "text-emerald-500";
+    case "degraded":
+      return "text-amber-500";
+    case "down":
+    case "unhealthy":
+      return "text-rose-500";
+    default:
+      return "text-slate-500";
   }
 }
 
@@ -40,8 +55,6 @@ function relativeTime(ts: string) {
 }
 
 export default function SystemStatus() {
-  useDashboard("system-status");
-
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [logs, setLogs] = useState<LogEvent[]>([]);
   const [logStats, setLogStats] = useState<any>(null);
@@ -57,7 +70,7 @@ export default function SystemStatus() {
         getLogStats(24),
       ]);
       setHealth(h);
-      setLogs(lt?.events || lt?.items || []);
+      setLogs(lt?.events || []);
       setLogStats(ls?.stats || ls);
       setLastUpdated(new Date().toLocaleTimeString());
       setError(null);
@@ -80,25 +93,25 @@ export default function SystemStatus() {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* 标题 */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">系统状态</h1>
-        <span className="text-xs text-gray-400">
+        <h1 className="text-2xl font-bold text-slate-100">系统状态</h1>
+        <span className="text-xs text-slate-500">
           {lastUpdated ? `更新于 ${lastUpdated}` : ""}
         </span>
       </div>
 
       {/* 加载/错误状态 */}
       {loading && (
-        <div className="text-center py-20 text-gray-400">
+        <div className="text-center py-20 text-slate-500">
           正在获取系统状态...
         </div>
       )}
       {error && !loading && (
-        <div className="text-center py-20 text-red-500">
+        <div className="text-center py-20 text-rose-500">
           无法连接后端: {error}
           <br />
           <button
             onClick={() => { void fetchAll(); }}
-            className="mt-2 underline text-blue-600"
+            className="mt-2 underline text-primary"
           >
             重试
           </button>
@@ -113,16 +126,16 @@ export default function SystemStatus() {
               {Object.entries(health.services || {}).map(([name, svc]: [string, any]) => (
                 <div
                   key={name}
-                  className="border rounded-lg p-4 flex flex-col gap-1"
+                  className="bg-[#0d1222]/80 border border-[#1e293b] rounded-xl p-4 flex flex-col gap-1"
                 >
                   <div className="flex items-center gap-2">
-                    <span>{healthDot(svc.status)}</span>
-                    <span className="font-medium text-sm capitalize">
+                    <span className={cn("text-lg font-bold", healthColor(svc.status))}>{healthDot(svc.status)}</span>
+                    <span className="font-medium text-sm text-slate-200 capitalize">
                       {name}
                     </span>
                   </div>
-                  <span className="text-xs text-gray-400">{svc.status}</span>
-                  <span className="text-xs text-gray-400">
+                  <span className={cn("text-xs", healthColor(svc.status))}>{svc.status}</span>
+                  <span className="text-xs text-slate-500">
                     {svc.latency_ms != null ? `${svc.latency_ms}ms` : "—"}
                   </span>
                 </div>
@@ -136,10 +149,10 @@ export default function SystemStatus() {
               {Object.entries(logStats).map(([k, v]: [string, any]) => (
                 <div
                   key={k}
-                  className="border rounded-lg p-4 text-center"
+                  className="bg-[#0d1222]/80 border border-[#1e293b] rounded-xl p-4 text-center"
                 >
-                  <div className="text-2xl font-bold">{v ?? "—"}</div>
-                  <div className="text-xs text-gray-500 mt-1 capitalize">
+                  <div className="text-2xl font-bold text-slate-100">{v ?? "—"}</div>
+                  <div className="text-xs text-slate-500 mt-1 capitalize">
                     {k}
                   </div>
                 </div>
@@ -149,28 +162,28 @@ export default function SystemStatus() {
 
           {/* 最近日志事件 */}
           <div>
-            <h3 className="font-semibold mb-3">最近事件</h3>
+            <h3 className="font-semibold mb-3 text-slate-200">最近事件</h3>
             {logs.length === 0 ? (
-              <div className="text-gray-400 text-sm py-8 text-center">
+              <div className="text-slate-500 text-sm py-8 text-center">
                 暂无最近事件
               </div>
             ) : (
-              <div className="border rounded-lg divide-y max-h-80 overflow-y-auto">
+              <div className="bg-[#0d1222]/80 border border-[#1e293b] rounded-xl divide-y divide-[#1e293b] max-h-80 overflow-y-auto">
                 {logs.map((evt, i) => (
                   <div
                     key={i}
                     className="px-4 py-2.5 flex items-start gap-3 text-sm"
                   >
-                    <span className="text-xs font-mono text-gray-400 shrink-0 w-16">
+                    <span className="text-xs font-mono text-slate-500 shrink-0 w-16">
                       {evt.timestamp
                         ? new Date(evt.timestamp).toLocaleTimeString()
                         : "—"}
                     </span>
-                    <span className="font-medium text-xs shrink-0 w-16">
+                    <span className="font-medium text-xs shrink-0 w-16 text-primary">
                       {evt.type}
                     </span>
-                    <span className="flex-1">{evt.message}</span>
-                    <span className="text-xs text-gray-400 shrink-0">
+                    <span className="flex-1 text-slate-300">{evt.message}</span>
+                    <span className="text-xs text-slate-500 shrink-0">
                       {evt.timestamp ? relativeTime(evt.timestamp) : ""}
                     </span>
                   </div>

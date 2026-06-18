@@ -1,14 +1,15 @@
 import React from 'react';
-import { Bell, Search, User, Globe } from 'lucide-react';
-import { ViewState } from '../types';
+import { Bell, Search, User, Globe, BarChart3, LogOut } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { useDashboard } from '../context/useDashboard';
 
 interface NavbarProps {
-  currentView: ViewState;
+  onToggleCockpit: () => void;
 }
 
-export default function Navbar({ currentView }: NavbarProps) {
+export default function Navbar({ onToggleCockpit }: NavbarProps) {
   const { lang, setLang, t } = useLanguage();
+  const { role } = useDashboard();
 
   return (
     <header className="bg-surface-container-lowest border-b border-outline-variant shadow-sm fixed top-0 w-full z-50 h-16">
@@ -18,14 +19,26 @@ export default function Navbar({ currentView }: NavbarProps) {
         </div>
 
         <div className="flex items-center gap-6">
+          {/* 大屏入口/退出 */}
+          <button
+            onClick={onToggleCockpit}
+            className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-black hover:opacity-80 transition-all shadow-md"
+          >
+            {role === 'admin' ? (
+              <><LogOut size={14} />{lang === 'zh' ? '退出大屏' : 'EXIT'}</>
+            ) : (
+              <><BarChart3 size={14} />{lang === 'zh' ? '打开大屏' : 'COCKPIT'}</>
+            )}
+          </button>
+
           <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-lg border border-outline-variant">
-            <button 
+            <button
               onClick={() => setLang('en')}
               className={`px-3 py-1 rounded-md text-[10px] font-black transition-all ${lang === 'en' ? 'bg-primary text-on-primary' : 'text-outline hover:bg-surface-container-high'}`}
             >
               EN
             </button>
-            <button 
+            <button
               onClick={() => setLang('zh')}
               className={`px-3 py-1 rounded-md text-[10px] font-black transition-all ${lang === 'zh' ? 'bg-primary text-on-primary' : 'text-outline hover:bg-surface-container-high'}`}
             >

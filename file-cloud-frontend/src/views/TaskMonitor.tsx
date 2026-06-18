@@ -6,7 +6,6 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { useDashboard } from "../context/useDashboard";
 import {
   listTasks,
   getQueueLength,
@@ -20,18 +19,16 @@ const PAGE_SIZE = 20;
 
 function statusBadge(s: string) {
   const map: Record<string, string> = {
-    pending: "bg-gray-100 text-gray-600",
-    queued: "bg-amber-100 text-amber-700",
-    processing: "bg-blue-100 text-blue-700",
-    success: "bg-green-100 text-green-700",
-    failed: "bg-red-100 text-red-700",
+    pending: "bg-slate-800 text-slate-400",
+    queued: "bg-amber-900/30 text-amber-400",
+    processing: "bg-blue-900/30 text-blue-400",
+    success: "bg-emerald-900/30 text-emerald-400",
+    failed: "bg-rose-900/30 text-rose-400",
   };
   return `px-2 py-0.5 text-xs rounded-full font-medium ${map[s] || map.pending}`;
 }
 
 export default function TaskMonitor() {
-  useDashboard("task-monitor");
-
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -66,7 +63,7 @@ export default function TaskMonitor() {
       ]);
       setQueueLen(ql.length);
       setCluster(co.overview || co);
-      setFailures(rf.tasks || rf.items || []);
+      setFailures(rf.tasks || []);
     } catch {
       // sidebar data is non-critical
     }
@@ -92,12 +89,12 @@ export default function TaskMonitor() {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* 标题 */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">任务监控</h1>
-        <div className="flex items-center gap-3 text-sm text-gray-500">
-          <span className="px-2 py-1 rounded bg-gray-50">
+        <h1 className="text-2xl font-bold text-slate-100">任务监控</h1>
+        <div className="flex items-center gap-3 text-sm text-slate-500">
+          <span className="px-2 py-1 rounded bg-[#12182d] border border-[#1e293b]">
             队列: {queueLen ?? "—"}
           </span>
-          <span className="px-2 py-1 rounded bg-gray-50">
+          <span className="px-2 py-1 rounded bg-[#12182d] border border-[#1e293b]">
             节点: {cluster?.active_workers ?? cluster?.workers ?? "—"}
           </span>
         </div>
@@ -108,7 +105,7 @@ export default function TaskMonitor() {
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setOffset(0); }}
-          className="border rounded px-3 py-1.5 text-sm"
+          className="bg-[#12182d] border border-[#1e293b] rounded px-3 py-1.5 text-sm text-slate-200"
         >
           <option value="">全部状态</option>
           <option value="pending">Pending</option>
@@ -119,7 +116,7 @@ export default function TaskMonitor() {
         <select
           value={kindFilter}
           onChange={(e) => { setKindFilter(e.target.value); setOffset(0); }}
-          className="border rounded px-3 py-1.5 text-sm"
+          className="bg-[#12182d] border border-[#1e293b] rounded px-3 py-1.5 text-sm text-slate-200"
         >
           <option value="">全部类型</option>
           <option value="conversion">Conversion</option>
@@ -127,19 +124,19 @@ export default function TaskMonitor() {
         </select>
         <button
           onClick={() => { void fetchTasks(); void fetchSidebar(); }}
-          className="ml-auto px-4 py-1.5 text-sm border rounded hover:bg-gray-50"
+          className="ml-auto px-4 py-1.5 text-sm border border-[#1e293b] rounded hover:bg-[#12182d] text-slate-300"
         >
-          🔄 刷新
+          刷新
         </button>
       </div>
 
       {/* 最近失败 */}
       {failures.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h3 className="font-semibold text-red-800 mb-2">
+        <div className="bg-rose-950/20 border border-rose-900/50 rounded-xl p-4">
+          <h3 className="font-semibold text-rose-400 mb-2">
             最近失败 ({failures.length})
           </h3>
-          <ul className="text-sm text-red-700 space-y-1">
+          <ul className="text-sm text-rose-300 space-y-1">
             {failures.map((f: any, i: number) => (
               <li key={i}>
                 <span className="font-mono">{f.task_id?.slice(0, 8)}</span>
@@ -152,22 +149,22 @@ export default function TaskMonitor() {
 
       {/* 加载/错误/空状态 */}
       {loading && (
-        <div className="text-center py-20 text-gray-400">加载中...</div>
+        <div className="text-center py-20 text-slate-500">加载中...</div>
       )}
       {error && !loading && (
-        <div className="text-center py-20 text-red-500">
+        <div className="text-center py-20 text-rose-500">
           加载失败: {error}
           <br />
           <button
             onClick={() => { void fetchTasks(); }}
-            className="mt-2 underline text-blue-600"
+            className="mt-2 underline text-primary"
           >
             重试
           </button>
         </div>
       )}
       {!loading && !error && tasks.length === 0 && (
-        <div className="text-center py-20 text-gray-400">
+        <div className="text-center py-20 text-slate-500">
           暂无任务记录
         </div>
       )}
@@ -175,18 +172,18 @@ export default function TaskMonitor() {
       {/* 任务列表 */}
       {!loading && !error && tasks.length > 0 && (
         <>
-          <div className="overflow-x-auto border rounded-lg">
+          <div className="overflow-x-auto bg-[#0d1222]/80 border border-[#1e293b] rounded-xl">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-left">
+              <thead className="bg-[#12182d] text-left">
                 <tr>
-                  <th className="p-3 font-medium">Task ID</th>
-                  <th className="p-3 font-medium">类型</th>
-                  <th className="p-3 font-medium">状态</th>
-                  <th className="p-3 font-medium">创建时间</th>
-                  <th className="p-3 font-medium">耗时</th>
+                  <th className="p-3 font-medium text-slate-400">Task ID</th>
+                  <th className="p-3 font-medium text-slate-400">类型</th>
+                  <th className="p-3 font-medium text-slate-400">状态</th>
+                  <th className="p-3 font-medium text-slate-400">创建时间</th>
+                  <th className="p-3 font-medium text-slate-400">耗时</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody className="divide-y divide-[#1e293b]">
                 {tasks.map((t) => {
                   const duration =
                     t.started_at && t.completed_at
@@ -197,18 +194,18 @@ export default function TaskMonitor() {
                         ).toFixed(1) + "s"
                       : "—";
                   return (
-                    <tr key={t.task_id} className="hover:bg-gray-50">
-                      <td className="p-3 font-mono text-xs">{t.task_id.slice(0, 12)}</td>
-                      <td className="p-3">{t.kind || "—"}</td>
+                    <tr key={t.task_id} className="hover:bg-[#12182d]/50">
+                      <td className="p-3 font-mono text-xs text-slate-300">{t.task_id.slice(0, 12)}</td>
+                      <td className="p-3 text-slate-300">{t.kind || "—"}</td>
                       <td className="p-3">
                         <span className={statusBadge(t.status)}>{t.status}</span>
                       </td>
-                      <td className="p-3 text-gray-500">
+                      <td className="p-3 text-slate-500">
                         {t.created_at
                           ? new Date(t.created_at).toLocaleString()
                           : "—"}
                       </td>
-                      <td className="p-3">{duration}</td>
+                      <td className="p-3 text-slate-300">{duration}</td>
                     </tr>
                   );
                 })}
@@ -217,7 +214,7 @@ export default function TaskMonitor() {
           </div>
 
           {/* 分页 */}
-          <div className="flex items-center justify-between text-sm text-gray-500">
+          <div className="flex items-center justify-between text-sm text-slate-500">
             <span>
               共 {total} 条，第 {offset / PAGE_SIZE + 1}/{totalPages} 页
             </span>
@@ -225,14 +222,14 @@ export default function TaskMonitor() {
               <button
                 disabled={offset === 0}
                 onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
-                className="px-3 py-1 border rounded disabled:opacity-30"
+                className="px-3 py-1 border border-[#1e293b] rounded disabled:opacity-30 hover:bg-[#12182d] text-slate-300"
               >
                 上一页
               </button>
               <button
                 disabled={offset + PAGE_SIZE >= total}
                 onClick={() => setOffset(offset + PAGE_SIZE)}
-                className="px-3 py-1 border rounded disabled:opacity-30"
+                className="px-3 py-1 border border-[#1e293b] rounded disabled:opacity-30 hover:bg-[#12182d] text-slate-300"
               >
                 下一页
               </button>

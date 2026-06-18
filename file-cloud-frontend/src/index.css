@@ -56,3 +56,29 @@
   0%, 100% { opacity: 1; }
   50% { opacity: .5; }
 }
+
+.theme-admin {
+  --color-surface: #0b0f19;
+  --color-surface-dim: #070a13;
+  --color-surface-bright: #0f172a;
+  --color-surface-container-lowest: #0d1222;
+  --color-surface-container-low: #12182d;
+  --color-surface-container: #1b233d;
+  --color-surface-container-high: #242f51;
+  --color-surface-container-highest: #2d3b66;
+  --color-on-surface: #f1f5f9;
+  --color-on-surface-variant: #94a3b8;
+  --color-outline: #334155;
+  --color-outline-variant: #1e293b;
+
+  --color-primary: #38bdf8;
+  --color-on-primary: #0f172a;
+  --color-primary-container: #0284c7;
+  --color-on-primary-container: #e0f2fe;
+}
+
+.theme-admin-bg {
+  background-color: #0b0f19 !important;
+  color: #f1f5f9 !important;
+}
+

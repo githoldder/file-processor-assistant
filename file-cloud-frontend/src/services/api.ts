@@ -209,3 +209,50 @@ export async function getLogStats(hours: number = 24): Promise<any> {
   if (!response.ok) throw new Error('Failed to get log stats');
   return response.json();
 }
+
+export async function extractPdfPages(objectName: string): Promise<{
+  status: string;
+  preview_id: string;
+  source_object_name: string;
+  pages: Array<{ page_num: number; url: string }>;
+}> {
+  const formData = new FormData();
+  formData.append('object_name', objectName);
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/convert/pdf/extract-pages`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) throw new Error('Failed to extract PDF pages');
+  const payload = await response.json();
+  return {
+    ...payload,
+    pages: payload.pages.map((p: any) => ({
+      ...p,
+      url: toAbsoluteApiUrl(p.url),
+    })),
+  };
+}
+
+export interface PDFPageProcessConfig {
+  source_object_name: string;
+  page_num: number;
+  rotation: number;
+}
+
+export async function processPdf(pages: PDFPageProcessConfig[], outputFilename: string = "processed.pdf"): Promise<{ task_id: string; status: string }> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/convert/pdf/process`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      pages,
+      output_filename: outputFilename,
+    }),
+  });
+
+  if (!response.ok) throw new Error('Failed to process PDF');
+  return response.json();
+}

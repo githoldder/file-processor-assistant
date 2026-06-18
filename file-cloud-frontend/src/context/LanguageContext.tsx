@@ -4,7 +4,7 @@ import { Language, translations } from '../translations';
 interface LanguageContextType {
   lang: Language;
   setLang: (lang: Language) => void;
-  t: typeof translations.en;
+  t: typeof translations.en & { zh: boolean };
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -12,7 +12,10 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState<Language>('zh');
 
-  const t = translations[lang];
+  const t = {
+    ...translations[lang],
+    zh: lang === 'zh',
+  };
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>
