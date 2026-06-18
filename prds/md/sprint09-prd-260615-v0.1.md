@@ -1,6 +1,6 @@
 # Sprint 09 PRD — CulCloud 体验与大数据闭环重构
 
-Last Updated: 2026-06-18 21:20
+Last Updated: 2026-06-18 22:10
 
 ## Object
 
@@ -34,6 +34,7 @@ Last Updated: 2026-06-18 21:20
 
 - 2026-06-18：管理员大数据舱桑基图采用“来源格式层 -> 目标格式层”的双层节点模型，避免双向转换统计形成 ECharts Sankey 不支持的有向环。
 - 2026-06-18：ECharts 图表异常不在大屏裸露内部报错，统一降级为产品态“图表暂不可用”空状态，保障答辩演示连续性。
+- 2026-06-18：全球拓扑图对标 Grafana、SigNoz、Coroot 等开源可观测产品，升级为暗色 Service Map 风格，突出服务角色、链路流量、SLO 状态和实时 Trace 观感。
 - 用公开/生成的大规模行为日志包装为 CulCloud 全局历史遥测日志，保持大数据课设与文件处理主线一致。
 - 文件转换能力只保留 Office to PDF、图片格式互转、PDF 拆分合并/提取等高保真路径。
 - PDF 轻量编辑采用 pdf.js + Fabric.js + pdf-lib 的前端叠层方案，避免后端重排版风险。
@@ -78,6 +79,7 @@ Last Updated: 2026-06-18 21:20
 - 大屏显示数据处理规模、文件格式偏好、吞吐趋势、服务节点状态。
 - 中央图不空白，点击节点弹出详情 Modal。
 - 宽屏下信息不重叠，能作为答辩首屏截图。
+- 全球拓扑图具备高级暗色观测面板质感，节点角色、实时链路和状态图例清晰可辨。
 - 转换桑基图在存在双向转换数据时仍可渲染，不出现 `Sankey is a DAG` 白屏错误。
 
 ### P3 现代化云盘与高保真文件格式工厂
@@ -114,5 +116,6 @@ Last Updated: 2026-06-18 21:20
 - Flask analytics 层新增 cockpit 聚合接口，负责把 Spark 输出包装成 CulCloud 遥测口径。
 - React Analytics 页只消费聚合指标，不自己伪造百万明细。
 - 大屏中心图使用 ECharts graph/lines/effectScatter，保留后续替换为 three/globe.gl 的接口空间。
+- 拓扑图前端展示层可对后端节点坐标做布局映射；接口事实数据不变，展示构图按 Service Map 叙事优化。
 - 转换桑基图消费 `conversion-stats.by_type` 时，前端将 `source_format` 和 `target_format` 映射到独立层级节点，保留双向统计且保证 DAG。
 - 文档、截图、LaTeX 叙事均以 PRD、接口返回、代码截图为事实源。

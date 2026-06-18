@@ -102,3 +102,22 @@
 - `prds/md/sprint09-prd-260615-v0.1.md`
 - `prds/json/sprint09-prd-260615-v0.1.json`
 - `context/context.txt`
+
+## Session Update: 2026-06-18 — Open-source Observability Style Topology Polish
+
+### Completed
+- [Research] Benchmarked open-source observability/service-map products: Grafana for high-adoption dashboard language, SigNoz for OpenTelemetry-native APM positioning, and Coroot for service-map focused topology UX.
+- [Design] Upgraded the Analytics left global topology from a sparse orbit diagram to a dark Service Map style panel with role-colored nodes, soft grid, central observability mesh rings, live trace flow lines, status dots, and compact SLO/Trace chips.
+- [Design] Added a display-only topology layout mapping for known service ids (`web`, `api`, `hdfs`, `spark`, `redis`, `gotenberg`) so the visual composition is balanced without changing backend telemetry facts.
+- [Polish] Adjusted the API node label placement after screenshot QA to avoid overlap with the central mesh label.
+- [Docs] Updated Sprint 09 PRD markdown and JSON with the open-source observability benchmark and topology acceptance criteria.
+
+### Service Verification
+- Front-end build -- `npm run build` completed successfully.
+- Browser screenshot QA -- captured `/tmp/culcloud-topology-polish.png` at 2048×1280 using local Chrome via Playwright; verified the cockpit renders canvases and the topology panel contains the new trace chips.
+
+### Changed Files
+- `file-cloud-frontend/src/views/Analytics.tsx`
+- `prds/md/sprint09-prd-260615-v0.1.md`
+- `prds/json/sprint09-prd-260615-v0.1.json`
+- `context/context.txt`

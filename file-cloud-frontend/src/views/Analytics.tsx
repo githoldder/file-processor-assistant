@@ -177,6 +177,65 @@ function buildSankeyOption(convData: any[], nodeColorMap: Record<string, string>
   };
 }
 
+const topologyLayout: Record<string, [number, number]> = {
+  web: [170, 118],
+  api: [368, 190],
+  hdfs: [504, 108],
+  spark: [594, 190],
+  gotenberg: [202, 282],
+  redis: [486, 282],
+  nordic: [356, 72],
+  mumbai: [612, 292],
+  sydney: [628, 116],
+};
+
+const topologyRoles: Record<string, { role: string; color: string; glow: string; size: number }> = {
+  web: { role: 'Console', color: '#22d3ee', glow: 'rgba(34,211,238,0.45)', size: 17 },
+  api: { role: 'Gateway', color: '#60a5fa', glow: 'rgba(96,165,250,0.48)', size: 22 },
+  hdfs: { role: 'Object Lake', color: '#2dd4bf', glow: 'rgba(45,212,191,0.42)', size: 19 },
+  spark: { role: 'Compute', color: '#a78bfa', glow: 'rgba(167,139,250,0.48)', size: 24 },
+  gotenberg: { role: 'Render', color: '#f59e0b', glow: 'rgba(245,158,11,0.42)', size: 16 },
+  redis: { role: 'Cache', color: '#34d399', glow: 'rgba(52,211,153,0.42)', size: 18 },
+  nordic: { role: 'Edge', color: '#38bdf8', glow: 'rgba(56,189,248,0.42)', size: 15 },
+  mumbai: { role: 'AI Route', color: '#fb7185', glow: 'rgba(251,113,133,0.4)', size: 15 },
+  sydney: { role: 'Replica', color: '#818cf8', glow: 'rgba(129,140,248,0.42)', size: 15 },
+};
+
+const topologyStatusColor = (status?: string) => {
+  if (status === 'degraded') return '#f59e0b';
+  if (status === 'failed' || status === 'error' || status === 'down') return '#fb7185';
+  return '#22c55e';
+};
+
+function decorateTopologyNodes(nodes: any[]) {
+  return nodes.map((node: any, index: number) => {
+    const role = topologyRoles[node.id] || { role: node.city || 'Node', color: '#38bdf8', glow: 'rgba(56,189,248,0.38)', size: 16 };
+    const fallbackAngle = (Math.PI * 2 * index) / Math.max(nodes.length, 1);
+    const fallbackCoord: [number, number] = [380 + Math.cos(fallbackAngle) * 190, 190 + Math.sin(fallbackAngle) * 112];
+    return {
+      ...node,
+      coord: topologyLayout[node.id] || node.coord || fallbackCoord,
+      role: node.role || role.role,
+      color: role.color,
+      glow: role.glow,
+      symbolSize: role.size,
+      statusColor: topologyStatusColor(node.status),
+    };
+  });
+}
+
+function buildTopologyGraphic(processedRows: number, successRate: string) {
+  return [
+    { type: 'circle', left: 'center', top: 'middle', shape: { r: 174 }, style: { fill: 'rgba(56,189,248,0.018)', stroke: 'rgba(56,189,248,0.18)', lineWidth: 1.2 }, silent: true },
+    { type: 'circle', left: 'center', top: 'middle', shape: { r: 124 }, style: { fill: 'rgba(99,102,241,0.025)', stroke: 'rgba(129,140,248,0.14)', lineWidth: 1 }, silent: true },
+    { type: 'circle', left: 'center', top: 'middle', shape: { r: 78 }, style: { fill: 'rgba(45,212,191,0.035)', stroke: 'rgba(45,212,191,0.12)', lineWidth: 1 }, silent: true },
+    { type: 'circle', left: 'center', top: 'middle', shape: { r: 42 }, style: { fill: 'rgba(34,211,238,0.06)', stroke: 'rgba(34,211,238,0.18)', lineWidth: 1 }, silent: true },
+    { type: 'text', left: 'center', top: 'middle', style: { text: 'CULCLOUD\nOBSERVABILITY MESH', fill: 'rgba(226,232,240,0.52)', font: '700 12px Inter', align: 'center', lineHeight: 17 }, silent: true },
+    { type: 'text', left: '5%', top: 16, style: { text: 'OPEN TELEMETRY FABRIC', fill: 'rgba(56,189,248,0.55)', font: '800 10px Inter', letterSpacing: 1.5 }, silent: true },
+    { type: 'text', right: '5%', top: 16, style: { text: `${processedRows.toLocaleString()} EVENTS  |  ${successRate} SLO`, fill: 'rgba(148,163,184,0.62)', font: '700 10px Inter', align: 'right' }, silent: true },
+  ];
+}
+
 function LoggerConsole({ logs }: { logs: any[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -265,7 +324,7 @@ function SlideOverview({ data, loading, worldChart, onTopologyReady }: any) {
       <div className="flex-1 min-h-0 flex gap-2">
         {/* 左: 拓扑 */}
         <div className="flex-[3] bg-[#0d1222]/80 border border-[#1e293b] rounded-lg flex flex-col relative overflow-hidden">
-          <div className="absolute inset-0 opacity-30 pointer-events-none bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.18),transparent_55%)]" />
+          <div className="absolute inset-0 opacity-70 pointer-events-none bg-[radial-gradient(circle_at_48%_46%,rgba(56,189,248,0.18),transparent_36%),linear-gradient(135deg,rgba(15,23,42,0.1),rgba(2,6,23,0.42))]" />
           <div className="flex justify-between items-center border-b border-[#1e293b] pb-1 px-2.5 pt-1.5 shrink-0">
             <span className="text-[8px] font-black text-slate-500 tracking-widest flex items-center gap-1">
               <Globe2 className="w-3 h-3 text-primary" />
@@ -275,6 +334,23 @@ function SlideOverview({ data, loading, worldChart, onTopologyReady }: any) {
           </div>
           <div className="flex-1 min-h-0">
             <EChartsWrapper option={worldChart.option} loading={loading} theme="dark" style={{ height: '100%' }} onReady={onTopologyReady} />
+          </div>
+          <div className="absolute left-3 bottom-3 flex items-center gap-2 pointer-events-none">
+            {[
+              ['Gateway', '#60a5fa'],
+              ['Compute', '#a78bfa'],
+              ['Storage', '#2dd4bf'],
+              ['Cache', '#34d399'],
+            ].map(([label, color]) => (
+              <span key={label} className="flex items-center gap-1.5 rounded border border-slate-800/80 bg-[#020617]/55 px-2 py-1 text-[7px] font-black text-slate-500 backdrop-blur">
+                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
+                {label}
+              </span>
+            ))}
+          </div>
+          <div className="absolute right-3 bottom-3 flex items-center gap-1.5 pointer-events-none">
+            <span className="rounded border border-cyan-500/20 bg-cyan-950/30 px-2 py-1 text-[7px] font-black text-cyan-300">TRACE FLOW</span>
+            <span className="rounded border border-emerald-500/20 bg-emerald-950/30 px-2 py-1 text-[7px] font-black text-emerald-300">SLO OK</span>
           </div>
         </div>
 
@@ -768,9 +844,11 @@ export default function Analytics() {
   const health = data?.health;
   const logs = data?.logs || [];
   const cockpit = data?.cockpit || {};
+  const cockpitScale = cockpit.scale || {};
+  const processedRows = Number(cockpitScale.processed_rows ?? 100000);
+  const topologySlo = typeof cockpitScale.conversion_rate === 'number' ? `${cockpitScale.conversion_rate}%` : '95%';
 
-  // 扩充到9个全球节点,更丰富
-  const cockpitNodes = Array.isArray(cockpit.nodes) && cockpit.nodes.length > 0 ? cockpit.nodes : [
+  const rawCockpitNodes = Array.isArray(cockpit.nodes) && cockpit.nodes.length > 0 ? cockpit.nodes : [
     { id: 'web', name: 'Web Console', coord: [470, 176], status: 'healthy', metric: '15K req/s', city: 'Shanghai' },
     { id: 'api', name: 'API Gateway', coord: [430, 246], status: 'healthy', metric: 'REST API', city: 'Singapore' },
     { id: 'hdfs', name: 'MinIO/HDFS', coord: [455, 142], status: 'healthy', metric: '2.4 PB', city: 'Beijing' },
@@ -781,6 +859,7 @@ export default function Analytics() {
     { id: 'mumbai', name: 'AI Proxy', coord: [580, 276], status: 'healthy', metric: '1.2K infer/s', city: 'Mumbai' },
     { id: 'sydney', name: 'DR Replica', coord: [620, 120], status: 'healthy', metric: 'sync 0.5s', city: 'Sydney' },
   ];
+  const cockpitNodes = decorateTopologyNodes(rawCockpitNodes);
   const cockpitLinks = Array.isArray(cockpit.links) ? cockpit.links : [
     { source: 'Web Console', target: 'API Gateway' },
     { source: 'API Gateway', target: 'MinIO/HDFS' },
@@ -796,40 +875,104 @@ export default function Analytics() {
     { source: 'Spark', target: 'AI Proxy' },
   ];
   const nodeByName = new Map(cockpitNodes.map((n: any) => [n.name, n]));
+  const topologyLinkData = cockpitLinks.map((link: any, index: number) => {
+    const s: any = nodeByName.get(link.source);
+    const t: any = nodeByName.get(link.target);
+    return s && t ? {
+      coords: [s.coord, t.coord],
+      value: link.value || (index + 1) * 8,
+      lineStyle: { color: t.color || '#38bdf8' },
+    } : null;
+  }).filter(Boolean);
+  const topologyGridData = [
+    ...[120, 240, 360, 480, 600].map((x) => ({ coords: [[x, 38], [x, 342]] })),
+    ...[82, 154, 226, 298].map((y) => ({ coords: [[68, y], [672, y]] })),
+    { coords: [[96, 322], [644, 72]] },
+    { coords: [[110, 68], [658, 312]] },
+  ];
 
-  // 增强拓扑图:更丰富的视觉效果
+  // 对标 Grafana / Coroot service map 的高级暗色可观测拓扑。
   const worldChart = {
     _nodes: cockpitNodes,
     option: {
       backgroundColor: 'transparent',
-      tooltip: { trigger: 'item', formatter: (p: any) => { const d = p.data; return `<b>${d.name || ''}</b><br/>${d.metric || d.status || ''}<br/>${d.city || ''}`; } },
-      grid: { left: 0, right: 0, top: 0, bottom: 0 },
+      tooltip: {
+        trigger: 'item',
+        backgroundColor: 'rgba(2,6,23,0.92)',
+        borderColor: 'rgba(56,189,248,0.28)',
+        textStyle: { color: '#cbd5e1', fontSize: 11 },
+        formatter: (p: any) => {
+          const d = p.data;
+          if (p.seriesType === 'lines') return '服务链路<br/>实时遥测流';
+          return `<b>${d.name || ''}</b><br/>${d.role || d.city || ''}<br/>${d.metric || d.status || ''}`;
+        },
+      },
+      grid: { left: 18, right: 18, top: 10, bottom: 8 },
       xAxis: { show: false, min: 0, max: 740 },
       yAxis: { show: false, min: 0, max: 380, inverse: true },
-      graphic: [
-        { type: 'circle', left: 'center', top: 'middle', shape: { r: 155 }, style: { fill: 'rgba(14, 165, 233, 0.04)', stroke: 'rgba(56, 189, 248, 0.25)', lineWidth: 1.5 } },
-        { type: 'circle', left: 'center', top: 'middle', shape: { r: 110 }, style: { fill: 'transparent', stroke: 'rgba(99, 102, 241, 0.15)', lineWidth: 1 } },
-        { type: 'circle', left: 'center', top: 'middle', shape: { r: 60 }, style: { fill: 'rgba(99, 102, 241, 0.05)', stroke: 'rgba(99, 102, 241, 0.1)', lineWidth: 0.5 } },
-        { type: 'text', left: 'center', top: 'middle', style: { text: 'CulCloud\nGlobal', fill: 'rgba(226,232,240,0.4)', font: '700 13px Inter', align: 'center' } },
-      ],
+      graphic: buildTopologyGraphic(processedRows, topologySlo),
       series: [
         {
+          type: 'lines', coordinateSystem: 'cartesian2d', zlevel: 0,
+          silent: true,
+          lineStyle: { color: 'rgba(148,163,184,0.08)', width: 1, opacity: 1, curveness: 0 },
+          data: topologyGridData,
+        },
+        {
+          type: 'lines', coordinateSystem: 'cartesian2d', zlevel: 1,
+          silent: true,
+          lineStyle: { color: '#38bdf8', width: 7, opacity: 0.06, curveness: 0.24 },
+          data: topologyLinkData,
+        },
+        {
           type: 'lines', coordinateSystem: 'cartesian2d', zlevel: 2,
-          effect: { show: true, period: 4, trailLength: 0.4, symbol: 'arrow', symbolSize: 4, color: '#38bdf8' },
-          lineStyle: { color: '#38bdf8', width: 0.6, opacity: 0.3, curveness: 0.3 },
-          data: cockpitLinks.map((link: any) => {
-            const s: any = nodeByName.get(link.source);
-            const t: any = nodeByName.get(link.target);
-            return s && t ? { coords: [s.coord, t.coord] } : null;
-          }).filter(Boolean),
+          effect: { show: true, period: 4.8, trailLength: 0.32, symbol: 'circle', symbolSize: 5, color: '#e0f2fe' },
+          lineStyle: { color: '#38bdf8', width: 1.25, opacity: 0.52, curveness: 0.24 },
+          data: topologyLinkData,
         },
         {
           type: 'effectScatter', coordinateSystem: 'cartesian2d', zlevel: 3,
-          rippleEffect: { brushType: 'stroke', scale: 2.5 },
-          symbolSize: (val: any) => val?.[2] || 12,
-          label: { show: true, position: 'bottom', color: '#cbd5e1', fontSize: 7, fontWeight: 'bold', formatter: '{b}' },
-          itemStyle: { color: '#38bdf8', shadowBlur: 15, shadowColor: '#38bdf8' },
-          data: cockpitNodes.map((n: any) => ({ ...n, value: [n.coord?.[0] ?? 370, n.coord?.[1] ?? 190, n.id === 'spark' ? 18 : 10] })),
+          silent: true,
+          rippleEffect: { brushType: 'stroke', scale: 4.2, period: 5 },
+          symbolSize: (val: any) => (val?.[2] || 18) * 1.7,
+          itemStyle: { color: (p: any) => p.data.glow, opacity: 0.45, shadowBlur: 26, shadowColor: (p: any) => p.data.glow },
+          data: cockpitNodes.map((n: any) => ({ ...n, value: [n.coord?.[0] ?? 370, n.coord?.[1] ?? 190, n.symbolSize] })),
+        },
+        {
+          type: 'effectScatter', coordinateSystem: 'cartesian2d', zlevel: 3,
+          rippleEffect: { brushType: 'stroke', scale: 2.2, period: 3.8 },
+          symbolSize: (val: any) => val?.[2] || 16,
+          label: {
+            show: true,
+            color: '#dbeafe',
+            fontSize: 9,
+            fontWeight: 800,
+            lineHeight: 13,
+            formatter: (p: any) => `{name|${p.name}}\n{meta|${p.data.role} · ${p.data.metric || 'online'}}`,
+            rich: {
+              name: { color: '#dbeafe', fontSize: 9, fontWeight: 800 },
+              meta: { color: '#64748b', fontSize: 7, fontWeight: 700 },
+            },
+          },
+          itemStyle: {
+            color: (p: any) => p.data.color,
+            borderColor: '#e0f2fe',
+            borderWidth: 1,
+            shadowBlur: 20,
+            shadowColor: (p: any) => p.data.glow,
+          },
+          data: cockpitNodes.map((n: any) => ({
+            ...n,
+            value: [n.coord?.[0] ?? 370, n.coord?.[1] ?? 190, n.symbolSize],
+            label: { position: n.id === 'api' ? 'right' : n.coord?.[0] > 510 ? 'left' : n.coord?.[0] < 240 ? 'right' : 'bottom' },
+          })),
+        },
+        {
+          type: 'scatter', coordinateSystem: 'cartesian2d', zlevel: 4,
+          symbolSize: 5,
+          silent: true,
+          itemStyle: { color: (p: any) => p.data.statusColor, borderColor: '#020617', borderWidth: 1 },
+          data: cockpitNodes.map((n: any) => ({ ...n, value: [(n.coord?.[0] ?? 370) + 12, (n.coord?.[1] ?? 190) - 12] })),
         },
       ],
     },
