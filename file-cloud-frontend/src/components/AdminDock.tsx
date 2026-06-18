@@ -1,0 +1,1 @@
+// AdminDock 已废弃 — 大屏入口移至 Navbar 按钮

@@ -641,6 +641,38 @@ class DocumentConverter:
 
         return response.content
 
+    def process_pdf_pages(self, page_configs: list, fetch_pdf_bytes_callback) -> bytes:
+        import fitz
+        import io
+        new_doc = fitz.open()
+        opened_docs = {}
+        
+        try:
+            for config in page_configs:
+                src_name = config["source_object_name"]
+                page_num = int(config["page_num"]) # 1-indexed
+                rotation = int(config.get("rotation", 0))
+                
+                if src_name not in opened_docs:
+                    pdf_bytes = fetch_pdf_bytes_callback(src_name)
+                    opened_docs[src_name] = fitz.open(stream=pdf_bytes, filetype="pdf")
+                
+                src_doc = opened_docs[src_name]
+                orig_idx = page_num - 1
+                if 0 <= orig_idx < len(src_doc):
+                    new_doc.insert_pdf(src_doc, from_page=orig_idx, to_page=orig_idx)
+                    new_page = new_doc[-1]
+                    if rotation:
+                        new_page.set_rotation(rotation)
+            
+            output = io.BytesIO()
+            new_doc.save(output)
+            return output.getvalue()
+        finally:
+            for doc in opened_docs.values():
+                doc.close()
+            new_doc.close()
+
 
 class PDFProcessor:
     """Advanced PDF processing operations"""

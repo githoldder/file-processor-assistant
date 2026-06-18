@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  mysql-exp7:
+    image: mysql:8.0
+    container_name: mysql-exp7
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=culcloud_data
+    ports:
+      - "33067:3306"
+    volumes:
+      - ./exp7_mysql_init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - exp7_net
+
+  hadoop-exp7:
+    image: chaoliu123/myubuntu:hadoop-mapreduce-lab-topn
+    container_name: hadoop-exp7
+    ports:
+      - "8088:8088"
+      - "9870:9870"
+    # 保持容器运行
+    command: tail -f /dev/null
+    volumes:
+      - ./:/workspace
+    networks:
+      - exp7_net
+
+networks:
+  exp7_net:
+    driver: bridge
+

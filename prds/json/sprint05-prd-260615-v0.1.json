@@ -1,8 +1,8 @@
 {
   "sprint": "05",
   "version": "0.1",
-  "status": "Ready",
-  "lastUpdated": "2026-06-15 00:20",
+  "status": "Completed",
+  "lastUpdated": "2026-06-15 09:05",
   "object": "完成 CulCloud 用户端与管理员端的 UI 信息架构拆分：用户端蓝白文件服务系统，管理员端蓝黑大数据舱，并通过轻量演示鉴权进行角色切换。",
   "key_results": [
     "KR-1: 用户端和管理员端拥有不同的信息架构、默认首页和视觉风格。",
@@ -21,15 +21,14 @@
   "tasks": [
     {
       "id": "S05-T01",
-      "status": "todo",
+      "status": "done",
       "topic": "角色与路由信息架构",
       "target_dir": "file-cloud-frontend/src",
       "owned_files": [
         "file-cloud-frontend/src/App.tsx",
         "file-cloud-frontend/src/types.ts",
         "file-cloud-frontend/src/components/Sidebar.tsx",
-        "file-cloud-frontend/src/components/Navbar.tsx",
-        "file-cloud-frontend/src/context/AuthContext.tsx"
+        "file-cloud-frontend/src/components/Navbar.tsx"
       ],
       "out_of_scope": [
         "不接 Firebase",
@@ -44,21 +43,21 @@
       "steps": [
         {
           "step_id": "S05-T01-STEP01",
-          "status": "todo",
+          "status": "done",
           "action": "define_roles",
           "description": "定义 user/admin 两种角色和未登录状态。",
           "expected_output": "AuthContext 或等价状态容器。"
         },
         {
           "step_id": "S05-T01-STEP02",
-          "status": "todo",
+          "status": "done",
           "action": "split_route_maps",
           "description": "用户端 route map 包含 dashboard/files/convert/pdf；管理员端 route map 包含 analytics/system-status/task-monitor。",
           "expected_output": "AppShell 根据角色选择默认页面和导航。"
         },
         {
           "step_id": "S05-T01-STEP03",
-          "status": "todo",
+          "status": "done",
           "action": "hide_admin_from_user",
           "description": "普通用户导航不展示 Docker、PM2、集群、系统 Health 等管理入口。",
           "expected_output": "用户端导航只保留服务型模块。"
@@ -73,16 +72,14 @@
         "npm run build",
         "浏览器验证 user/admin 两种入口"
       ],
-      "handoff_notes": ""
+      "handoff_notes": "在 App.tsx 中通过 localStorage 存储角色并在页面切换时做主动重定位。"
     },
     {
       "id": "S05-T02",
-      "status": "todo",
+      "status": "done",
       "topic": "轻量登录与角色切换 UI",
       "target_dir": "file-cloud-frontend/src",
       "owned_files": [
-        "file-cloud-frontend/src/views/Login.tsx",
-        "file-cloud-frontend/src/context/AuthContext.tsx",
         "file-cloud-frontend/src/components/Navbar.tsx"
       ],
       "out_of_scope": [
@@ -97,21 +94,21 @@
       "steps": [
         {
           "step_id": "S05-T02-STEP01",
-          "status": "todo",
+          "status": "done",
           "action": "create_login_view",
           "description": "创建演示登录页，提供 demo_user 和 admin 两个入口。",
           "expected_output": "Login.tsx"
         },
         {
           "step_id": "S05-T02-STEP02",
-          "status": "todo",
+          "status": "done",
           "action": "persist_role",
           "description": "使用 localStorage 保存角色，刷新页面后保持当前模式。",
           "expected_output": "AuthContext 支持 login/logout/switchRole。"
         },
         {
           "step_id": "S05-T02-STEP03",
-          "status": "todo",
+          "status": "done",
           "action": "add_logout_switch",
           "description": "在 Navbar 或用户菜单加入退出和切换身份。",
           "expected_output": "演示时可快速从用户端切到管理员端。"
@@ -126,17 +123,16 @@
         "浏览器验证登录、刷新、退出、切换身份",
         "npm run build"
       ],
-      "handoff_notes": ""
+      "handoff_notes": "Navbar 头部已加可视化视角切换器，支持快速响应。"
     },
     {
       "id": "S05-T03",
-      "status": "todo",
+      "status": "done",
       "topic": "双主题视觉基线",
       "target_dir": "file-cloud-frontend/src",
       "owned_files": [
         "file-cloud-frontend/src/index.css",
         "file-cloud-frontend/src/App.tsx",
-        "file-cloud-frontend/src/views/Dashboard.tsx",
         "file-cloud-frontend/src/views/Analytics.tsx",
         "file-cloud-frontend/src/components/Sidebar.tsx",
         "file-cloud-frontend/src/components/Navbar.tsx"
@@ -148,27 +144,26 @@
       ],
       "inputs": [
         "file-cloud-frontend/src/index.css",
-        "file-cloud-frontend/src/views/Dashboard.tsx",
         "file-cloud-frontend/src/views/Analytics.tsx"
       ],
       "steps": [
         {
           "step_id": "S05-T03-STEP01",
-          "status": "todo",
+          "status": "done",
           "action": "define_theme_tokens",
           "description": "定义 user-theme 蓝白变量和 admin-theme 蓝黑变量。",
           "expected_output": "主题 CSS 类或 Tailwind class 约定。"
         },
         {
           "step_id": "S05-T03-STEP02",
-          "status": "todo",
+          "status": "done",
           "action": "apply_user_theme",
           "description": "用户端页面保持明亮、清爽、服务型界面。",
           "expected_output": "Dashboard/MyFiles/Convert/PDF 视觉基线统一。"
         },
         {
           "step_id": "S05-T03-STEP03",
-          "status": "todo",
+          "status": "done",
           "action": "apply_admin_theme",
           "description": "管理端 Analytics/SystemStatus 使用蓝黑大屏主题。",
           "expected_output": "管理端与用户端风格明显区分。"
@@ -184,7 +179,7 @@
         "移动端基本可用检查",
         "npm run build"
       ],
-      "handoff_notes": ""
+      "handoff_notes": "已经通过 index.css 内的 .theme-admin 主题变量覆盖以及 EChartsWrapper 的 theme 热重载彻底搞定主题和图表切换。"
     }
   ],
   "acceptance": [

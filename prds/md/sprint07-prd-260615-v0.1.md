@@ -79,6 +79,24 @@ Last Updated: 2026-06-15 00:30
 - PM2 服务状态可展示或有明确兜底。
 - API 健康状态可刷新。
 
+### S07-T05: 大屏交互增强与拓扑热链接
+
+**目标**: 实现方案 A（时序业务趋势与预处理面板支持弹窗及表格详情）及计算拓扑图节点热链接跳转。
+
+**详细方案与实现细节**:
+- **时序业务波动趋势 (Trend Chart)**：右上角增加 `🔍 详情` 按钮，点击后弹出暗黑系 Modal 弹窗。Modal 弹窗左侧渲染放大版 ECharts 趋势图，右侧以表格 (Table) 形式展示原始的历史监控数据。
+- **数据预处理质量 (Data Quality Panel)**：右上角增加 `🔍 详情` 按钮，点击弹出 Modal 弹窗。弹窗左侧为清洗历史的汇总图表，右侧为各个文件的原始数据处理详情表格。
+- **HDFS/Spark 拓扑图节点点击热链接**：在 `Analytics.tsx` 中的拓扑关系图 `data` 节点配置中，为 HDFS Master 绑定 `targetView: "system-status"`，为 Spark Worker 1 & 2 绑定 `targetView: "task-monitor"`。在 ECharts 实例上通过 `chart.on('click')` 拦截节点点击，调用 `onViewChange` 切换至对应的监控面板。
+- **系统 Health 和监控页面白屏与 404 修复**：
+  - 调整后端 `tasks.py` 路由定义顺序，将 `@router.get("/{task_id}")` 移动到所有具体路由（如 `/queue-length`、`/recent-failures`）的下方，避免拦截具体路由。
+  - 将前端 `useDashboard.tsx` 中的 Context 状态同步（`ctx.setActiveView`）移入 `useEffect` 中执行，避免在 React 渲染阶段更新状态导致死锁白屏。
+  - 优化 `SystemStatus.tsx` 和 `TaskMonitor.tsx` 的全局容器样式，适配暗黑大屏背景色、文字对比度及暗色边框。
+
+**验收口径**:
+- 点击趋势图和预处理面板详情按钮，可弹出 Modal 详尽查看图表与数据表格。
+- 点击拓扑图节点，能流畅切换至系统 Health 或任务监控模块。
+- 键盘快捷键、侧边栏点击均可正常打开监控与状态页面，无渲染死锁白屏。
+
 ## Acceptance
 
 - 管理员默认进入蓝黑大屏。
@@ -89,3 +107,4 @@ Last Updated: 2026-06-15 00:30
 ## Walkthrough
 
 记录大屏截图、模块入口截图、接口数据来源、热键说明和残余风险。
+

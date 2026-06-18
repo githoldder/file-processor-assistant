@@ -31,14 +31,14 @@
       "steps": [
         {
           "step_id": "S07-T01-STEP01",
-          "status": "todo",
+          "status": "done",
           "action": "design_big_screen_grid",
           "description": "定义 16:9 管理大屏布局：顶部状态、左列指标、中部主图、右列健康、底部事件。",
           "expected_output": "Analytics 大屏布局结构。"
         },
         {
           "step_id": "S07-T01-STEP02",
-          "status": "todo",
+          "status": "done",
           "action": "apply_admin_visual_style",
           "description": "应用蓝黑主题、紧凑文字、稳定图表容器和适配宽屏的尺寸。",
           "expected_output": "蓝黑大数据舱视觉。"
@@ -57,7 +57,7 @@
     },
     {
       "id": "S07-T02",
-      "status": "todo",
+      "status": "done",
       "topic": "业务数据替换与图表故事线",
       "target_dir": "flask-analytics",
       "owned_files": [
@@ -75,21 +75,21 @@
       "steps": [
         {
           "step_id": "S07-T02-STEP01",
-          "status": "todo",
+          "status": "done",
           "action": "map_business_metrics",
           "description": "将大屏指标映射为文件总量、转换次数、成功率、文件类型、转换矩阵、存储、任务队列。",
           "expected_output": "业务指标映射表。"
         },
         {
           "step_id": "S07-T02-STEP02",
-          "status": "todo",
+          "status": "done",
           "action": "replace_chart_data",
           "description": "替换不相关销售/用户行为数据，统一使用文件处理平台业务数据或 Spark 输出。",
           "expected_output": "Analytics 图表数据语义对齐 CulCloud。"
         },
         {
           "step_id": "S07-T02-STEP03",
-          "status": "todo",
+          "status": "done",
           "action": "write_chart_story",
           "description": "为每张图记录数据来源和答辩讲解口径。",
           "expected_output": "docs/02-process/governance/analytics-dashboard-evidence-20260615.md"
@@ -109,7 +109,7 @@
     },
     {
       "id": "S07-T03",
-      "status": "todo",
+      "status": "done",
       "topic": "隐藏式模块入口与热键",
       "target_dir": "file-cloud-frontend/src",
       "owned_files": [
@@ -125,14 +125,14 @@
       "steps": [
         {
           "step_id": "S07-T03-STEP01",
-          "status": "todo",
+          "status": "done",
           "action": "create_admin_dock",
           "description": "创建大屏边缘隐藏入口，点击左右箭头展开。",
           "expected_output": "AdminDock.tsx 或等价组件。"
         },
         {
           "step_id": "S07-T03-STEP02",
-          "status": "todo",
+          "status": "done",
           "action": "bind_hotkeys",
           "description": "绑定 1-7 热键跳转用户首页、云盘、转换、PDF、集群、Health、大屏。",
           "expected_output": "管理员模式可通过键盘快速跳转。"
@@ -151,7 +151,7 @@
     },
     {
       "id": "S07-T04",
-      "status": "todo",
+      "status": "done",
       "topic": "集群状态与 Health 面板接入",
       "target_dir": "backend/app",
       "owned_files": [
@@ -168,14 +168,14 @@
       "steps": [
         {
           "step_id": "S07-T04-STEP01",
-          "status": "todo",
+          "status": "done",
           "action": "verify_compose_status",
           "description": "展示 Docker Compose 服务状态和关键容器健康。",
           "expected_output": "集群状态卡片。"
         },
         {
           "step_id": "S07-T04-STEP02",
-          "status": "todo",
+          "status": "done",
           "action": "verify_pm2_api_health",
           "description": "展示 PM2 服务、本地 API、Redis、MinIO、Gotenberg/FastAPI 健康状态。",
           "expected_output": "系统 Health 面板。"
@@ -191,6 +191,57 @@
         "pm2 status",
         "curl system health endpoint",
         "浏览器截图"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S07-T05",
+      "status": "done",
+      "topic": "大屏交互增强与拓扑热链接",
+      "target_dir": "file-cloud-frontend/src",
+      "owned_files": [
+        "file-cloud-frontend/src/views/Analytics.tsx",
+        "file-cloud-frontend/src/context/useDashboard.tsx",
+        "backend/app/routers/tasks.py",
+        "file-cloud-frontend/src/views/SystemStatus.tsx",
+        "file-cloud-frontend/src/views/TaskMonitor.tsx"
+      ],
+      "out_of_scope": [
+        "不引入第三方复杂弹窗库",
+        "不对拓扑图做复杂的拖拽位置保存"
+      ],
+      "steps": [
+        {
+          "step_id": "S07-T05-STEP01",
+          "status": "done",
+          "action": "implement_detail_modals",
+          "description": "为趋势图和质量面板添加 🔍 详情按钮及暗色 Modal 弹窗，集成大图与详情数据表格。",
+          "expected_output": "点击详情按钮可弹窗查看大图表和数据表格。"
+        },
+        {
+          "step_id": "S07-T05-STEP02",
+          "status": "done",
+          "action": "bind_topology_hotlinks",
+          "description": "在拓扑图中增加 targetView 映射，并在 ECharts graph 点击事件中调用 onViewChange 进行热链接切换。",
+          "expected_output": "点击拓扑图节点能正常跳转对应监控页面。"
+        },
+        {
+          "step_id": "S07-T05-STEP03",
+          "status": "done",
+          "action": "fix_system_status_and_routing",
+          "description": "调整后端 tasks.py 路由顺序修复 404，将 useDashboard 同步改入 useEffect 修复渲染死锁白屏，并适配 SystemStatus 与 TaskMonitor 的暗黑背景样式。",
+          "expected_output": "系统监控和 Health 页面在暗黑大屏下可正常打开且样式美观。"
+        }
+      ],
+      "acceptance_criteria": [
+        "点击趋势图和质量面板详情按钮可弹出 Modal 查看图表与表格。",
+        "点击拓扑图节点能跳转至对应监控页面。",
+        "监控与 Health 页面可正常显示，无渲染死锁白屏且样式适配深色主题。"
+      ],
+      "verification": [
+        "手动点击详情弹窗测试",
+        "手动点击拓扑图节点测试",
+        "通过键盘热键/侧边栏切换 SystemStatus 和 TaskMonitor 页面"
       ],
       "handoff_notes": ""
     }

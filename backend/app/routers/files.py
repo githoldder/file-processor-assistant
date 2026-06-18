@@ -102,6 +102,11 @@ async def get_download_url(object_name: str):
     client = get_minio_client()
     try:
         client.stat_object(BUCKET, object_name)
+        await log_event(
+            EventType.FILE_DOWNLOADED,
+            f"文件下载: {_display_name(object_name)}",
+            file_name=_display_name(object_name),
+        )
         url = client.presigned_get_object(
             BUCKET,
             object_name,
@@ -128,6 +133,12 @@ async def download_file_content(object_name: str):
     client = get_minio_client()
     try:
         stat = client.stat_object(BUCKET, object_name)
+        await log_event(
+            EventType.FILE_DOWNLOADED,
+            f"文件下载: {_display_name(object_name)}",
+            file_name=_display_name(object_name),
+            file_size=stat.size,
+        )
         response = client.get_object(BUCKET, object_name)
 
         def iter_object():

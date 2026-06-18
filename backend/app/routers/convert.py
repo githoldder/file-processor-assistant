@@ -183,3 +183,128 @@ async def convert_existing_file(
     background_tasks.add_task(async_convert_task, task_id, file_bytes, target_format, parsed_options)
     
     return ConvertResponse(task_id=task_id, status=TaskStatus.PENDING, message="Task queued")
+
+
+# ---- PDF Studio Workspace Endpoints ----
+
+from pydantic import BaseModel
+from typing import List
+
+class PDFPageConfig(BaseModel):
+    source_object_name: str
+    page_num: int
+    rotation: int = 0
+
+class PDFProcessRequest(BaseModel):
+    pages: List[PDFPageConfig]
+    output_filename: Optional[str] = "processed.pdf"
+
+
+async def async_pdf_process_task(task_id: str, pages: List[PDFPageConfig], output_filename: str):
+    try:
+        await set_task_status(task_id, TaskStatus.PROCESSING)
+        await log_event(
+            EventType.PDF_REORDER_STARTED,
+            f"开始重组PDF: {output_filename}",
+            task_id=task_id,
+        )
+        
+        client = get_minio_client()
+        def fetch_pdf_bytes(object_name: str) -> bytes:
+            response = client.get_object(settings.MINIO_BUCKET, object_name)
+            try:
+                return response.read()
+              
+            finally:
+                response.close()
+                response.release_conn()
+                
+        configs = [
+            {
+                "source_object_name": p.source_object_name,
+                "page_num": p.page_num,
+                "rotation": p.rotation,
+            }
+            for p in pages
+        ]
+        
+        result_bytes = converter.process_pdf_pages(configs, fetch_pdf_bytes)
+        
+        object_name = f"conversions/{task_id}.pdf"
+        client.put_object(
+            settings.MINIO_BUCKET,
+            object_name,
+            io.BytesIO(result_bytes),
+            len(result_bytes),
+            content_type="application/pdf"
+        )
+        
+        await set_task_status(task_id, TaskStatus.SUCCESS, result_url=_api_download_url(object_name))
+        await log_event(
+            EventType.PDF_REORDER_COMPLETED,
+            f"重组PDF完成: {output_filename}",
+            task_id=task_id,
+        )
+    except Exception as e:
+        await set_task_status(task_id, TaskStatus.FAILED, error=str(e))
+        await log_event(
+            EventType.CONVERSION_FAILED,
+            f"重组PDF失败: {str(e)}",
+            task_id=task_id,
+        )
+
+
+@router.post("/pdf/extract-pages")
+async def extract_pdf_pages(object_name: str = Form(...)):
+    client = get_minio_client()
+    try:
+        response = client.get_object(settings.MINIO_BUCKET, object_name)
+        pdf_bytes = response.read()
+        response.close()
+        response.release_conn()
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"File not found in cloud storage: {str(e)}")
+        
+    try:
+        images = converter.pdf_to_images(pdf_bytes, dpi=120, fmt="PNG")
+        preview_id = str(uuid.uuid4())
+        pages_list = []
+        
+        for idx, img_bytes in enumerate(images):
+            preview_object_name = f"previews/{preview_id}/page_{idx+1}.png"
+            client.put_object(
+                settings.MINIO_BUCKET,
+                preview_object_name,
+                io.BytesIO(img_bytes),
+                len(img_bytes),
+                content_type="image/png"
+            )
+            pages_list.append({
+                "page_num": idx + 1,
+                "url": f"/api/v1/files/content/{quote(preview_object_name, safe='')}"
+            })
+            
+        return {
+            "status": "success",
+            "preview_id": preview_id,
+            "source_object_name": object_name,
+            "pages": pages_list
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to extract PDF pages: {str(e)}")
+
+
+@router.post("/pdf/process", response_model=ConvertResponse)
+async def process_pdf(
+    request: PDFProcessRequest,
+    background_tasks: BackgroundTasks,
+):
+    task_id = str(uuid.uuid4())
+    await set_task_status(task_id, TaskStatus.PENDING)
+    background_tasks.add_task(
+        async_pdf_process_task,
+        task_id,
+        request.pages,
+        request.output_filename or "processed.pdf"
+    )
+    return ConvertResponse(task_id=task_id, status=TaskStatus.PENDING, message="PDF process task queued")

@@ -25,3 +25,60 @@
 - Analytics big-screen UI needs auto-refresh, loading/empty/error states, and clean grid layout
 - Cluster status visualization needs refresh endpoint in flask-analytics
 - Final report evidence chain needs assembly from real APIs + screenshots + logs
+
+## Session Update: 2026-06-15 — Dual-Role Integration & Dual-Theme split
+
+### Completed
+- [Decision] Created PM2 + Docker Compose architecture decision record (ADR) detailing the decoupled governance strategy.
+- [Decision] Created defense evidence chain document mapping all core services to files/logs/ports.
+- [Feature] Refactored React frontend to support dual roles: `demo_user` (blue/white theme) and `admin` (dark cockpit theme) with localStorage persistence.
+- [Feature] Enabled edge pull tab and keyboard shortcuts (1-7) to dynamically switch pages and toggle sidebar visibility.
+- [Feature] Rebuilt EChartsWrapper to re-initialize echarts instance dynamically with dark theme on theme switch.
+- [Bug] Fixed TypeScript compilation type errors in `SystemStatus.tsx` and `TaskMonitor.tsx`.
+
+### Service Verification
+- Front-end build -- `npm run build` compiles successfully.
+
+## Session Update: 2026-06-15 — Analytics Cockpit Single-Screen Reconstruction
+
+### Completed
+- [Feature] Completely refactored `Analytics.tsx` to support a single-screen, scroll-free high-density cockpit layout under `.theme-admin` dark mode.
+- [Feature] Implemented a central 3D-effect Spark/HDFS data-flow node graph and an active Logger ticker console.
+- [Feature] Integrated micro-status lights indicating system cluster health directly on the cockpit header.
+- [Feature] Configured EChartsWrapper to hot-reload dynamically with ECharts dark options.
+
+### Service Verification
+- Front-end lint and build -- successfully compiled in 6.21s.
+
+## Session Update: 2026-06-15 — UI Overlap & Layout Polish Fixes
+
+### Completed
+- [Bug] Added global responsive paddings (`px-6 py-8 md:px-10`) to `<main>` in `App.tsx` to prevent sidebar and dashboard header overlap.
+- [Feature] Redesigned Dashboard header in `Dashboard.tsx`, removing the heavy, overlapping underline decoration style and expanding title line-heights.
+- [Feature] Adjusted Sidebar styles in `Sidebar.tsx` to use container-lowest backgrounds and increased item margins (`space-y-7`) to optimize typography.
+
+### Service Verification
+- Front-end build -- `npm run build` compiles successfully.
+
+## Session Update: 2026-06-15 — Top Padding & Viewport Height Adaptation
+
+### Completed
+- [Bug] Upgraded top padding of `<main>` in `App.tsx` from `pt-16` (64px) to `pt-24` (96px), completely solving the issue of Navbar overlapping the Dashboard main header.
+- [Feature] Adapted Analytics viewport height calculation in `Analytics.tsx` to `h-[calc(100vh-96px)]` to prevent overflow scrollbars.
+
+### Service Verification
+- Front-end build -- `npm run build` compiles successfully.
+
+## Session Update: 2026-06-15 — Sprint 06: Frontend-Backend File Services & PDF Workspace Integration
+
+### Completed
+- [Bug] Fixed the Tailwind Merge layout conflict in `App.tsx` by separating `py-8` into `pb-8`, completely resolving the header overlap under the fixed Navbar.
+- [Bug] Fixed the global `t.zh` translation boolean check by appending `zh: lang === 'zh'` to the language context object in `LanguageContext.tsx`.
+- [Feature] Created PDF page extraction (`/pdf/extract-pages`) and rearrange processing (`/pdf/process`) API endpoints on the backend in `convert.py` using PyMuPDF.
+- [Feature] Implemented a premium PDF Studio workspace in `PDFStudio.tsx` supporting PDF selection/upload, thumbnail extraction, Framer Motion drag-reordering, rotation/deletion, merging multiple files, and real task exports.
+- [Feature] Refined the personal User Dashboard in `Dashboard.tsx` to display real user metrics, recent tasks, storage stats, and interactive quick-actions, completely stripping admin-level jargon.
+- [Feature] Bound backend conversion tasks to `task_tracker` and `log_collector` index in `task_queue.py` so they dynamically reflect on the admin big-screen and monitor lists.
+
+### Service Verification
+- Front-end build -- `npm run build` compiles successfully in 9.19s with zero errors.
+- Back-end restart -- `culcloud-demo-api-1` successfully restarted and logs confirm application startup complete.
