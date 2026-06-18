@@ -35,6 +35,6 @@ Last Updated: 2026-06-14 22:10
 ## 后续维护触发条件
 
 - 根目录新增非代码文档超过 3 个时，立即归档到 `docs/02-process/` 或 `prds/`。
-- Sprint 结束时更新 `prds/md`、`prds/json` 和 `context/context.txt`。
+- Sprint 结束时更新 `prds/sprints`、`prds/sprints` 和 `context/context.txt`。
 - commit 前必须执行 `git status --short`，并只 add 本次相关路径。
 - push 前需要确认没有 `.env`、缓存、测试报告或本地构建产物进入暂存区。

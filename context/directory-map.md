@@ -1,6 +1,6 @@
 # Directory Map
 
-Last Updated: 2026-06-14 23:05
+Last Updated: 2026-06-18 23:20
 
 | Path | Role | Notes |
 | --- | --- | --- |
@@ -9,9 +9,8 @@ Last Updated: 2026-06-14 23:05
 | `.agent/workflows/` | Reusable execution workflows | Use before recurring tasks such as implementation, docs, smoke tests and release. |
 | `.agent/skills/` | Project-local skill notes | Domain/project checklists copied into the repo for future agents. |
 | `context/` | Memory and handoff | `project-brief.md` and `directory-map.md` are durable; `context.txt` is short-term. |
-| `prds/md/` | Human-readable sprint PRDs | Markdown board for goals, key results and acceptance. |
-| `prds/json/` | Agent-executable sprint boards | JSON board for task state, file scopes and verification. |
-| `prds/01-*` to `prds/08-*` | Legacy/phase PRDs | Keep as historical task packets unless actively migrated. |
+| `prds/sprints/` | Sprint PRD pairs | Each `sprintNN/` contains matching Markdown and JSON boards. |
+| `prds/legacy/` | Legacy/phase PRDs | Earlier topic packets retained as historical context. |
 | `docs/01-resources/` | Reference inputs | Teacher material, research notes and source references. |
 | `docs/02-process/` | Working material | Drafts, screenshots, scripts, governance reports and intermediate documents. |
 | `docs/03-reports/` | Final/report-facing material | Course report drafts, logs and submit-ready evidence. |
@@ -26,7 +25,7 @@ Last Updated: 2026-06-14 23:05
 
 ## Placement Rules
 
-- New formal requirements go to `prds/md/` plus matching `prds/json/`.
+- New formal requirements go to the active `prds/sprints/sprintNN/` folder as matching Markdown and JSON files.
 - New process notes go to `docs/02-process/`; final hand-in material goes to `docs/03-reports/`.
 - Running logs, dependency folders, build output, caches and local env files must stay untracked.
 - Root directory should stay small: only project entry files, compose files, package manifests and core folders.

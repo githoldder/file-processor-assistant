@@ -1,32 +1,38 @@
 # PRD Index
 
-Last Updated: 2026-06-14 23:05
+Last Updated: 2026-06-18 23:20
 
 This folder is the requirements and execution-control center for CulCloud Platform.
 
 Start from [roadmap-260615.md](/Users/caolei/Desktop/culcloud-platform/prds/roadmap-260615.md) for the defense-before-deadline execution order.
 
-## Active Boards
+## Standard Structure
 
 | Folder | Purpose |
 | --- | --- |
-| `md/` | Human-readable sprint PRDs. Use these for objective, key results, task intent and acceptance. |
-| `json/` | Agent-executable sprint boards. Use these for status, owned files, steps and verification records. |
+| `sprints/sprintNN/` | Current sprint PRD pair. Markdown and JSON live together to avoid split-brain references. |
+| `legacy/` | Earlier topic PRD packets retained for historical context. |
+| `roadmap-260615.md` | Defense-oriented roadmap and execution order. |
 
-## Historical PRD Packets
+## Historical Packets
 
-The numbered folders `01-resource-cleanup/` through `08-file-preview-conversion-folders/` are earlier task packets. Keep them as historical context unless a future sprint explicitly migrates them into the `md/` plus `json/` double-board format.
+The numbered folders `01-resource-cleanup/` through `08-file-preview-conversion-folders/` now live under `legacy/`. Keep them as historical context unless a future sprint explicitly migrates their requirements into a current sprint PRD.
 
 ## Naming Contract
 
-Sprint PRDs use matching filenames:
+Sprint PRDs use matching filenames inside the same sprint folder:
 
 ```text
-prds/md/sprintNN-prd-YYMMDD-vX.Y.md
-prds/json/sprintNN-prd-YYMMDD-vX.Y.json
+prds/sprints/sprintNN/sprintNN-prd-YYMMDD-vX.Y.md
+prds/sprints/sprintNN/sprintNN-prd-YYMMDD-vX.Y.json
 ```
 
 The Markdown file is for human review. The JSON file is the execution state source for agents.
+
+## Current Active Sprint
+
+- Human PRD: [sprints/sprint09/sprint09-prd-260615-v0.1.md](/Users/caolei/Desktop/culcloud-platform/prds/sprints/sprint09/sprint09-prd-260615-v0.1.md)
+- Agent board: [sprints/sprint09/sprint09-prd-260615-v0.1.json](/Users/caolei/Desktop/culcloud-platform/prds/sprints/sprint09/sprint09-prd-260615-v0.1.json)
 
 ## Current Sprint Direction
 
@@ -38,3 +44,4 @@ The Markdown file is for human review. The JSON file is the execution state sour
 - Sprint 6: finish user-side baseline services: personal dashboard, cloud disk, high-frequency file conversion, PDF preview/light editing/export.
 - Sprint 7: upgrade admin Analytics into the default data cockpit, with hidden module dock, hotkeys, business data replacement, cluster status and Health panels.
 - Sprint 8: complete document engineering: txt chapters, UML/engineering diagrams, technology logos, UI screenshots, LaTeX injection and final PDF compilation.
+- Sprint 9: dual-role product polish, admin cockpit observability, and incremental user-event telemetry sync over the historical Spark baseline.

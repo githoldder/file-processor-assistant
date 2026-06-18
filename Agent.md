@@ -7,7 +7,7 @@
 1. `context/context.txt`
 2. `context/project-brief.md`
 3. `context/directory-map.md`
-4. `prds/md/` and `prds/json/` for the active Sprint board
+4. `prds/sprints/sprintNN/` for the active Sprint PRD pair
 5. `.agent/rules/workspace-governance-taste-v3.md`
 6. `.agent/rules/agent-ops-governance.md`
 7. `.agent/rules/mvp-scope.md`
@@ -53,7 +53,7 @@ Align final content with academic standards: chapter maintenance as txt, UML/fig
 
 - Do not use `git add .`.
 - Do not commit local secrets, `.env`, cache folders, dependency folders, generated test reports or OS metadata.
-- Keep formal requirements in `prds/md/` and executable task status in `prds/json/`.
+- Keep formal requirements and executable task state together in `prds/sprints/sprintNN/` as matching Markdown/JSON files.
 - Put process notes, snapshots and governance reports under `docs/02-process/`.
 - Put final reports and evidence intended for submission under `docs/03-reports/`.
 - Keep `context/context.txt` short and useful: decisions, blockers, verification results and next steps only.
@@ -68,8 +68,8 @@ Align final content with academic standards: chapter maintenance as txt, UML/fig
 | `.agent/skills/` | Project-specific operating skills and checklists |
 | `.agent/workflows/` | Repeatable workflows for implementation, docs and release |
 | `context/` | Agent memory and handoff state |
-| `prds/md/` | Human-readable Sprint PRDs |
-| `prds/json/` | Agent-executable Sprint task boards |
+| `prds/sprints/` | Sprint PRD pairs; each `sprintNN/` keeps matching Markdown and JSON files together |
+| `prds/legacy/` | Earlier topic PRD packets retained for historical context |
 | `docs/01-resources/` | Original reference materials (lecture notes, rubrics, examples) |
 | `docs/02-process/` | Process notes, drafts, governance reports, screenshots, intermediate artifacts |
 | `docs/03-reports/` | Final report drafts and submit-ready outputs |

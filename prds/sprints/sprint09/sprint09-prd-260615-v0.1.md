@@ -1,6 +1,6 @@
 # Sprint 09 PRD — CulCloud 体验与大数据闭环重构
 
-Last Updated: 2026-06-18 22:55
+Last Updated: 2026-06-18 23:20
 
 ## Object
 
@@ -36,6 +36,7 @@ Last Updated: 2026-06-18 22:55
 - 2026-06-18：ECharts 图表异常不在大屏裸露内部报错，统一降级为产品态“图表暂不可用”空状态，保障答辩演示连续性。
 - 2026-06-18：全球拓扑图对标 Grafana、SigNoz、Coroot 等开源可观测产品，升级为暗色 Service Map 风格，突出服务角色、链路流量、SLO 状态和实时 Trace 观感。
 - 2026-06-18：Slide 2/3 按 ToB 可观测驾驶舱标准重构信息密度，补充真实 KPI 条、图例、错误排行、服务健康矩阵、延迟条和数据质量侧栏。
+- 2026-06-18：用户端真实操作采用增量遥测模型，历史 `data/raw/telemetry.csv` 作为基线不覆盖，上传、下载、转换、PDF 操作等新增事件写入 Redis 日志并经桥接脚本合并进 Spark 聚合输入。
 - 用公开/生成的大规模行为日志包装为 CulCloud 全局历史遥测日志，保持大数据课设与文件处理主线一致。
 - 文件转换能力只保留 Office to PDF、图片格式互转、PDF 拆分合并/提取等高保真路径。
 - PDF 轻量编辑采用 pdf.js + Fabric.js + pdf-lib 的前端叠层方案，避免后端重排版风险。
@@ -84,6 +85,7 @@ Last Updated: 2026-06-18 22:55
 - Slide 2 展示真实文件样本总量、转换任务、平均耗时、存储吞吐，并用排行图替代不可读词云。
 - Slide 3 展示真实服务状态、服务类别、探针延迟、健康图例、数据质量和错误热力分布。
 - 转换桑基图在存在双向转换数据时仍可渲染，不出现 `Sankey is a DAG` 白屏错误。
+- 用户端新增云盘上传、文件下载、文件转换、PDF 上传/导出等操作后，管理端刷新可看到增量日志和聚合指标变化，且不破坏历史基线数据集。
 
 ### P3 现代化云盘与高保真文件格式工厂
 
@@ -121,4 +123,6 @@ Last Updated: 2026-06-18 22:55
 - 大屏中心图使用 ECharts graph/lines/effectScatter，保留后续替换为 three/globe.gl 的接口空间。
 - 拓扑图前端展示层可对后端节点坐标做布局映射；接口事实数据不变，展示构图按 Service Map 叙事优化。
 - 转换桑基图消费 `conversion-stats.by_type` 时，前端将 `source_format` 和 `target_format` 映射到独立层级节点，保留双向统计且保证 DAG。
+- 增量遥测链路采用 `logs:timeline` → `scripts/spark/redis_events_bridge.py` → `data/raw/redis_events.csv` → Spark 聚合输出；聚合输入逻辑上为历史基线加增量事件。
+- 需要补齐所有用户端关键操作的 `log_event` 打点，重点包括预览、真实下载内容接口、PDF Studio 导出与转换失败原因。
 - 文档、截图、LaTeX 叙事均以 PRD、接口返回、代码截图为事实源。

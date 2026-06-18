@@ -1,7 +1,7 @@
 # PRD08 实施计划：文件预览、轻量转换集成与文件夹云盘能力
 
 > 日期：2026-05-12  
-> 来源 PRD：`prds/08-file-preview-conversion-folders/prd.md`  
+> 来源 PRD：`prds/legacy/08-file-preview-conversion-folders/prd.md`  
 > 建议分支：`feature/file-preview-conversion-folders`  
 > 目标：在现有 FastAPI + React + MinIO + Redis + Gotenberg 轻量架构内，补齐真实文件预览、完整轻量转换矩阵、目录式云盘体验与自动化验收。
 

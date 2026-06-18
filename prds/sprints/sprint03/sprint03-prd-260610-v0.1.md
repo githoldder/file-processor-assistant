@@ -6,7 +6,7 @@ Last Updated: 2026-06-10
 
 填充 LaTeX 论文正文 6 章（绪论→相关技术→系统设计→系统实现→系统测试→总结+展望），生成系统面试-Q&A.md 答辩辅助文档（15-20 题），补充 8+ 条参考文献，制作/整理 5+ 张技术图表，完成 LaTeX 编译验证输出 final.pdf。
 
-> Agent 执行以 `prds/json/sprint03-prd-260610-v0.1.json` 为详细设计拆解文件。
+> Agent 执行以 `prds/sprints/sprint03/sprint03-prd-260610-v0.1.json` 为详细设计拆解文件。
 
 ## Key-Results
 

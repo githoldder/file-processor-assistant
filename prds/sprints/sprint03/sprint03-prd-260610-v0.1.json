@@ -118,20 +118,20 @@
       ],
       "steps": [
         "chap01 绪论（3 节，约 1200 字）：",
-        "  \section{项目背景}：企业级文档处理普遍面临文件格式转换耗时长、多格式不兼容等挑战。Spark 和 Flask 相结合的分析与可视化方案可行。",
-        "  \section{项目意义}：展示大数据从存储→处理→分析→可视化的完整技术栈。",
-        "  \section{项目概述}：CulCloud 平台功能框架（文件上传→转换→下载 + 大数据分析大屏）。",
+        "  \\section{项目背景}：企业级文档处理普遍面临文件格式转换耗时长、多格式不兼容等挑战。Spark 和 Flask 相结合的分析与可视化方案可行。",
+        "  \\section{项目意义}：展示大数据从存储→处理→分析→可视化的完整技术栈。",
+        "  \\section{项目概述}：CulCloud 平台功能框架（文件上传→转换→下载 + 大数据分析大屏）。",
         "chap02 相关技术（4 节，约 1500 字）：",
-        "  \section{Apache Spark}：Spark 架构（Spark Core / SQL / Streaming / MLlib），PySpark API，local 模式适用场景。",
-        "  \section{Flask Web 框架}：轻量级 Python Web 框架，RESTful API 设计，与 Spark 输出 JSON 的对接方式。",
-        "  \section{数据存储技术}：MinIO（S3 兼容对象存储）、Redis（异步任务队列 + 缓存）。",
-        "  \section{前端可视化技术}：React + TypeScript + ECharts 技术栈，与后端 API 的数据交互。",
+        "  \\section{Apache Spark}：Spark 架构（Spark Core / SQL / Streaming / MLlib），PySpark API，local 模式适用场景。",
+        "  \\section{Flask Web 框架}：轻量级 Python Web 框架，RESTful API 设计，与 Spark 输出 JSON 的对接方式。",
+        "  \\section{数据存储技术}：MinIO（S3 兼容对象存储）、Redis（异步任务队列 + 缓存）。",
+        "  \\section{前端可视化技术}：React + TypeScript + ECharts 技术栈，与后端 API 的数据交互。",
         "每节使用 booktabs/longtable 宏包生成的表格展示技术对比，使用 listings 插入代码 snippet。"
       ],
       "acceptance": [
         "两章总字数 ≥ 2700 字。",
         "至少 2 个表格（技术对比表）和 1 个代码片段。",
-        "LaTeX 语法正确，'Missing \begin{document}' 之类错误为 0。"
+        "LaTeX 语法正确，'Missing \\begin{document}' 之类错误为 0。"
       ]
     },
     {
@@ -144,15 +144,15 @@
       ],
       "steps": [
         "chap03 系统设计（4 节，约 1500 字）：",
-        "  \section{系统架构设计}：总体架构图描述（PM2+Docker 混合部署，6 层：前端→Flask→FastAPI→Spark→存储→基础设施）。需插入架构示意图。",
-        "  \section{功能模块划分}：8 个功能模块（Dashboard/Analytics/Files/Convert/PDF/TaskMonitor/SystemStatus/User）。",
-        "  \section{数据流设计}：文件上传→转换→Spark 分析→结果存储→前端渲染的数据流向。",
-        "  \section{数据库与存储设计}：MinIO 桶结构、Redis key 设计、Spark 输出 JSON schema。",
+        "  \\section{系统架构设计}：总体架构图描述（PM2+Docker 混合部署，6 层：前端→Flask→FastAPI→Spark→存储→基础设施）。需插入架构示意图。",
+        "  \\section{功能模块划分}：8 个功能模块（Dashboard/Analytics/Files/Convert/PDF/TaskMonitor/SystemStatus/User）。",
+        "  \\section{数据流设计}：文件上传→转换→Spark 分析→结果存储→前端渲染的数据流向。",
+        "  \\section{数据库与存储设计}：MinIO 桶结构、Redis key 设计、Spark 输出 JSON schema。",
         "chap04 系统实现（4 节，约 2000 字）：",
-        "  \section{PySpark 数据预处理}：generate\_data.py 生成 10 万用户行为 + 1 万销售数据，preprocess.py 6 阶段管线（加载→清洗→转换→聚合→统计→导出）。",
-        "  \section{Flask 分析服务}：20+ REST 端点，Spark 输出 JSON 直接加载为 API 响应，5 秒缓存。",
-        "  \section{文件转换服务}：FastAPI + Gotenberg 转换引擎，18 种格式互转，异步任务队列。",
-        "  \section{前端可视化大屏}：3 面板（用户行为分析/销售分析/管线信息），7 个 ECharts 图表。",
+        "  \\section{PySpark 数据预处理}：generate\\_data.py 生成 10 万用户行为 + 1 万销售数据，preprocess.py 6 阶段管线（加载→清洗→转换→聚合→统计→导出）。",
+        "  \\section{Flask 分析服务}：20+ REST 端点，Spark 输出 JSON 直接加载为 API 响应，5 秒缓存。",
+        "  \\section{文件转换服务}：FastAPI + Gotenberg 转换引擎，18 种格式互转，异步任务队列。",
+        "  \\section{前端可视化大屏}：3 面板（用户行为分析/销售分析/管线信息），7 个 ECharts 图表。",
         "每节至少 1 个代码片段或图/表。"
       ],
       "acceptance": [
@@ -174,12 +174,12 @@
       ],
       "steps": [
         "chap05 系统测试（3 节，约 1200 字）：",
-        "  \section{测试环境}：Docker 容器 vs 本机 PM2 进程，测试机器配置。",
-        "  \section{功能测试}：测试用例表（用例名称/输入/预期输出/实际结果/状态），包含文件上传、转换、Analytics 大屏展示、Pipeline 执行。",
-        "  \section{数据质量验证}：引用 data_quality_report.json 的数据（清洗前 vs 清洗后行数/空值数/重复数），展示空值比例表和清洗效果对比条。",
+        "  \\section{测试环境}：Docker 容器 vs 本机 PM2 进程，测试机器配置。",
+        "  \\section{功能测试}：测试用例表（用例名称/输入/预期输出/实际结果/状态），包含文件上传、转换、Analytics 大屏展示、Pipeline 执行。",
+        "  \\section{数据质量验证}：引用 data_quality_report.json 的数据（清洗前 vs 清洗后行数/空值数/重复数），展示空值比例表和清洗效果对比条。",
         "chap06 总结与展望（2 节，约 800 字）：",
-        "  \section{项目总结}：实现了的八项功能，混合部署方案验证，Spark+Flask 技术栈有效性。",
-        "  \section{未来改进方向}：分布式 Spark 集群、实时流处理（Spark Streaming）、告警通知、多租户支持。",
+        "  \\section{项目总结}：实现了的八项功能，混合部署方案验证，Spark+Flask 技术栈有效性。",
+        "  \\section{未来改进方向}：分布式 Spark 集群、实时流处理（Spark Streaming）、告警通知、多租户支持。",
         "abstract.tex：中文摘要约 200 字（项目背景→方法→结果→意义），英文摘要约 200 words。",
         "acknowledgements.tex：致谢指导教师和团队成员。"
       ],

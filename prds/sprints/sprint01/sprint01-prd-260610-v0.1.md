@@ -6,7 +6,7 @@ Last Updated: 2026-06-10
 
 将 TaskMonitor 和 SystemStatus 前端视图从 mock 数据状态改造为对接真实后端 API 的可用监控面板。重构三个后端 Service（health_checker、task_tracker、log_collector），新增 3 个 FastAPI Router 约 15 个 REST 端点，覆盖 6 个服务的健康检查、转换/Spark 任务追踪、Worker 节点管理、系统日志汇聚和事件告警时间线。所有新增 API 在前端通过 loading/error/empty 三态 UX 展现。
 
-> Agent 执行以 `prds/json/sprint01-prd-260610-v0.1.json` 为详细设计拆解文件。
+> Agent 执行以 `prds/sprints/sprint01/sprint01-prd-260610-v0.1.json` 为详细设计拆解文件。
 
 ## Key-Results
 

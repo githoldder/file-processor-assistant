@@ -6,7 +6,7 @@ Last Updated: 2026-06-10
 
 将 Dashboard 从零散的真实/mock 混合状态改造为完整的全指标数据面板（8 个指标卡 + 文件类型分布 + 活动时间线），将 PDFStudio 从纯 UI mock 升级为对接后端 PDF 处理 API 的可用工具（合并/拆分/重新排序/导出）。MyFiles 和 ConvertCenter 已基本就绪，本次仅做体验修补（拖拽上传、文件图标识别、批量转换队列、polling 重试）。
 
-> Agent 执行以 `prds/json/sprint02-prd-260610-v0.1.json` 为详细设计拆解文件。
+> Agent 执行以 `prds/sprints/sprint02/sprint02-prd-260610-v0.1.json` 为详细设计拆解文件。
 
 ## Key-Results
 

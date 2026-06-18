@@ -99,8 +99,8 @@
 ### Changed Files
 - `file-cloud-frontend/src/views/Analytics.tsx`
 - `file-cloud-frontend/src/components/EChartsWrapper.tsx`
-- `prds/md/sprint09-prd-260615-v0.1.md`
-- `prds/json/sprint09-prd-260615-v0.1.json`
+- `prds/sprints/sprint09/sprint09-prd-260615-v0.1.md`
+- `prds/sprints/sprint09/sprint09-prd-260615-v0.1.json`
 - `context/context.txt`
 
 ## Session Update: 2026-06-18 — Open-source Observability Style Topology Polish
@@ -118,9 +118,34 @@
 
 ### Changed Files
 - `file-cloud-frontend/src/views/Analytics.tsx`
-- `prds/md/sprint09-prd-260615-v0.1.md`
-- `prds/json/sprint09-prd-260615-v0.1.json`
+- `prds/sprints/sprint09/sprint09-prd-260615-v0.1.md`
+- `prds/sprints/sprint09/sprint09-prd-260615-v0.1.json`
 - `context/context.txt`
+
+## Session Update: 2026-06-18 — PRD Structure Simplification & Incremental Telemetry Requirement
+
+### Completed
+- [Decision] Simplified PRD folder structure from the old split Markdown/JSON folders into `prds/sprints/sprintNN/`, where Markdown and JSON for the same sprint live together.
+- [Decision] Moved earlier topic packets `01-resource-cleanup` through `08-file-preview-conversion-folders` into `prds/legacy/` as historical PRD context.
+- [Requirement] Added Sprint 09 incremental telemetry sync requirement: preserve `data/raw/telemetry.csv` as the historical baseline and append user-side real operations through Redis `logs:timeline` plus `scripts/spark/redis_events_bridge.py`.
+- [Requirement] Management cockpit refresh must be able to show incremental user uploads, downloads, conversions, PDF operations and related aggregate metric changes without overwriting the baseline dataset.
+- [Fix] Updated PRD path references in `Agent.md`, `context/directory-map.md`, docs and PRD files to use the new `prds/sprints/` and `prds/legacy/` structure.
+- [Fix] Repaired invalid JSON escaping in `prds/sprints/sprint03/sprint03-prd-260610-v0.1.json` so all sprint JSON files are parseable.
+
+### Service Verification
+- Active Sprint 09 JSON parses successfully.
+- All `prds/sprints/**/*.json` files parse successfully after repairing Sprint 03 v0.1.
+
+### Changed Files
+- `prds/README.md`
+- `prds/sprints/sprint09/sprint09-prd-260615-v0.1.md`
+- `prds/sprints/sprint09/sprint09-prd-260615-v0.1.json`
+- `prds/sprints/sprint03/sprint03-prd-260610-v0.1.json`
+- `Agent.md`
+- `context/directory-map.md`
+- `context/context.txt`
+- `docs/02-process/PRD08-文件预览转换文件夹能力实施计划.md`
+- `docs/02-process/governance/entropy-audit-20260614.md`
 
 ## Session Update: 2026-06-18 — Slide 2/3 ToB Observability Density Upgrade
 
@@ -138,6 +163,6 @@
 
 ### Changed Files
 - `file-cloud-frontend/src/views/Analytics.tsx`
-- `prds/md/sprint09-prd-260615-v0.1.md`
-- `prds/json/sprint09-prd-260615-v0.1.json`
+- `prds/sprints/sprint09/sprint09-prd-260615-v0.1.md`
+- `prds/sprints/sprint09/sprint09-prd-260615-v0.1.json`
 - `context/context.txt`
