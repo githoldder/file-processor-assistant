@@ -15,9 +15,11 @@ class ConversionType(str, Enum):
     PDF_TO_HTML = "pdf_to_html"
 
     WORD_TO_PDF = "word_to_pdf"
+    DOC_TO_PDF = "doc_to_pdf"
     WORD_TO_MARKDOWN = "word_to_markdown"
 
     EXCEL_TO_PDF = "excel_to_pdf"
+    CSV_TO_PDF = "csv_to_pdf"
     EXCEL_TO_CSV = "excel_to_csv"
 
     PPTX_TO_PDF = "pptx_to_pdf"

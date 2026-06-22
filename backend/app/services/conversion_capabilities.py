@@ -13,6 +13,16 @@ CAPABILITIES = [
         "description": "Convert Word documents to PDF via LibreOffice",
     },
     {
+        "key": "doc_to_pdf",
+        "name": "DOC → PDF",
+        "from_ext": ".doc",
+        "to_ext": ".pdf",
+        "group": "office2pdf",
+        "quality": "high",
+        "stability": "stable",
+        "description": "Convert legacy Word documents to PDF via LibreOffice",
+    },
+    {
         "key": "excel_to_pdf",
         "name": "Excel → PDF",
         "from_ext": ".xlsx",
@@ -21,6 +31,16 @@ CAPABILITIES = [
         "quality": "high",
         "stability": "stable",
         "description": "Convert Excel spreadsheets to PDF via LibreOffice",
+    },
+    {
+        "key": "csv_to_pdf",
+        "name": "CSV → PDF",
+        "from_ext": ".csv",
+        "to_ext": ".pdf",
+        "group": "office2pdf",
+        "quality": "high",
+        "stability": "stable",
+        "description": "Render CSV tables to PDF",
     },
     {
         "key": "pptx_to_pdf",

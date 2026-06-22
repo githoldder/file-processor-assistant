@@ -1,6 +1,6 @@
 # CulCloud Defense Roadmap
 
-Last Updated: 2026-06-21 01:55
+Last Updated: 2026-06-22 15:25
 
 ## Execution Principle
 
@@ -21,9 +21,9 @@ Last Updated: 2026-06-21 01:55
 | Sprint 06 | `sprint06-prd-260615-v0.1` | 补齐用户端文件服务与高频转换能力 | 上传、云盘、转换、PDF 页面整理至少各有一条演示链路 |
 | Sprint 07 | `sprint07-prd-260615-v0.1` | 把 Analytics 做成蓝黑管理员大数据舱 | 管理员默认大屏、隐藏入口、热键、监控入口可演示 |
 | Sprint 09 | `sprint09-prd-260615-v0.1` | 大屏体验与大数据闭环重构 | 全球拓扑、Spark 遥测、桑基图、质量仪表盘可演示 |
-| Sprint 10 | `sprint10-prd-260621-v0.2` | 用户端真实能力收敛与体验补齐 | user/admin 路由隔离、高保真转换白名单、命名记忆、PDF 页面整理稳定化 |
+| Sprint 10 | `sprint10-prd-260621-v0.2` | 用户端真实能力收敛与体验补齐 | user/admin 路由隔离、高保真转换白名单、云盘移动/预览/日志补强、PDF 页面整理稳定化 |
 | Sprint 08 | `sprint08-prd-260615-v0.1` | 文档工程基线（已跑通一次交付流程） | 基线完成，需 Sprint 10 迭代 2 轮至可交付 |
-| Sprint 10 | `sprint10-prd-260621-v0.2` | **最后**交付：用户端真实能力 + 文档迭代 | 云盘/PDF 页面整理/高保真转换 + 可交付最终 PDF |
+| Sprint 10 | `sprint10-prd-260621-v0.2` | **最后**交付：用户端真实能力 + 文档迭代 | 云盘移动与预览/PDF 页面整理/高保真转换 + 可交付最终 PDF |
 
 ## UI Product Contract
 

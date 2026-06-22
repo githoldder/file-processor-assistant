@@ -1,6 +1,6 @@
 # Sprint 10 PRD v0.2 — 用户端真实能力收敛与 PDF 体验重构
 
-Last Updated: 2026-06-22 15:00
+Last Updated: 2026-06-22 15:25
 
 ## 变更原因分析
 
@@ -75,7 +75,9 @@ Admin 端可保留热键，但只在 `role=admin` 时生效。user 角色即使 
 | key | 说明 | 保真判断 |
 | --- | --- | --- |
 | `word_to_pdf` | DOCX -> PDF | Office/Gotenberg 路径稳定 |
+| `doc_to_pdf` | DOC -> PDF | 旧版 Word 文档通过 Gotenberg/LibreOffice 转 PDF，满足 DOC/DOCX 聚合口径 |
 | `excel_to_pdf` | XLSX -> PDF | 参数简化后稳定 |
+| `csv_to_pdf` | CSV -> PDF | CSV 以表格渲染为 PDF，满足 XLS/XLSX/CSV 聚合口径 |
 | `pptx_to_pdf` | PPTX -> PDF | Office/Gotenberg 路径稳定 |
 | `markdown_to_pdf` | MD -> PDF | 可控样式输出 |
 | `markdown_to_html` | MD -> HTML | 预览/导出稳定 |
@@ -93,10 +95,15 @@ Admin 端可保留热键，但只在 `role=admin` 时生效。user 角色即使 
 - `markdown_to_word`
 - `pdf_to_html`
 - `png_to_svg`
+- `excel_to_csv`
 - PDF -> Word/Excel/PPTX
 - PPTX -> Images
 
 如果保留接口，只允许 admin/debug 模式或“实验能力”折叠区展示，并明确标记 beta，不进入主流程。
+
+### 当前实现校准
+
+Sprint10 v0.2 以“可靠演示”优先，当前 P0 白名单相比最初 12 项补入 `doc_to_pdf` 与 `csv_to_pdf`。原因是云盘分类已经把 DOC/DOCX、XLS/XLSX/CSV 按用户语义聚合，若转换中心只支持 DOCX/XLSX，会造成同一类文件“能预览但不能转换”的断裂体验。
 
 ## 转换参数简化
 
@@ -142,6 +149,50 @@ Admin 端可保留热键，但只在 `role=admin` 时生效。user 角色即使 
 - 上传 `课程报告-终稿.docx`，转换 PDF 后下载建议名为 `课程报告-终稿.pdf`。
 - 用户将输出名改为 `大数据课程报告`，转换结果建议名为 `大数据课程报告.pdf`。
 - 云盘文件和本地文件路径一致。
+
+## 云盘文件夹、预览与日志补强
+
+### 文件夹机制
+
+目标是把 MinIO prefix 模型包装成接近日常云盘的体验：
+
+- 文件夹以 `prefix/.keep` marker 表达。
+- 文件和文件夹元数据显示当前云盘路径。
+- 文件可通过拖拽放入文件夹，也可通过“移动到”按钮选择目标目录。
+- 支持移动回云盘根目录。
+- 文件夹展开时不得把自身作为子文件夹重复显示。
+
+### 预览能力矩阵
+
+| 类型 | 格式 | 预览策略 |
+| --- | --- | --- |
+| PDF | `.pdf` | 原文件流式 iframe 预览 |
+| 图片 | `.png`, `.jpg`, `.jpeg`, `.svg` | API content URL 直出，前端 `img` 展示 |
+| 文本 | `.txt` | UTF-8 文本流式预览 |
+| Markdown | `.md` | 后端渲染 HTML，sandbox iframe 展示 |
+| CSV | `.csv` | 后端渲染 HTML 表格，限制大文件 |
+| Office | `.doc`, `.docx`, `.xls`, `.xlsx`, `.pptx` | Gotenberg/LibreOffice 转 PDF 并缓存到 `previews/` |
+| 音频 | `.mp3`, `.wav`, `.ogg` | 原文件流式返回，前端 audio controls |
+| 视频 | `.mp4`, `.webm`, `.mov` | 原文件流式返回，前端 video controls |
+
+音视频只做上传和预览，不进入转换中心。它们作为云盘基础体验补强，不作为答辩主线转换能力。
+
+### 日志与持久化
+
+日志系统以 Redis 为在线事件流：
+
+- `logs:recent`：最近事件 LIST，保留最多 5000 条。
+- `logs:timeline`：按时间索引的 ZSET，供大屏和时间线读取。
+- `tasks:index`、`tasks:timeline`、`tasks:completed/failed/processing`：任务列表和状态索引。
+- `task:{id}`：单任务查询缓存，TTL 为 24 小时。
+
+持久化边界：
+
+- 浏览器重启、PM2 前端重启、`docker compose restart` 不应导致日志丢失。
+- `docker compose down -v` 会删除 Redis/MinIO volume，日志、任务索引、文件对象都会丢失。
+- Redis 不可用时 `log_event` 会降级为 warning 并丢弃事件，这是当前已知限制。
+
+Compose 必须保留 `redis_data` 与 `minio_data` 命名卷。报告中需说明：课程演示环境采用 Docker volume 做本机持久化，生产环境可迁移到外部 Redis、对象存储和数据库。
 
 ## PDF 编辑体验重构
 
@@ -190,6 +241,9 @@ Admin 端可保留热键，但只在 `role=admin` 时生效。user 角色即使 
 | P0 | ConvertCenter 白名单与参数简化 | 只做高保真能力 |
 | P0 | 转换命名记忆 | 上传名、输出名、下载名一致 |
 | P0 | PDF 工作台稳定化 | 先修卡顿、重叠、错位 |
+| P0 | 云盘文件夹机制盘活 | 拖拽移动、移动到、路径元数据、自嵌套修复 |
+| P0 | 预览能力补齐 | CSV/Markdown/TXT/Office/音视频预览按矩阵实现 |
+| P0 | 日志历史与持久化说明 | 转换历史显示、Redis 日志链路和 volume 边界说明 |
 | P1 | PDF 真编辑阶段 2 | pdf.js + annotation layer + pdf-lib |
 | P1 | 测试补齐 | 路由隔离、转换白名单、命名、PDF 交互 |
 | P2 | 实验转换能力折叠区 | 非核心，不影响主流程 |
@@ -224,11 +278,16 @@ Admin 端可保留热键，但只在 `role=admin` 时生效。user 角色即使 
 2. User 端没有系统监控、任务监控、端口健康、PM2/Docker/集群入口。
 3. Admin 端仍可进入 Analytics、SystemStatus、TaskMonitor。
 4. ConvertCenter 默认只展示 P0 高保真白名单。
-5. 转换参数默认极简，Excel 只暴露 3 个预设。
-6. 转换输出文件名继承用户可见命名。
-7. PDF 工作台不重叠、不错位，拖拽排序有占位且不卡顿。
-8. 未实现的 PDF 批注能力不得以可用按钮展示。
-9. PRD、代码、测试、UI 文案保持同一事实口径。
+5. P0 白名单包含 `doc_to_pdf`、`csv_to_pdf`，避免 DOC/DOCX 和 XLS/XLSX/CSV 用户口径断裂。
+6. 转换参数默认极简，Excel/CSV 只暴露页面适配类参数。
+7. 转换输出文件名继承用户可见命名。
+8. 云盘文件可拖入文件夹，也可通过“移动到”选择目录。
+9. 文件夹展开不出现自身嵌套。
+10. CSV、MD、TXT、PDF、图片、Office、MP3/MP4 等按预览矩阵可用或给出明确不支持状态。
+11. 转换历史记录能显示 completed/success/failed 任务。
+12. PDF 工作台不重叠、不错位，拖拽排序有占位且不卡顿。
+13. 未实现的 PDF 批注能力不得以可用按钮展示。
+14. PRD、代码、测试、UI 文案保持同一事实口径。
 
 ## 测试计划
 
@@ -242,3 +301,4 @@ Admin 端可保留热键，但只在 `role=admin` 时生效。user 角色即使 
 | `pdf-page-organizer.spec.ts` | 加载、删除、旋转、排序、导出 |
 | `pdf-layout-stability.spec.ts` | 拖拽无重叠/错位，页面容器尺寸稳定 |
 | `admin-routes.spec.ts` | admin 能进入 analytics/system/tasks |
+| `tests/backend/unit/test_sprint10_contracts.py` | P0 转换白名单、预览类型矩阵、CSV/MD HTML 长度、文件移动、路径安全 |

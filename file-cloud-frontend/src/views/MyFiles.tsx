@@ -998,6 +998,12 @@ function PreviewFrame({ meta, objectName }: { meta: PreviewMetadata; objectName:
   if (meta.preview_type === 'image') {
     return <div className="flex min-h-[50vh] items-center justify-center"><img src={url} alt={meta.filename} className="max-h-[65vh] max-w-full object-contain rounded-xl border border-outline-variant bg-white" /></div>;
   }
+  if (meta.preview_type === 'audio') {
+    return <div className="flex min-h-[50vh] items-center justify-center"><audio src={url} controls className="w-full max-w-3xl" /></div>;
+  }
+  if (meta.preview_type === 'video') {
+    return <div className="flex min-h-[50vh] items-center justify-center"><video src={url} controls className="max-h-[65vh] max-w-full rounded-xl border border-outline-variant bg-black" /></div>;
+  }
   if (meta.preview_type === 'text') {
     return <iframe title={meta.filename} src={url} className="h-[70vh] w-full rounded-xl border border-outline-variant bg-white" sandbox="" />;
   }

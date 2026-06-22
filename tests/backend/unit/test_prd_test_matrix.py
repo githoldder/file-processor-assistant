@@ -64,9 +64,9 @@ TEST_MATRIX = {
         "assertions": ["cockpit schema", "sankey DAG", "incremental telemetry", "service map"],
     },
     "10": {
-        "features": ["S10-V02-T01", "S10-V02-T02", "S10-V02-T03", "S10-V02-T04", "S10-V02-T05", "S10-V02-T06"],
+        "features": ["S10-V02-T01", "S10-V02-T02", "S10-V02-T03", "S10-V02-T04", "S10-V02-T05", "S10-V02-T06", "S10-V02-T07", "S10-V02-T08"],
         "layers": ["unit", "integration", "e2e"],
-        "assertions": ["role route guard", "conversion whitelist", "rename memory", "simple options", "pdf layout stability"],
+        "assertions": ["role route guard", "conversion whitelist", "rename memory", "simple options", "pdf layout stability", "preview matrix", "log persistence"],
     },
 }
 

@@ -1,6 +1,6 @@
 # PRD Index
 
-Last Updated: 2026-06-21 01:55
+Last Updated: 2026-06-22 15:25
 
 This folder is the requirements and execution-control center for CulCloud Platform.
 
@@ -45,4 +45,4 @@ The Markdown file is for human review. The JSON file is the execution state sour
 - Sprint 7: upgrade admin Analytics into the default data cockpit, with hidden module dock, hotkeys, business data replacement, cluster status and Health panels.
 - Sprint 8: complete document engineering: txt chapters, UML/engineering diagrams, technology logos, UI screenshots, LaTeX injection and final PDF compilation.
 - Sprint 9: dual-role product polish, admin cockpit observability, and incremental user-event telemetry sync over the historical Spark baseline.
-- Sprint 10: user-side real capability convergence: strict user/admin route isolation, server-enforced high-fidelity conversion whitelist, conversion name memory, simplified parameters, and phased PDF page organization before true editing.
+- Sprint 10: user-side real capability convergence: strict user/admin route isolation, server-enforced high-fidelity conversion whitelist, conversion name memory, cloud folder movement, preview/log persistence clarification, and phased PDF page organization before true editing.

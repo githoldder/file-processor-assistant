@@ -438,7 +438,7 @@ export interface PreviewMetadata {
   object_name: string;
   filename: string;
   size: number;
-  preview_type: 'pdf' | 'html' | 'text' | 'image' | 'unsupported';
+  preview_type: 'pdf' | 'html' | 'text' | 'image' | 'audio' | 'video' | 'unsupported';
   cached: boolean;
   content_url: string;
 }
@@ -475,7 +475,7 @@ export interface BrowseResult {
 export async function createFolder(path: string): Promise<{ status: string; folder: string; path: string }> {
   const formData = new FormData();
   formData.append('path', path);
-  const response = await fetch(`${API_BASE_URL}/api/v1/files/folders`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/folders`, {
     method: 'POST',
     body: formData,
   });
@@ -496,7 +496,7 @@ export async function browseFolder(path: string): Promise<BrowseResult> {
 }
 
 export async function deleteFolder(path: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/files/folders/${encodeURIComponent(path)}`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/folders/${encodeURIComponent(path)}`, {
     method: 'DELETE',
   });
   if (!response.ok) {

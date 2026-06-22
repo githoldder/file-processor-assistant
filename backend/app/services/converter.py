@@ -170,6 +170,9 @@ class DocumentConverter:
             # Fallback: use python-docx + PyMuPDF
             return self._word_to_pdf_fallback(docx_data, output_path)
 
+    def doc_to_pdf(self, doc_data: bytes) -> bytes:
+        return self._gotenberg_convert(doc_data, "doc", "pdf")
+
     def _word_to_pdf_fallback(self, docx_data: bytes, output_path: str) -> bytes:
         from docx import Document
 
@@ -381,6 +384,68 @@ class DocumentConverter:
             return "\n".join(csv_lines)
         finally:
             os.unlink(tmp_path)
+
+    def csv_to_pdf(
+        self,
+        csv_data: bytes,
+        output_path: Optional[str] = None,
+        layout_options: Optional[Dict[str, Any]] = None,
+    ) -> bytes:
+        import csv
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import A3, A4, landscape, portrait
+        from reportlab.lib.units import inch
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+
+        text = csv_data.decode("utf-8-sig", errors="replace")
+        rows = list(csv.reader(io.StringIO(text)))
+        options = layout_options or {}
+        page_size_name = str(options.get("page_size", "A4")).upper()
+        page_size = A3 if page_size_name == "A3" else A4
+        orientation = str(options.get("orientation", "landscape")).lower()
+        page_size = landscape(page_size) if orientation == "landscape" else portrait(page_size)
+        max_columns = max(1, min(int(options.get("max_columns", 12) or 12), 32))
+        font_size = max(6, min(int(options.get("font_size", 8) or 8), 12))
+        repeat_header = bool(options.get("repeat_header", True))
+
+        trimmed_rows = [[str(cell) for cell in row[:max_columns]] for row in rows if any(str(cell).strip() for cell in row)]
+        if not trimmed_rows:
+            trimmed_rows = [["No data"]]
+        column_count = max(len(row) for row in trimmed_rows)
+        normalized_rows = [row + [""] * (column_count - len(row)) for row in trimmed_rows]
+
+        output_path = output_path or self._get_temp_path(".pdf")
+        doc = SimpleDocTemplate(
+            output_path,
+            pagesize=page_size,
+            leftMargin=0.35 * inch,
+            rightMargin=0.35 * inch,
+            topMargin=0.45 * inch,
+            bottomMargin=0.45 * inch,
+        )
+        usable_width = page_size[0] - doc.leftMargin - doc.rightMargin
+        table = Table(
+            normalized_rows,
+            colWidths=[usable_width / column_count] * column_count,
+            repeatRows=1 if repeat_header and len(normalized_rows) > 1 else 0,
+        )
+        table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#eef2ff")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#111827")),
+                    ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+                    ("FONTSIZE", (0, 0), (-1, -1), font_size),
+                    ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cbd5e1")),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
+                ]
+            )
+        )
+        doc.build([table])
+        with open(output_path, "rb") as f:
+            return f.read()
 
     def pptx_to_pdf(self, pptx_data: bytes) -> bytes:
         return self._gotenberg_convert(pptx_data, "pptx", "pdf")

@@ -48,7 +48,7 @@ interface FileAnalysis {
 }
 
 const P0_WHITELIST = [
-  'word_to_pdf', 'excel_to_pdf', 'pptx_to_pdf', 'markdown_to_pdf', 'markdown_to_html',
+  'word_to_pdf', 'doc_to_pdf', 'excel_to_pdf', 'csv_to_pdf', 'pptx_to_pdf', 'markdown_to_pdf', 'markdown_to_html',
   'svg_to_png', 'svg_to_pdf', 'png_to_pdf', 'jpg_to_pdf', 'jpeg_to_pdf', 'png_to_ico',
   'pdf_to_images'
 ];
@@ -119,7 +119,7 @@ export default function ConvertCenter() {
       const res = await listTasks({ limit: 100 });
       const items = res.items || [];
       const active = items.filter((t) => ['queued', 'pending', 'processing'].includes(t.status));
-      const history = items.filter((t) => ['success', 'failed'].includes(t.status));
+      const history = items.filter((t) => ['completed', 'success', 'failed'].includes(t.status));
       setActiveTasks(active);
       setHistoryTasks(history);
     } catch (err) {
@@ -203,9 +203,11 @@ export default function ConvertCenter() {
     setErrorMessage('');
     const lowerName = name.toLowerCase();
     
-    if (lowerName.endsWith('.docx') || lowerName.endsWith('.doc')) setTargetFormat('word_to_pdf');
+    if (lowerName.endsWith('.docx')) setTargetFormat('word_to_pdf');
+    else if (lowerName.endsWith('.doc')) setTargetFormat('doc_to_pdf');
     else if (lowerName.endsWith('.pdf')) setTargetFormat('pdf_to_images');
-    else if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls') || lowerName.endsWith('.csv')) setTargetFormat('excel_to_pdf');
+    else if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')) setTargetFormat('excel_to_pdf');
+    else if (lowerName.endsWith('.csv')) setTargetFormat('csv_to_pdf');
     else if (lowerName.endsWith('.pptx')) setTargetFormat('pptx_to_pdf');
     else if (lowerName.endsWith('.md')) setTargetFormat('markdown_to_pdf');
     else if (lowerName.endsWith('.svg')) setTargetFormat('svg_to_png');
@@ -914,7 +916,7 @@ export default function ConvertCenter() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {t.status === 'success' ? (
+                    {t.status === 'success' || t.status === 'completed' ? (
                       <>
                         {t.result_url && (
                           <a href={t.result_url} target="_blank" rel="noopener noreferrer" className="p-1.5 hover:bg-primary/10 rounded-lg text-primary transition-all" title={lang === 'zh' ? '下载结果' : 'Download Result'}>

@@ -48,6 +48,21 @@ def _display_name(object_name: str) -> str:
     return base.split("_", 1)[-1] if "_" in base else base
 
 
+def _folder_exists(client, folder_prefix: str) -> bool:
+    if not folder_prefix:
+        return True
+    for candidate in (folder_prefix, f"{folder_prefix}.keep"):
+        try:
+            client.stat_object(BUCKET, candidate)
+            return True
+        except Exception:
+            pass
+    try:
+        return any(client.list_objects(BUCKET, prefix=folder_prefix, recursive=True))
+    except Exception:
+        return False
+
+
 @router.post("")
 async def create_folder(path: str = Form(...)):
     p = _sanitize_path(path)
@@ -252,11 +267,8 @@ async def move_to_folder(object_name: str = Form(...), target_folder: str = Form
     target_prefix = _normalize_folder_path(target_folder)
 
     client = get_minio_client()
-    if target_prefix:
-        try:
-            client.stat_object(BUCKET, target_prefix)
-        except Exception:
-            raise HTTPException(status_code=404, detail="Target folder not found")
+    if not _folder_exists(client, target_prefix):
+        raise HTTPException(status_code=404, detail="Target folder not found")
 
     try:
         client.stat_object(BUCKET, object_name)

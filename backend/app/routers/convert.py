@@ -22,7 +22,9 @@ converter = DocumentConverter()
 # Any target_format not in this set is rejected before conversion starts.
 P0_WHITELIST: set[str] = {
     "word_to_pdf",
+    "doc_to_pdf",
     "excel_to_pdf",
+    "csv_to_pdf",
     "pptx_to_pdf",
     "markdown_to_pdf",
     "markdown_to_html",
@@ -114,8 +116,17 @@ async def async_convert_task(
         elif target_format == ConversionType.WORD_TO_PDF:
             result_bytes = converter.word_to_pdf(file_bytes)
             output_ext = "pdf"
+        elif target_format == ConversionType.DOC_TO_PDF:
+            result_bytes = converter.doc_to_pdf(file_bytes)
+            output_ext = "pdf"
         elif target_format == ConversionType.EXCEL_TO_PDF:
             result_bytes = converter.excel_to_pdf(
+                file_bytes,
+                layout_options=conversion_options.get("excel_layout", {}),
+            )
+            output_ext = "pdf"
+        elif target_format == ConversionType.CSV_TO_PDF:
+            result_bytes = converter.csv_to_pdf(
                 file_bytes,
                 layout_options=conversion_options.get("excel_layout", {}),
             )

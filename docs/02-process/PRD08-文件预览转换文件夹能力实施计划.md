@@ -5,6 +5,8 @@
 > 建议分支：`feature/file-preview-conversion-folders`  
 > 目标：在现有 FastAPI + React + MinIO + Redis + Gotenberg 轻量架构内，补齐真实文件预览、完整轻量转换矩阵、目录式云盘体验与自动化验收。
 
+> 2026-06-22 校准：本计划保留为 PRD08 历史实施参考。当前执行事实源为 `prds/sprints/sprint10/sprint10-prd-260621-v0.2.md`。PRD08 中“完整轻量转换矩阵”不再作为用户端主流程目标；Sprint10 v0.2 改为高保真 P0 白名单，并补入 `doc_to_pdf`、`csv_to_pdf` 以匹配 DOC/DOCX、XLS/XLSX/CSV 的用户分类口径。
+
 ## 1. 当前基线
 
 ### 1.1 已具备能力
@@ -23,6 +25,15 @@
 - 预览 service 与 `/api/v1/preview` 路由尚未存在，MyFiles 预览弹窗仍是占位 UI。
 - 前端 API service 尚无 preview、folder、capabilities 封装。
 - E2E 尚未覆盖 PRD08 的文件夹、预览、完整云端转换路径。
+
+### 1.3 当前 Sprint10 状态
+
+- ConvertCenter 默认只展示 P0 高保真白名单，而不是 PRD08 全矩阵。
+- 当前 P0 转换包括：`word_to_pdf`、`doc_to_pdf`、`excel_to_pdf`、`csv_to_pdf`、`pptx_to_pdf`、`markdown_to_pdf`、`markdown_to_html`、`svg_to_png`、`svg_to_pdf`、`png_to_pdf`、`jpg_to_pdf`、`jpeg_to_pdf`、`png_to_ico`、`pdf_to_images`。
+- `word_to_markdown`、`markdown_to_word`、`pdf_to_html`、`png_to_svg`、`excel_to_csv` 等能力即使后端存在，也不进入用户端主流程。
+- MyFiles 已按云盘体验推进：路径元数据、文件拖拽移动、“移动到”按钮、文件夹自嵌套修复。
+- 预览矩阵扩展到 CSV HTML 表格、Office 转 PDF、MP3/MP4 原文件播放器。音视频只做上传与预览，不进入转换中心。
+- 日志与历史记录以 Redis 为在线事件流，依赖 Docker volume 持久化；`docker compose down -v` 会清空演示数据。
 
 ## 2. 实施原则
 
@@ -51,9 +62,11 @@
 - capabilities 覆盖 PRD08 conversion_scope。
 - 前端不再硬编码 5 个转换选项作为唯一来源。
 
-### Phase 1：后端转换 dispatch 补齐
+### Phase 1：后端转换 dispatch 补齐（被 Sprint10 v0.2 收敛）
 
-目标：让 `/api/v1/convert` 与 `/api/v1/convert/existing` 都覆盖 PRD08 轻量转换矩阵。
+历史目标：让 `/api/v1/convert` 与 `/api/v1/convert/existing` 都覆盖 PRD08 轻量转换矩阵。
+
+当前目标：只保证 Sprint10 P0 高保真白名单全链路可用；实验能力可保留接口，但不得包装成用户端核心功能。
 
 任务：
 
@@ -66,7 +79,8 @@
 
 验收：
 
-- PRD08 conversion_scope 中每项都有明确 dispatch。
+- Sprint10 P0 白名单中每项都有明确 dispatch。
+- capabilities、`ConversionType`、后端 `P0_WHITELIST`、前端 `P0_WHITELIST` 保持一致。
 - 失败时 Redis task 状态能返回可读 error。
 
 ### Phase 2：后端文件夹与 prefix 浏览
@@ -108,7 +122,7 @@
 
 验收：
 
-- `.pdf`、`.md`、`.txt`、`.png`、`.jpg`、`.jpeg`、`.svg`、`.docx`、`.xlsx/.xls`、`.pptx` 均有 preview metadata。
+- `.pdf`、`.md`、`.txt`、`.csv`、`.png`、`.jpg`、`.jpeg`、`.svg`、`.doc/.docx`、`.xlsx/.xls`、`.pptx`、`.mp3/.mp4` 均有 preview metadata 或明确不支持状态。
 - 重复预览命中 `cached: true`。
 - 大文件和不支持格式返回友好错误，不阻塞 API。
 
@@ -142,7 +156,7 @@
 - MyFiles 可以完成 PRD08 文件夹与预览全部用户路径。
 - 文本不溢出按钮/卡片，移动端弹窗可滚动且不遮挡主要操作。
 
-### Phase 5：ConvertCenter 动态转换矩阵
+### Phase 5：ConvertCenter 动态转换矩阵（当前按 P0 白名单过滤）
 
 目标：转换中心根据文件类型呈现可用转换项，避免用户选到无效目标。
 
@@ -156,7 +170,7 @@
 
 验收：
 
-- PDF、Word、Excel、PPTX、Markdown、SVG、PNG、JPG/JPEG 选择后均能看到对应可用转换项。
+- PDF、Word/DOC、Excel/CSV、PPTX、Markdown、SVG、PNG、JPG/JPEG 选择后均能看到对应 P0 可用转换项。
 - 前端无法提交 capabilities 不支持的 target_format。
 
 ### Phase 6：测试与验证
@@ -165,7 +179,7 @@
 
 后端测试：
 
-- capabilities 覆盖完整矩阵。
+- capabilities 覆盖完整后端能力，用户端 P0 白名单覆盖 Sprint10 v0.2 主流程。
 - conversion dispatch 对每个 `ConversionType` 有映射。
 - prefix normalize 拒绝 `..`、绝对路径和空非法名称。
 - folder create/list/delete 行为可用 MinIO mock 或测试 bucket 覆盖。

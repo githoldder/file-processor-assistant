@@ -21,6 +21,8 @@ PREVIEW_PREFIX = "previews/"
 MAX_TEXT_SIZE = 5 * 1024 * 1024
 
 PREVIEWABLE_IMAGE_EXTS = {".png", ".jpg", ".jpeg"}
+PREVIEWABLE_AUDIO_EXTS = {".mp3", ".wav", ".ogg"}
+PREVIEWABLE_VIDEO_EXTS = {".mp4", ".webm", ".mov"}
 PREVIEWABLE_TEXT_EXTS = {".txt"}
 PREVIEWABLE_CSV_EXTS = {".csv"}
 PREVIEWABLE_MD_EXTS = {".md"}
@@ -30,6 +32,8 @@ PREVIEWABLE_OFFICE_EXTS = {".doc", ".docx", ".xlsx", ".xls", ".pptx"}
 
 ALL_PREVIEWABLE = (
     PREVIEWABLE_IMAGE_EXTS
+    | PREVIEWABLE_AUDIO_EXTS
+    | PREVIEWABLE_VIDEO_EXTS
     | PREVIEWABLE_TEXT_EXTS
     | PREVIEWABLE_CSV_EXTS
     | PREVIEWABLE_MD_EXTS
@@ -48,6 +52,8 @@ def _preview_object_name(object_name: str) -> str:
     ext = _get_ext(object_name)
     if ext in PREVIEWABLE_IMAGE_EXTS | PREVIEWABLE_SVG_EXTS:
         return f"{PREVIEW_PREFIX}{hashed}{ext}"
+    if ext in PREVIEWABLE_AUDIO_EXTS | PREVIEWABLE_VIDEO_EXTS:
+        return f"{PREVIEW_PREFIX}{hashed}{ext}"
     if ext in PREVIEWABLE_TEXT_EXTS:
         return f"{PREVIEW_PREFIX}{hashed}.txt"
     if ext in PREVIEWABLE_CSV_EXTS:
@@ -64,6 +70,10 @@ def _detect_preview_type(object_name: str) -> str:
     ext = _get_ext(object_name)
     if ext in PREVIEWABLE_IMAGE_EXTS:
         return "image"
+    if ext in PREVIEWABLE_AUDIO_EXTS:
+        return "audio"
+    if ext in PREVIEWABLE_VIDEO_EXTS:
+        return "video"
     if ext in PREVIEWABLE_SVG_EXTS:
         return "image"
     if ext in PREVIEWABLE_TEXT_EXTS:
@@ -87,6 +97,12 @@ def _content_type_for(object_name: str) -> str:
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",
         ".svg": "image/svg+xml",
+        ".mp3": "audio/mpeg",
+        ".wav": "audio/wav",
+        ".ogg": "audio/ogg",
+        ".mp4": "video/mp4",
+        ".webm": "video/webm",
+        ".mov": "video/quicktime",
         ".txt": "text/plain; charset=utf-8",
         ".html": "text/html; charset=utf-8",
     }.get(ext, "application/octet-stream")
@@ -94,6 +110,10 @@ def _content_type_for(object_name: str) -> str:
 
 def _iter_bytes(data: bytes):
     yield data
+
+
+def _size_stat(size: int):
+    return type("PreviewStat", (), {"size": size})()
 
 
 def is_previewable(object_name: str) -> bool:
@@ -143,7 +163,7 @@ async def stream_preview_content(object_name: str):
     if ext not in ALL_PREVIEWABLE:
         return None
 
-    if ext in PREVIEWABLE_IMAGE_EXTS | PREVIEWABLE_SVG_EXTS:
+    if ext in PREVIEWABLE_IMAGE_EXTS | PREVIEWABLE_SVG_EXTS | PREVIEWABLE_AUDIO_EXTS | PREVIEWABLE_VIDEO_EXTS:
         return await _stream_raw(client, object_name)
 
     if ext in PREVIEWABLE_PDF_EXTS:
@@ -224,7 +244,8 @@ table {{ border-collapse: collapse; width: 100%; }}
 th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
 </style></head><body>{html_body}</body></html>"""
 
-        return stat, lambda: _iter_bytes(wrapped.encode("utf-8")), "text/html; charset=utf-8"
+        rendered = wrapped.encode("utf-8")
+        return _size_stat(len(rendered)), lambda: _iter_bytes(rendered), "text/html; charset=utf-8"
     except S3Error:
         return None
 
@@ -271,7 +292,8 @@ th {{ position: sticky; top: 0; background: #f8fafc; font-weight: 800; }}
 tr:nth-child(even) td {{ background: #f9fafb; }}
 </style></head><body>{notice}<div class="table-wrap"><table>{''.join(table_rows)}</table></div></body></html>"""
 
-        return stat, lambda: _iter_bytes(wrapped.encode("utf-8")), "text/html; charset=utf-8"
+        rendered = wrapped.encode("utf-8")
+        return _size_stat(len(rendered)), lambda: _iter_bytes(rendered), "text/html; charset=utf-8"
     except S3Error:
         return None
 
