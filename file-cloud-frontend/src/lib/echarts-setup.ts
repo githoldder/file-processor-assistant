@@ -49,8 +49,4 @@ echarts.use([
   CanvasRenderer,
 ]);
 
-// Register liquidfill & wordcloud (plugins auto-register on import)
-import 'echarts-liquidfill';
-import 'echarts-wordcloud';
-
 export { echarts };

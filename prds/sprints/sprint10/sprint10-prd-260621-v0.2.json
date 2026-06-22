@@ -2,7 +2,7 @@
   "sprint": "10",
   "version": "0.2",
   "status": "Planned",
-  "lastUpdated": "2026-06-21 01:55",
+  "lastUpdated": "2026-06-22 15:00",
   "object": "将 Sprint10 从全能力扩张收敛为用户端真实能力交付：修正 user/admin 路由边界，只暴露高保真文件转换，简化转换参数，补齐转换命名记忆，并分阶段重构 PDF 编辑体验。",
   "decisions": [
     {
@@ -20,20 +20,41 @@
     {
       "id": "S10-V02-ADR-03",
       "topic": "PDF 编辑分阶段",
-      "decision": "先稳定当前 PDF 页面整理器，再实现 pdf.js + annotation layer + pdf-lib 的真编辑。",
+      "decision": "先稳定当前 PDF 工作台页面管理阶段，再实现 pdf.js + annotation layer + pdf-lib 的真编辑。",
       "reason": "当前实现是 PNG 页面重排，不是 PDF 编辑器；一步到位容易继续卡顿、重叠、错位。"
     }
   ],
   "userSidebar": [
-    {"id": "dashboard", "label": "个人首页"},
-    {"id": "files", "label": "我的云盘"},
-    {"id": "convert", "label": "文件转换"},
-    {"id": "pdf", "label": "PDF 页面整理"}
+    {
+      "id": "dashboard",
+      "label": "个人首页"
+    },
+    {
+      "id": "files",
+      "label": "我的云盘"
+    },
+    {
+      "id": "convert",
+      "label": "文件转换"
+    },
+    {
+      "id": "pdf",
+      "label": "PDF 工作台"
+    }
   ],
   "adminOnlyRoutes": [
-    {"id": "analytics", "label": "管理员大数据舱"},
-    {"id": "system", "label": "系统监控"},
-    {"id": "tasks", "label": "任务监控"}
+    {
+      "id": "analytics",
+      "label": "管理员大数据舱"
+    },
+    {
+      "id": "system",
+      "label": "系统监控"
+    },
+    {
+      "id": "tasks",
+      "label": "任务监控"
+    }
   ],
   "conversionWhitelist": [
     "word_to_pdf",
@@ -92,7 +113,7 @@
     {
       "id": "S10-V02-T04",
       "priority": "P0",
-      "topic": "PDF 页面整理稳定化",
+      "topic": "PDF 工作台稳定化",
       "acceptance": [
         "拖拽排序有占位且无重叠错位",
         "页面图片预加载完成后再允许排序",
@@ -108,6 +129,31 @@
         "annotation layer 支持高亮、矩形、箭头、文本框",
         "pdf-lib 导出后批注位置误差小于 5px 等效比例"
       ]
+    },
+    {
+      "id": "S10-V02-T06",
+      "priority": "P0",
+      "topic": "云盘文件分类细化",
+      "acceptance": [
+        "文件分类从粗粒度 image/document/spreadsheet/archive 改为 pdf/docx/xlsx/png-jpeg/svg/txt/md/zip-rar/other",
+        "全部文件计数使用全局递归文件列表，子文件夹中的文件也可被分类和检索",
+        "分类标签使用产品文案而不是内部 key，中文界面显示 PDF、DOCX、XLSX、PNG/JPEG、SVG、TXT、MD、ZIP/RAR、其他文件"
+      ]
+    },
+    {
+      "id": "S10-V02-T07",
+      "priority": "P0",
+      "topic": "下午文档工程路线同步",
+      "acceptance": [
+        "基于 docx 课程模板手搓 LaTeX 模板并同步 cit-template",
+        "整理国家政策 PDF 链接、截图和可追溯证据链",
+        "对需求和市场分析数据集进行 Python 分析跑图，处理中文字体兼容",
+        "检索并复用技术栈 logo SVG/PNG，优先参考 springboot-lgg 分布式 figures",
+        "完成公式、算法、学术三线表设计",
+        "生成用例图、流程图、数据流图、ER 图、整体系统架构图、模块架构图、状态图、时序图、活动图",
+        "设计关键路径 MVP 用户故事并留出人工 UI 截图点",
+        "完成图片 PDF 转换、LaTeX 编译和后续文本结构优化"
+      ]
     }
   ],
   "acceptance": [
@@ -115,8 +161,10 @@
     "ConvertCenter 不展示低保真/实验转换作为主功能",
     "转换参数默认极简且可解释",
     "转换文件命名可继承用户重命名",
-    "PDF 页面整理无卡顿、重叠、超模、错位",
-    "未实现的 PDF 批注能力不得以可用按钮展示"
+    "PDF 工作台无卡顿、重叠、超模、错位",
+    "未实现的 PDF 批注能力不得以可用按钮展示",
+    "云盘文件分类按 pdf/docx/xlsx/png-jpeg/svg/txt/md/zip-rar/other 明确展示",
+    "下午文档工程路线同步到 PRD，并能作为后续 LaTeX/图表/UML/截图/编译任务清单"
   ],
   "tests": [
     "role-routing.spec.ts",

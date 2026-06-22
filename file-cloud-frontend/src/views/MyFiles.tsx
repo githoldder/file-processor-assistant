@@ -15,7 +15,6 @@ import {
   ImageIcon,
   Loader2,
   Plus,
-  Presentation,
   RefreshCw,
   Search,
   Sheet,
@@ -43,9 +42,22 @@ import {
   uploadFile,
 } from '../services/api';
 
-type TypeFilter = 'all' | 'pdf' | 'image' | 'document' | 'spreadsheet' | 'presentation' | 'archive' | 'other';
+type TypeFilter = 'all' | 'pdf' | 'docx' | 'xlsx' | 'png-jpeg' | 'svg' | 'txt' | 'md' | 'zip-rar' | 'other';
 
-const typeFilters: TypeFilter[] = ['all', 'pdf', 'image', 'document', 'spreadsheet', 'presentation', 'archive', 'other'];
+const typeFilters: TypeFilter[] = ['all', 'pdf', 'docx', 'xlsx', 'png-jpeg', 'svg', 'txt', 'md', 'zip-rar', 'other'];
+
+const typeFilterLabels: Record<TypeFilter, { zh: string; en: string }> = {
+  all: { zh: '全部文件', en: 'All Files' },
+  pdf: { zh: 'PDF', en: 'PDF' },
+  docx: { zh: 'DOCX', en: 'DOCX' },
+  xlsx: { zh: 'XLSX', en: 'XLSX' },
+  'png-jpeg': { zh: 'PNG/JPEG', en: 'PNG/JPEG' },
+  svg: { zh: 'SVG', en: 'SVG' },
+  txt: { zh: 'TXT', en: 'TXT' },
+  md: { zh: 'MD', en: 'MD' },
+  'zip-rar': { zh: 'ZIP/RAR', en: 'ZIP/RAR' },
+  other: { zh: '其他文件', en: 'Other' },
+};
 
 function extensionOf(name: string) {
   const clean = name.toLowerCase().split('?')[0];
@@ -55,21 +67,22 @@ function extensionOf(name: string) {
 function filterFor(file: FileEntry): TypeFilter {
   const ext = extensionOf(file.filename || file.object_name);
   if (ext === '.pdf') return 'pdf';
-  if (['.png', '.jpg', '.jpeg', '.svg', '.webp', '.gif'].includes(ext)) return 'image';
-  if (['.xls', '.xlsx', '.csv'].includes(ext)) return 'spreadsheet';
-  if (['.ppt', '.pptx'].includes(ext)) return 'presentation';
-  if (['.zip', '.rar', '.7z', '.tar', '.gz'].includes(ext)) return 'archive';
-  if (['.doc', '.docx', '.md', '.txt'].includes(ext)) return 'document';
+  if (ext === '.docx') return 'docx';
+  if (ext === '.xlsx') return 'xlsx';
+  if (['.png', '.jpg', '.jpeg'].includes(ext)) return 'png-jpeg';
+  if (ext === '.svg') return 'svg';
+  if (ext === '.txt') return 'txt';
+  if (ext === '.md') return 'md';
+  if (['.zip', '.rar'].includes(ext)) return 'zip-rar';
   return 'other';
 }
 
 function fileIcon(file: FileEntry) {
   const kind = filterFor(file);
-  if (kind === 'image') return ImageIcon;
+  if (kind === 'png-jpeg' || kind === 'svg') return ImageIcon;
   if (kind === 'pdf') return FileArchive;
-  if (kind === 'spreadsheet') return Sheet;
-  if (kind === 'presentation') return Presentation;
-  if (kind === 'archive') return FileArchive;
+  if (kind === 'xlsx') return Sheet;
+  if (kind === 'zip-rar') return FileArchive;
   return FileText;
 }
 
@@ -77,11 +90,13 @@ function typeTone(kind: TypeFilter | 'folder') {
   const tones = {
     folder: 'bg-amber-50 text-amber-600 border-amber-200',
     pdf: 'bg-rose-50 text-rose-600 border-rose-200',
-    image: 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200',
-    document: 'bg-sky-50 text-sky-600 border-sky-200',
-    spreadsheet: 'bg-emerald-50 text-emerald-600 border-emerald-200',
-    presentation: 'bg-violet-50 text-violet-600 border-violet-200',
-    archive: 'bg-orange-50 text-orange-600 border-orange-200',
+    docx: 'bg-sky-50 text-sky-600 border-sky-200',
+    xlsx: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+    'png-jpeg': 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200',
+    svg: 'bg-cyan-50 text-cyan-600 border-cyan-200',
+    txt: 'bg-slate-50 text-slate-600 border-slate-200',
+    md: 'bg-indigo-50 text-indigo-600 border-indigo-200',
+    'zip-rar': 'bg-orange-50 text-orange-600 border-orange-200',
     other: 'bg-slate-50 text-slate-600 border-slate-200',
     all: 'bg-primary/5 text-primary border-primary/20',
   };
@@ -96,6 +111,11 @@ function formatSize(size?: number) {
 
 function joinPath(prefix: string, name: string) {
   return [prefix, name].filter(Boolean).join('/');
+}
+
+function directoryOf(objectName: string) {
+  const idx = objectName.lastIndexOf('/');
+  return idx > -1 ? objectName.slice(0, idx) : '';
 }
 
 function highlight(text: string, query: string) {
@@ -133,7 +153,7 @@ export default function MyFiles() {
   const [folderToDelete, setFolderToDelete] = useState<FolderEntry | null>(null);
   const [newName, setNewName] = useState('');
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
-  const [folderContents, setFolderContents] = useState<Record<string, FileEntry[]>>({});
+  const [folderContents, setFolderContents] = useState<Record<string, { folders: FolderEntry[]; files: FileEntry[] }>>({});
   const [uploadHistory, setUploadHistory] = useState<LogEvent[]>([]);
   const [sortBy, setSortBy] = useState<'name' | 'size' | 'time' | 'folder_time'>('time');
 
@@ -143,9 +163,19 @@ export default function MyFiles() {
     try {
       setLoading(true);
       setError('');
-      const res = await listFiles({ prefix });
-      setFolders(res.folders || []);
-      setFiles(res.files || []);
+      const normalizedPrefix = prefix.trim().replace(/^\/+|\/+$/g, '');
+      if (!normalizedPrefix) {
+        const [levelRes, recursiveRes] = await Promise.all([
+          listFiles({ prefix: '' }),
+          listFiles({ prefix: '', recursive: true, limit: 500 }),
+        ]);
+        setFolders(levelRes.folders || []);
+        setFiles(recursiveRes.files || []);
+      } else {
+        const res = await listFiles({ prefix: normalizedPrefix });
+        setFolders(res.folders || []);
+        setFiles(res.files || []);
+      }
     } catch (err) {
       console.error(err);
       setError(t.zh ? '读取云端文件失败' : 'Failed to load cloud files');
@@ -226,6 +256,8 @@ export default function MyFiles() {
         await uploadFile(file, { prefix: currentPrefix, relativePath });
       }
       await fetchFiles();
+      setExpandedFolder(null);
+      setFolderContents({});
       setSortBy('time');
       setViewMode('list');
     } catch (err) {
@@ -251,7 +283,7 @@ export default function MyFiles() {
     if (folderContents[folder.path]) return;
     try {
       const res = await listFiles({ prefix: folder.path });
-      setFolderContents(prev => ({ ...prev, [folder.path]: res.files || [] }));
+      setFolderContents(prev => ({ ...prev, [folder.path]: { folders: res.folders || [], files: res.files || [] } }));
     } catch (err) {
       console.error(err);
       setError(t.zh ? '读取文件夹内容失败' : 'Failed to load folder contents');
@@ -266,6 +298,8 @@ export default function MyFiles() {
       await createFolder(joinPath(currentPrefix, cleanName));
       setCreatingFolder(false);
       setFolderName('');
+      setExpandedFolder(null);
+      setFolderContents({});
       await fetchFiles();
     } catch (err) {
       console.error(err);
@@ -298,6 +332,8 @@ export default function MyFiles() {
     try {
       await deleteFolder(folderToDelete.path);
       setFolderToDelete(null);
+      setExpandedFolder(null);
+      setFolderContents({});
       await fetchFiles();
     } catch (err) {
       console.error(err);
@@ -309,6 +345,8 @@ export default function MyFiles() {
     if (!window.confirm(t.zh ? `删除 ${file.filename}?` : `Delete ${file.filename}?`)) return;
     try {
       await deleteFile(file.object_name);
+      setExpandedFolder(null);
+      setFolderContents({});
       await fetchFiles();
     } catch (err) {
       console.error(err);
@@ -332,6 +370,8 @@ export default function MyFiles() {
       await renameFile(renamingFile.object_name, newName.trim());
       setRenamingFile(null);
       setNewName('');
+      setExpandedFolder(null);
+      setFolderContents({});
       await fetchFiles();
     } catch (err) {
       console.error(err);
@@ -589,7 +629,9 @@ export default function MyFiles() {
                   <div className="grid grid-cols-1 gap-4">
                     {sortedFolders.map((folder) => {
                       const isOpen = expandedFolder === folder.path;
-                      const innerFiles = folderContents[folder.path] || [];
+                      const inner = folderContents[folder.path] || { folders: [], files: [] };
+                      const innerFolders = inner.folders || [];
+                      const innerFiles = inner.files || [];
                       return (
                         <div key={folder.path} className="overflow-hidden rounded-2xl border border-outline-variant/30 bg-surface-container-low/40 transition-all group">
                           <div className="flex items-center justify-between p-4 hover:bg-surface-container-low">
@@ -618,6 +660,22 @@ export default function MyFiles() {
                             {isOpen && (
                               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-t border-outline-variant/40 bg-white">
                                 <div className="grid gap-2 p-4">
+                                  {innerFolders.map((childFolder) => (
+                                    <div key={childFolder.path} className="flex items-center justify-between rounded-xl bg-amber-50/40 px-4 py-3">
+                                      <button onClick={() => setCurrentPrefix(childFolder.path)} className="flex min-w-0 items-center gap-3 text-left">
+                                        <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg border bg-white', typeTone('folder'))}>
+                                          <Folder className="h-4 w-4" />
+                                        </div>
+                                        <div className="min-w-0">
+                                          <span className="block truncate text-xs font-black">{childFolder.name || childFolder.path.split('/').pop()}</span>
+                                          <span className="block truncate text-[8px] font-black uppercase tracking-widest text-outline">{childFolder.path}</span>
+                                        </div>
+                                      </button>
+                                      <button onClick={() => setCurrentPrefix(childFolder.path)} className="rounded-lg px-2.5 py-1 text-[10px] font-black text-primary hover:bg-primary/10 transition-colors">
+                                        {t.zh ? '进入' : 'Open'}
+                                      </button>
+                                    </div>
+                                  ))}
                                   {innerFiles.length ? innerFiles.map((file) => {
                                     const Icon = fileIcon(file);
                                     return (
@@ -637,9 +695,11 @@ export default function MyFiles() {
                                       </div>
                                     );
                                   }) : (
+                                    innerFolders.length === 0 && (
                                     <div className="rounded-xl border border-dashed border-outline-variant p-6 text-center text-[10px] font-black uppercase tracking-widest text-outline">
                                       {t.zh ? '文件夹为空' : 'Empty folder'}
                                     </div>
+                                    )
                                   )}
                                 </div>
                               </motion.div>
@@ -674,7 +734,7 @@ export default function MyFiles() {
                                 : 'bg-white text-outline border-outline-variant hover:bg-surface-container-low'
                             )}
                           >
-                            <span>{filter === 'all' ? (t.zh ? '全部文件' : 'All Files') : filter}</span>
+                            <span>{t.zh ? typeFilterLabels[filter].zh : typeFilterLabels[filter].en}</span>
                             <span className="bg-surface-container-low px-1.5 py-0.5 rounded text-[8px] font-black text-outline">{count}</span>
                           </button>
                         );
@@ -699,6 +759,11 @@ export default function MyFiles() {
                               <p className="text-[9px] font-black text-outline uppercase tracking-widest mt-0.5">
                                 {formatSize(file.size)} · {file.last_modified ? new Date(file.last_modified).toLocaleString() : '--'}
                               </p>
+                              {!currentPrefix && directoryOf(file.object_name) && (
+                                <p className="mt-1 truncate text-[9px] font-bold text-outline/70">
+                                  {t.zh ? '位置：' : 'Path: '}{directoryOf(file.object_name)}
+                                </p>
+                              )}
                             </div>
                           </div>
                           <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">

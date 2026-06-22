@@ -472,7 +472,7 @@ export default function ConvertCenter() {
                       </div>
                       {selectedExtension === '.pdf' && (
                         <a href="#" onClick={(e) => { e.preventDefault(); }} className="text-[10px] font-black uppercase tracking-widest text-primary">
-                          {t.zh ? 'PDF 拆分/合并请使用 PDF 页面整理' : 'Use PDF Organizer for split / merge'}
+                          {t.zh ? 'PDF 拆分/合并请使用 PDF 工作台' : 'Use PDF Workspace for split / merge'}
                         </a>
                       )}
                     </div>
