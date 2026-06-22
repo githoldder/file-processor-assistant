@@ -135,9 +135,9 @@
       "priority": "P0",
       "topic": "云盘文件分类细化",
       "acceptance": [
-        "文件分类从粗粒度 image/document/spreadsheet/archive 改为 pdf/docx/xlsx/png-jpeg/svg/txt/md/zip-rar/other",
+        "文件分类从粗粒度 image/document/spreadsheet/archive 改为 pdf/doc-docx/xls-xlsx-csv/ppt-pptx/png-jpeg/svg/txt/md/zip-rar/other",
         "全部文件计数使用全局递归文件列表，子文件夹中的文件也可被分类和检索",
-        "分类标签使用产品文案而不是内部 key，中文界面显示 PDF、DOCX、XLSX、PNG/JPEG、SVG、TXT、MD、ZIP/RAR、其他文件"
+        "分类标签使用产品文案而不是内部 key，中文界面显示 PDF、DOC/DOCX、XLS/XLSX/CSV、PPT/PPTX、PNG/JPEG、SVG、TXT、MD、ZIP/RAR、其他文件"
       ]
     },
     {
@@ -163,7 +163,7 @@
     "转换文件命名可继承用户重命名",
     "PDF 工作台无卡顿、重叠、超模、错位",
     "未实现的 PDF 批注能力不得以可用按钮展示",
-    "云盘文件分类按 pdf/docx/xlsx/png-jpeg/svg/txt/md/zip-rar/other 明确展示",
+    "云盘文件分类按 pdf/doc-docx/xls-xlsx-csv/ppt-pptx/png-jpeg/svg/txt/md/zip-rar/other 明确展示",
     "下午文档工程路线同步到 PRD，并能作为后续 LaTeX/图表/UML/截图/编译任务清单"
   ],
   "tests": [

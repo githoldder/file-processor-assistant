@@ -42,15 +42,16 @@ import {
   uploadFile,
 } from '../services/api';
 
-type TypeFilter = 'all' | 'pdf' | 'docx' | 'xlsx' | 'png-jpeg' | 'svg' | 'txt' | 'md' | 'zip-rar' | 'other';
+type TypeFilter = 'all' | 'pdf' | 'doc' | 'sheet' | 'ppt' | 'png-jpeg' | 'svg' | 'txt' | 'md' | 'zip-rar' | 'other';
 
-const typeFilters: TypeFilter[] = ['all', 'pdf', 'docx', 'xlsx', 'png-jpeg', 'svg', 'txt', 'md', 'zip-rar', 'other'];
+const typeFilters: TypeFilter[] = ['all', 'pdf', 'doc', 'sheet', 'ppt', 'png-jpeg', 'svg', 'txt', 'md', 'zip-rar', 'other'];
 
 const typeFilterLabels: Record<TypeFilter, { zh: string; en: string }> = {
   all: { zh: '全部文件', en: 'All Files' },
   pdf: { zh: 'PDF', en: 'PDF' },
-  docx: { zh: 'DOCX', en: 'DOCX' },
-  xlsx: { zh: 'XLSX', en: 'XLSX' },
+  doc: { zh: 'DOC/DOCX', en: 'DOC/DOCX' },
+  sheet: { zh: 'XLS/XLSX/CSV', en: 'XLS/XLSX/CSV' },
+  ppt: { zh: 'PPT/PPTX', en: 'PPT/PPTX' },
   'png-jpeg': { zh: 'PNG/JPEG', en: 'PNG/JPEG' },
   svg: { zh: 'SVG', en: 'SVG' },
   txt: { zh: 'TXT', en: 'TXT' },
@@ -67,8 +68,9 @@ function extensionOf(name: string) {
 function filterFor(file: FileEntry): TypeFilter {
   const ext = extensionOf(file.filename || file.object_name);
   if (ext === '.pdf') return 'pdf';
-  if (ext === '.docx') return 'docx';
-  if (ext === '.xlsx') return 'xlsx';
+  if (['.doc', '.docx'].includes(ext)) return 'doc';
+  if (['.xls', '.xlsx', '.csv'].includes(ext)) return 'sheet';
+  if (['.ppt', '.pptx'].includes(ext)) return 'ppt';
   if (['.png', '.jpg', '.jpeg'].includes(ext)) return 'png-jpeg';
   if (ext === '.svg') return 'svg';
   if (ext === '.txt') return 'txt';
@@ -81,7 +83,7 @@ function fileIcon(file: FileEntry) {
   const kind = filterFor(file);
   if (kind === 'png-jpeg' || kind === 'svg') return ImageIcon;
   if (kind === 'pdf') return FileArchive;
-  if (kind === 'xlsx') return Sheet;
+  if (kind === 'sheet') return Sheet;
   if (kind === 'zip-rar') return FileArchive;
   return FileText;
 }
@@ -90,8 +92,9 @@ function typeTone(kind: TypeFilter | 'folder') {
   const tones = {
     folder: 'bg-amber-50 text-amber-600 border-amber-200',
     pdf: 'bg-rose-50 text-rose-600 border-rose-200',
-    docx: 'bg-sky-50 text-sky-600 border-sky-200',
-    xlsx: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+    doc: 'bg-sky-50 text-sky-600 border-sky-200',
+    sheet: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+    ppt: 'bg-violet-50 text-violet-600 border-violet-200',
     'png-jpeg': 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200',
     svg: 'bg-cyan-50 text-cyan-600 border-cyan-200',
     txt: 'bg-slate-50 text-slate-600 border-slate-200',

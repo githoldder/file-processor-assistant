@@ -193,7 +193,7 @@ Admin 端可保留热键，但只在 `role=admin` 时生效。user 角色即使 
 | P1 | PDF 真编辑阶段 2 | pdf.js + annotation layer + pdf-lib |
 | P1 | 测试补齐 | 路由隔离、转换白名单、命名、PDF 交互 |
 | P2 | 实验转换能力折叠区 | 非核心，不影响主流程 |
-| P0 | 云盘文件分类细化 | 按 pdf/docx/xlsx/png-jpeg/svg/txt/md/zip-rar/other 展示全局分类 |
+| P0 | 云盘文件分类细化 | 按 pdf/doc-docx/xls-xlsx-csv/ppt-pptx/png-jpeg/svg/txt/md/zip-rar/other 展示全局分类 |
 | P0 | 下午文档工程路线 | 从 docx 模板、政策截图、数据分析图、系统设计图到最终 LaTeX 编译形成闭环 |
 
 ## 下午文档工程 Sprint 路线
