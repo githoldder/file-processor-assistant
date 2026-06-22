@@ -1226,35 +1226,60 @@ export default function Analytics() {
   return (
     <div className="h-screen w-full flex flex-col overflow-hidden select-none bg-[#0b0f19]">
       {/* 顶部标题栏 */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-[#1e293b] shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-white/5 bg-[#080b13]/80 backdrop-blur-md shrink-0 z-50">
+        <div className="flex items-center gap-4">
           <img
             src="/logos/culcloud-cockpit-logo.png"
             alt="CulCloud 大数据指挥舱"
-            className="h-10 w-56 object-contain object-left"
+            className="h-8 w-48 object-contain object-left transition-all hover:brightness-110"
           />
-          <span className="text-[8px] text-slate-500 font-bold">Spark Telemetry</span>
-          {isManual && (
-            <span className="text-[7px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold">手动</span>
-          )}
+          <div className="h-4 w-[1px] bg-white/10" />
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-slate-400 font-bold tracking-wider uppercase">Spark Telemetry</span>
+            {isManual ? (
+              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-black tracking-wider transition-all animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                {lang === 'zh' ? '手动模式' : 'MANUAL'}
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black tracking-wider transition-all">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" style={{ animationDuration: '2s' }} />
+                {lang === 'zh' ? '实时轮播' : 'AUTO-ROTATE'}
+              </div>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <button onClick={() => setShowSystem(true)}
-            className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#12182d] hover:bg-[#1b233d] border border-[#1e293b] text-slate-400 hover:text-white transition-colors cursor-pointer" title="系统监控">
-            <Settings2 className="w-3.5 h-3.5" />
+
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setShowSystem(true)}
+            className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/10 hover:border-white/20 text-slate-400 hover:text-white transition-all duration-300 hover:scale-[1.08] active:scale-95 cursor-pointer"
+            title={lang === 'zh' ? '系统监控' : 'System Metrics'}
+          >
+            <Settings2 className="w-4 h-4" />
           </button>
-          <button onClick={() => setShowCluster(true)}
-            className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#12182d] hover:bg-[#1b233d] border border-[#1e293b] text-slate-400 hover:text-white transition-colors cursor-pointer" title="集群状态">
-            <Monitor className="w-3.5 h-3.5" />
+          <button
+            onClick={() => setShowCluster(true)}
+            className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/10 hover:border-white/20 text-slate-400 hover:text-white transition-all duration-300 hover:scale-[1.08] active:scale-95 cursor-pointer"
+            title={lang === 'zh' ? '集群状态' : 'Cluster Health'}
+          >
+            <Monitor className="w-4 h-4" />
           </button>
-          <button onClick={refresh}
-            className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#12182d] hover:bg-[#1b233d] border border-[#1e293b] text-slate-400 hover:text-white transition-colors cursor-pointer" title="刷新">
-            <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
+          <button
+            onClick={refresh}
+            className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/10 hover:border-white/20 text-slate-400 hover:text-white transition-all duration-300 hover:scale-[1.08] active:scale-95 cursor-pointer"
+            title={lang === 'zh' ? '刷新' : 'Refresh'}
+          >
+            <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
           </button>
-          <button onClick={toggleCockpit}
-            className="flex items-center gap-1.5 px-3 h-7 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/50 text-rose-400 hover:text-rose-300 text-[10px] font-black transition-colors cursor-pointer" title="退出大屏">
-            <LogOut className="w-3 h-3" />
-            退出
+          <div className="h-6 w-[1px] bg-white/10 mx-1" />
+          <button
+            onClick={toggleCockpit}
+            className="flex items-center gap-1.5 px-4 h-8 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 active:bg-rose-500/30 border border-rose-500/20 hover:border-rose-500/40 text-rose-400 hover:text-rose-300 text-xs font-black transition-all duration-300 hover:scale-[1.04] active:scale-95 cursor-pointer shadow-[0_0_15px_rgba(244,63,94,0.05)]"
+            title={lang === 'zh' ? '退出大屏' : 'Exit Cockpit'}
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>{lang === 'zh' ? '退出' : 'Exit'}</span>
           </button>
         </div>
       </div>
