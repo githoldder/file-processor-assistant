@@ -706,7 +706,7 @@ function SlideQuality({ data, loading }: any) {
     }],
   };
 
-  // 错误热力图 - 优先使用 API 返回的 matrix,空则从 error/scale 合成
+  // 错误热力图 - 优先使用 API 返回的 matrix, 空则从错误总数确定性分布，避免随机假数据。
   const hmMatrix = errorHeatmap?.matrix;
   const hmLabelsDow = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
   const hmLabelsHour = Array.from({ length: 24 }, (_, i) => `${i}:00`);
@@ -717,9 +717,8 @@ function SlideQuality({ data, loading }: any) {
         if (val > 0) hmData.push([hour, dow, val]);
       });
     });
-  } else {
-    // 合成 7×24 热力数据:基于错误总数按小时+工作日权重分布
-    const totalErrs = errTotal || 5037;
+  } else if (errTotal > 0) {
+    const totalErrs = errTotal;
     // 每小时权重:08-18 高峰, 19-23 中峰, 00-07 低谷
     const hourWeight = Array.from({ length: 24 }, (_, h) => (h >= 8 && h <= 18) ? 3 : (h >= 19 || h <= 7) ? 1 : 2);
     const dayWeight = [1.0, 1.1, 1.0, 0.9, 1.2, 0.6, 0.4]; // 周五最高,周末低
@@ -728,7 +727,8 @@ function SlideQuality({ data, loading }: any) {
     const errScale = totalErrs / totalWeight;
     for (let d = 0; d < 7; d++) {
       for (let h = 0; h < 24; h++) {
-        const val = Math.round(dayWeight[d] * hourWeight[h] * errScale * (0.7 + 0.6 * Math.random()));
+        const deterministicJitter = 0.85 + (((d + 1) * 17 + (h + 3) * 11) % 30) / 100;
+        const val = Math.round(dayWeight[d] * hourWeight[h] * errScale * deterministicJitter);
         if (val > 0) hmData.push([h, d, val]);
       }
     }
@@ -1228,10 +1228,11 @@ export default function Analytics() {
       {/* 顶部标题栏 */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-[#1e293b] shrink-0">
         <div className="flex items-center gap-3">
-          <h1 className="text-base font-black text-slate-100 flex items-center gap-1.5">
-            <BarChart3 className="w-4 h-4 text-primary" />
-            CulCloud 大数据指挥舱
-          </h1>
+          <img
+            src="/logos/culcloud-cockpit-logo.png"
+            alt="CulCloud 大数据指挥舱"
+            className="h-10 w-56 object-contain object-left"
+          />
           <span className="text-[8px] text-slate-500 font-bold">Spark Telemetry</span>
           {isManual && (
             <span className="text-[7px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold">手动</span>

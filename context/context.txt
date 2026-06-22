@@ -166,3 +166,69 @@
 - `prds/sprints/sprint09/sprint09-prd-260615-v0.1.md`
 - `prds/sprints/sprint09/sprint09-prd-260615-v0.1.json`
 - `context/context.txt`
+
+## Session Update: 2026-06-21 — Sprint 10 Planning Mode: Route Isolation, Convert Whitelisting, and PDF Organize Stabilization
+
+### Completed
+- [Design] Created `implementation_plan.md` detailing the design specifications for routing/sidebar isolation, ConvertCenter capability whitelist & simplified options, displayName inheritance, PDF page organizer Native Drag-and-Drop stabilization with page pagination, and new Profile page.
+
+### Changed Files
+- `implementation_plan.md` (Artifact)
+- `context/context.txt`
+
+## Session Update: 2026-06-21 — Sprint 10 Execution & Test Quality Hardening
+
+### Completed
+- [Bug] Fixed React hydration and load race conditions in all Convert and PDF organizer specs by waiting for the `h1` element to be visible before clicking file dialog buttons.
+- [Bug] Resolved strict mode locator violation in `minio_integration.spec.ts` (test case 7) by targeting `.first()` of the file entry name, and supported localized title attributes ("Download"/"下载", "Delete"/"删除") to handle both EN/ZH browser locales.
+- [Bug] Corrected incorrect download button `title` attribute in `MyFiles.tsx` from `t.files.upload` to `t.zh ? '下载' : 'Download'`.
+- [Bug] Repaired syntax error / broken closing tag on line 338 of `PDFStudio.tsx` that caused compilation failure.
+- [Bug] Resolved strict mode export button locator violation in `pdf-page-organizer.spec.ts` by using `.first()` to distinguish between workspace and parameter sidebar export buttons.
+- [Bug] Updated `useDashboard.tsx` view initialization logic to synchronize corrected fallbacks back to `localStorage` state.
+
+### Changed Files
+- `file-cloud-frontend/src/context/useDashboard.tsx`
+- `file-cloud-frontend/src/views/PDFStudio.tsx`
+- `file-cloud-frontend/src/views/MyFiles.tsx`
+- `tests/e2e/specs/convert-rename-memory.spec.ts`
+- `tests/e2e/specs/convert-simple-options.spec.ts`
+- `tests/e2e/specs/convert-capability-whitelist.spec.ts`
+- `tests/e2e/specs/convert.spec.ts`
+- `tests/e2e/specs/pdf-page-organizer.spec.ts`
+- `tests/e2e/specs/pdf-layout-stability.spec.ts`
+- `tests/e2e/specs/minio_integration.spec.ts`
+- `context/context.txt`
+
+## Session Update: 2026-06-21 — Backend Reload Validation & Whitelist/Auth Testing
+
+### Completed
+- [Bug] Restarted the backend api container to load updated auth routes and conversion whitelist.
+- [Feature] Added dedicated unit tests in `tests/backend/unit/test_auth_and_whitelist.py` covering `/auth/me`, `/auth/role`, and `/convert` non-P0 403 whitelist behaviors.
+- [Verification] Verified that pytest suite runs successfully (20 passed) and acceptance curl requests return 403 Forbidden for `pdf_to_html` and 200 OK for updated auth roles.
+
+### Changed Files
+- `tests/backend/unit/test_auth_and_whitelist.py`
+- `context/context.txt`
+
+## Session Update: 2026-06-21 — Cloud Drive Interface & Notification Enhancements
+
+### Completed
+- [Feature] Added `get_current_role()` to `auth.py` and passed `user_id` in logs for file/folder actions in `files.py` and `folders.py`.
+- [Feature] Redesigned notification dropdown in `Navbar.tsx` with close and mark-all-read buttons, a detailed message modal, and exact unread badge count.
+- [Feature] Replaced task/history placeholders in `ConvertCenter.tsx` with real-time active and completed pipelines queried from the API.
+- [Feature] Reconstructed `MyFiles.tsx` layout: isolated folder-level views from root-level upload widgets; formatted upload history logs as a detailed list with timestamp, name, size, and uploader; added folder sorting (Name A-Z, Size, Upload Time, Creation Time) and type filter toolbar.
+
+### Service Verification
+- Backend container `culcloud-demo-api-1` successfully restarted.
+- Frontend build `npm run build` compiled successfully in 2.63s with zero errors.
+
+### Changed Files
+- `backend/app/routers/auth.py`
+- `backend/app/routers/files.py`
+- `backend/app/routers/folders.py`
+- `file-cloud-frontend/src/components/Navbar.tsx`
+- `file-cloud-frontend/src/views/ConvertCenter.tsx`
+- `file-cloud-frontend/src/views/MyFiles.tsx`
+- `context/context.txt`
+
+

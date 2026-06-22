@@ -56,7 +56,16 @@ function AppShell() {
   const ctx = useDashboard();
   const [activeView, setActiveView] = useState<ViewState>(() => ctx.activeView);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const isImmersiveAdminCockpit = ctx.role === "admin" && ctx.activeView === "analytics";
+  const isAdminCockpit = ctx.role === "admin";
+
+  useEffect(() => {
+    const USER_ALLOWED_VIEWS: ViewState[] = ['dashboard', 'files', 'convert', 'pdf'];
+    if (ctx.role === 'user' && !USER_ALLOWED_VIEWS.includes(ctx.activeView)) {
+      ctx.setActiveView('dashboard');
+    } else if (ctx.role === 'admin' && ctx.activeView !== 'analytics') {
+      ctx.setActiveView('analytics');
+    }
+  }, [ctx.role, ctx.activeView]);
 
   useEffect(() => {
     setActiveView(ctx.activeView);
@@ -76,9 +85,9 @@ function AppShell() {
   return (
     <div className={cn(
       "min-h-screen transition-colors duration-300",
-      isImmersiveAdminCockpit ? "theme-admin theme-admin-bg" : "bg-gray-50 text-slate-800"
+      isAdminCockpit ? "theme-admin theme-admin-bg" : "bg-gray-50 text-slate-800"
     )}>
-      {!isImmersiveAdminCockpit && (
+      {!isAdminCockpit && (
         <>
           <Navbar onToggleCockpit={toggleCockpit} />
           <Sidebar
@@ -91,8 +100,8 @@ function AppShell() {
       )}
       <main className={cn(
         "min-h-screen transition-all duration-300",
-        isImmersiveAdminCockpit ? "p-0" : "pt-24 pb-8 px-6 md:px-10",
-        !isImmersiveAdminCockpit && "md:ml-20"
+        isAdminCockpit ? "p-0" : "pt-24 pb-8 px-6 md:px-10",
+        !isAdminCockpit && "md:ml-20"
       )}>
         <ViewLoader activeView={activeView} />
       </main>

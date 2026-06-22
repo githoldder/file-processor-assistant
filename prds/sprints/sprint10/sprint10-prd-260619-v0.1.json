@@ -1,0 +1,438 @@
+{
+  "sprint": "10",
+  "version": "0.1",
+  "status": "Pending",
+  "lastUpdated": "2026-06-19 00:30",
+  "object": "将散落在 Sprint 04-09 及 PRD08 中超出答辩基线的未完成任务统一收敛，集中补齐用户端体验缺口。",
+  "source_sprints": [
+    "legacy/08-file-preview-conversion-folders",
+    "sprint04",
+    "sprint06",
+    "sprint07",
+    "sprint09"
+  ],
+  "key_results": [
+    "KR-1: MyFiles 具备目录导航、文件夹管理、真实文件预览和类型分类。",
+    "KR-2: ConvertCenter 动态渲染 capabilities 覆盖全转换矩阵。",
+    "KR-3: PDF Studio 使用 pdf.js + Fabric.js + pdf-lib 实现阅读器 + 批注 + 导出。",
+    "KR-4: 后端 preview service + folder API 为 MyFiles 提供完整支撑。",
+    "KR-5: 所有用户端页面 i18n 全覆盖，mock 数据清理完毕。"
+  ],
+  "tasks": [
+    {
+      "id": "S10-T01",
+      "status": "pending",
+      "topic": "后端预览服务 (preview service + router)",
+      "source": "PRD08-T2/T3, PRD08-Phase3",
+      "owned_files": [
+        "backend/app/services/preview.py (new)",
+        "backend/app/routers/preview.py (new)",
+        "backend/app/main.py"
+      ],
+      "out_of_scope": [
+        "不做大文件（>100MB）预览",
+        "不做视频/音频预览"
+      ],
+      "steps": [
+        {
+          "step_id": "S10-T01-STEP01",
+          "status": "pending",
+          "action": "implement_preview_service",
+          "description": "创建 preview.py，实现 PDF/TXT/MD/图片/Office 的预览生成与缓存逻辑。",
+          "expected_output": "backend/app/services/preview.py"
+        },
+        {
+          "step_id": "S10-T01-STEP02",
+          "status": "pending",
+          "action": "implement_preview_router",
+          "description": "创建 preview.py 路由，实现 metadata/content/delete 三个端点。",
+          "expected_output": "backend/app/routers/preview.py"
+        },
+        {
+          "step_id": "S10-T01-STEP03",
+          "status": "pending",
+          "action": "register_router",
+          "description": "在 main.py 注册 preview router。",
+          "expected_output": "main.py 更新"
+        }
+      ],
+      "acceptance_criteria": [
+        "PDF/TXT/MD/PNG/JPG/SVG/DOCX/XLSX/PPTX 8 种格式均有 preview metadata",
+        "重复预览返回 cached: true",
+        "大文件和不支持格式返回友好错误"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S10-T02",
+      "status": "pending",
+      "topic": "后端文件夹系统",
+      "source": "PRD08-T5, PRD08-Phase2",
+      "owned_files": [
+        "backend/app/routers/files.py"
+      ],
+      "out_of_scope": [
+        "不做物理目录挂载",
+        "不做权限隔离"
+      ],
+      "steps": [
+        {
+          "step_id": "S10-T02-STEP01",
+          "status": "pending",
+          "action": "implement_folder_endpoints",
+          "description": "扩展 files.py：创建文件夹、prefix 列表、文件夹上传、递归删除。",
+          "expected_output": "files.py 更新"
+        },
+        {
+          "step_id": "S10-T02-STEP02",
+          "status": "pending",
+          "action": "path_normalization",
+          "description": "实现路径规范化：去前导/、压缩重复/、禁止 ..、过滤系统前缀。",
+          "expected_output": "路径工具函数"
+        }
+      ],
+      "acceptance_criteria": [
+        "能创建文件夹、进入文件夹、返回上级",
+        "上传保留 webkitRelativePath",
+        "删除文件夹能递归清理"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S10-T03",
+      "status": "pending",
+      "topic": "前端 API 封装",
+      "source": "PRD08-T6",
+      "owned_files": [
+        "file-cloud-frontend/src/services/api.ts"
+      ],
+      "steps": [
+        {
+          "step_id": "S10-T03-STEP01",
+          "status": "pending",
+          "action": "add_api_functions",
+          "description": "新增 listFiles(prefix)、uploadFile(file, options)、createFolder、deleteFolder、getPreview、getPreviewContentUrl、getConversionCapabilities。",
+          "expected_output": "api.ts 更新"
+        }
+      ],
+      "acceptance_criteria": [
+        "所有新 API 封装有类型定义",
+        "错误时返回可读信息"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S10-T04",
+      "status": "pending",
+      "topic": "云盘现代化改造 (MyFiles)",
+      "source": "Sprint09-P3, PRD08-T7, PRD08-Phase4",
+      "owned_files": [
+        "file-cloud-frontend/src/views/MyFiles.tsx",
+        "file-cloud-frontend/src/types.ts"
+      ],
+      "out_of_scope": [
+        "不做拖拽上传",
+        "不做多选批量操作"
+      ],
+      "steps": [
+        {
+          "step_id": "S10-T04-STEP01",
+          "status": "pending",
+          "action": "breadcrumb_nav",
+          "description": "实现动态面包屑目录导航，每段可点击返回。",
+          "expected_output": "MyFiles 面包屑组件"
+        },
+        {
+          "step_id": "S10-T04-STEP02",
+          "status": "pending",
+          "action": "folder_support",
+          "description": "创建文件夹弹窗、文件夹图标区分、进入/返回上级操作。",
+          "expected_output": "MyFiles 文件夹操作"
+        },
+        {
+          "step_id": "S10-T04-STEP03",
+          "status": "pending",
+          "action": "file_type_tabs",
+          "description": "MIME 分类 Tab（PDF/图片/文档/全部）和扩展名图标。",
+          "expected_output": "MyFiles 分类筛选"
+        },
+        {
+          "step_id": "S10-T04-STEP04",
+          "status": "pending",
+          "action": "real_preview",
+          "description": "接入 preview API，按类型渲染 PDF/html/text/image。",
+          "expected_output": "MyFiles 真实预览弹窗"
+        },
+        {
+          "step_id": "S10-T04-STEP05",
+          "status": "pending",
+          "action": "search_highlight",
+          "description": "搜索结果文件名关键字高亮。",
+          "expected_output": "MyFiles 搜索高亮"
+        }
+      ],
+      "acceptance_criteria": [
+        "可以创建文件夹并在其中上传文件",
+        "PDF/图片/文本文件可真实预览",
+        "搜索关键字在文件名中高亮",
+        "文件图标区分 PDF/图片/文档/文件夹"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S10-T05",
+      "status": "pending",
+      "topic": "转换中心能力全暴露",
+      "source": "PRD08-T8, PRD08-Phase5, Sprint06-T03",
+      "owned_files": [
+        "file-cloud-frontend/src/views/ConvertCenter.tsx",
+        "file-cloud-frontend/src/translations.ts"
+      ],
+      "steps": [
+        {
+          "step_id": "S10-T05-STEP01",
+          "status": "pending",
+          "action": "capabilities_api",
+          "description": "启动时拉取 /api/v1/convert/capabilities，动态渲染转换选项。",
+          "expected_output": "ConvertCenter 动态选项"
+        },
+        {
+          "step_id": "S10-T05-STEP02",
+          "status": "pending",
+          "action": "add_image_doc_conversions",
+          "description": "补齐图片转换（SVG↔PNG↔ICO↔PDF）和文档转换（Markdown↔PDF/HTML/Word）。",
+          "expected_output": "新转换选项可用"
+        },
+        {
+          "step_id": "S10-T05-STEP03",
+          "status": "pending",
+          "action": "group_conversions",
+          "description": "转换选项分组：Office2PDF / ImageFactory / PDF Utils / Document。",
+          "expected_output": "ConvertCenter 分组 UI"
+        }
+      ],
+      "acceptance_criteria": [
+        "可选转换项与 capabilities 返回一致",
+        "PDF/Word/Excel/PPTX/Markdown/SVG/PNG/JPG 均有对应选项",
+        "前端无法提交 capabilities 不支持的 target_format"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S10-T06",
+      "status": "pending",
+      "topic": "PDF 阅读器与批注系统改造",
+      "source": "Sprint09-P4",
+      "owned_files": [
+        "file-cloud-frontend/src/views/PDFStudio.tsx",
+        "file-cloud-frontend/package.json"
+      ],
+      "dependencies": {
+        "npm": ["pdfjs-dist", "fabric", "pdf-lib"]
+      },
+      "out_of_scope": [
+        "不做 PDF→Word/Excel",
+        "不做协同批注",
+        "不做 OCR"
+      ],
+      "steps": [
+        {
+          "step_id": "S10-T06-STEP01",
+          "status": "pending",
+          "action": "pdfjs_reader",
+          "description": "用 pdfjs-dist 替换现有 PNG 预览方案，实现真正的 PDF 阅读器（翻页/缩放/缓存）。",
+          "expected_output": "PDFStudio 内嵌 pdf.js 阅读器"
+        },
+        {
+          "step_id": "S10-T06-STEP02",
+          "status": "pending",
+          "action": "fabric_overlay",
+          "description": "在 PDF Canvas 上叠加 fabric.Canvas 透明层，实现批注工具（高亮/箭头/矩形/文本框）。",
+          "expected_output": "Fabric.js 批注层"
+        },
+        {
+          "step_id": "S10-T06-STEP03",
+          "status": "pending",
+          "action": "pdf_lib_export",
+          "description": "用 pdf-lib 在前端将批注合并回 PDF 并导出。",
+          "expected_output": "导出含批注的 PDF"
+        }
+      ],
+      "acceptance_criteria": [
+        "PDF 渲染不重排",
+        "批注可拖拽、缩放、删除",
+        "导出 PDF 保留批注和原文清晰度"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S10-T07",
+      "status": "pending",
+      "topic": "管理员热键补齐",
+      "source": "Sprint07-T03-STEP02",
+      "owned_files": [
+        "file-cloud-frontend/src/App.tsx",
+        "file-cloud-frontend/src/context/useDashboard.tsx"
+      ],
+      "steps": [
+        {
+          "step_id": "S10-T07-STEP01",
+          "status": "pending",
+          "action": "bind_hotkeys",
+          "description": "实现全局 keydown 监听，1-7 分别映射 7 个核心视图，仅管理员角色生效。",
+          "expected_output": "热键跳转功能"
+        }
+      ],
+      "acceptance_criteria": [
+        "1-7 数字键可跳转对应视图",
+        "仅管理员模式生效",
+        "不与其他快捷键冲突"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S10-T08",
+      "status": "pending",
+      "topic": "Mock 数据清理与 i18n 补齐",
+      "source": "代码审计",
+      "owned_files": [
+        "file-cloud-frontend/src/components/Navbar.tsx",
+        "file-cloud-frontend/src/views/Dashboard.tsx",
+        "file-cloud-frontend/src/views/MyFiles.tsx",
+        "file-cloud-frontend/src/views/SystemStatus.tsx",
+        "file-cloud-frontend/src/views/TaskMonitor.tsx",
+        "file-cloud-frontend/src/views/Analytics.tsx",
+        "file-cloud-frontend/src/constants.ts",
+        "file-cloud-frontend/src/translations.ts"
+      ],
+      "steps": [
+        {
+          "step_id": "S10-T08-STEP01",
+          "status": "pending",
+          "action": "mock_data_cleanup",
+          "description": "Navbar 搜索/通知/avatar 去硬编码、Dashboard avatar/用户名去硬编码、Active Tasks 接真实 API、删除 constants.ts。",
+          "expected_output": "Mock 数据清理完成"
+        },
+        {
+          "step_id": "S10-T08-STEP02",
+          "status": "pending",
+          "action": "i18n_admin_views",
+          "description": "SystemStatus/TaskMonitor/Analytics 接入 useLanguage()。",
+          "expected_output": "管理员视图 i18n 化"
+        },
+        {
+          "step_id": "S10-T08-STEP03",
+          "status": "pending",
+          "action": "i18n_hardcoded_strings",
+          "description": "补齐 MyFiles 等页面中的硬编码英文/中文字符串。",
+          "expected_output": "所有用户可见字段 i18n"
+        }
+      ],
+      "acceptance_criteria": [
+        "所有 Navbar 元素有真实状态或产品态空状态",
+        "三个管理员视图有中英文文案",
+        "constants.ts 可安全删除"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S10-T09",
+      "status": "pending",
+      "topic": "PRD08 遗留测试与文档",
+      "source": "PRD08-T9/T10/T11, PRD08-Phase6/7",
+      "owned_files": [
+        "tests/",
+        "README.md",
+        "docs/"
+      ],
+      "steps": [
+        {
+          "step_id": "S10-T09-STEP01",
+          "status": "pending",
+          "action": "backend_tests",
+          "description": "capabilities 覆盖、conversion dispatch 映射、prefix normalize、folder CRUD、preview type 识别。",
+          "expected_output": "后端测试覆盖"
+        },
+        {
+          "step_id": "S10-T09-STEP02",
+          "status": "pending",
+          "action": "e2e_tests",
+          "description": "Playwright E2E：文件夹创建/上传、各类型预览、云端文件转换。",
+          "expected_output": "E2E 测试覆盖"
+        },
+        {
+          "step_id": "S10-T09-STEP03",
+          "status": "pending",
+          "action": "update_docs",
+          "description": "README 补充 preview/folder/capabilities API，记录已知限制。",
+          "expected_output": "文档更新完成"
+        }
+      ],
+      "acceptance_criteria": [
+        "后端测试通过",
+        "E2E 覆盖 PRD08 主路径",
+        "README 与代码口径一致"
+      ],
+      "handoff_notes": ""
+    },
+    {
+      "id": "S10-T10",
+      "status": "pending",
+      "topic": "文档工程迭代优化（2 轮）",
+      "source": "Sprint08-T01~T05",
+      "owned_files": [
+        "docs/02-process/document/report-txt/chapters/",
+        "docs/02-process/Figure/",
+        "docs/02-process/document/latex/cit-template/",
+        "docs/03-reports/"
+      ],
+      "out_of_scope": [
+        "不伪造数据或截图"
+      ],
+      "steps": [
+        {
+          "step_id": "S10-T10-R1",
+          "status": "pending",
+          "action": "round1_content_structure",
+          "description": "第 1 轮：txt 章节按证据链定稿；UML 图修正补充；logo/截图替换；LaTeX 修复缺图和引用。",
+          "expected_output": "内容与结构对齐"
+        },
+        {
+          "step_id": "S10-T10-R2",
+          "status": "pending",
+          "action": "round2_delivery_audit",
+          "description": "第 2 轮：LaTeX 编译 0 error；PDF 视觉检查每页排版；交叉引用完整性审计；walkthrough 终审。",
+          "expected_output": "可交付最终 PDF"
+        }
+      ],
+      "acceptance_criteria": [
+        "两轮后 PDF 无排版问题、无缺图、无内容与事实不符",
+        "LaTeX 编译 0 error, 0 warning（允许少量 overfull box）",
+        "walkthrough 完成所有检查项",
+        "最终 PDF 放入 docs/03-reports/"
+      ],
+      "handoff_notes": ""
+    }
+  ],
+  "acceptance": [
+    "MyFiles 可完成目录浏览、文件夹上传、真实预览",
+    "ConvertCenter 基于 capabilities 动态渲染所有可用转换",
+    "PDF Studio 具备 pdf.js 阅读器 + Fabric.js 批注 + pdf-lib 导出",
+    "管理员热键 1-7 可跳转",
+    "所有用户端页面 i18n 全覆盖",
+    "Mock 数据全部替换为真实接口或产品态空状态",
+    "后端测试 + E2E 覆盖 PRD08 主路径"
+  ],
+  "implementation_order": [
+    "S10-T01: 后端 preview service（基建）",
+    "S10-T02: 后端文件夹系统（基建）",
+    "S10-T03: 前端 API 封装（桥梁）",
+    "S10-T04: 云盘现代化改造（最大 UI 工程）",
+    "S10-T05: 转换中心能力全暴露",
+    "S10-T06: PDF 阅读器与批注（第二 UI 工程）",
+    "S10-T07: 管理员热键补齐",
+    "S10-T08: Mock 数据清理与 i18n 补齐",
+    "S10-T09: PRD08 遗留测试与文档",
+    "S10-T10: 文档工程迭代优化（最后做）"
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "sprint": "10",
+  "version": "0.2",
+  "status": "Planned",
+  "lastUpdated": "2026-06-21 01:55",
+  "object": "将 Sprint10 从全能力扩张收敛为用户端真实能力交付：修正 user/admin 路由边界，只暴露高保真文件转换，简化转换参数，补齐转换命名记忆，并分阶段重构 PDF 编辑体验。",
+  "decisions": [
+    {
+      "id": "S10-V02-ADR-01",
+      "topic": "User/Admin 路由隔离",
+      "decision": "User sidebar 仅保留 dashboard/files/convert/pdf；analytics/system/tasks 全部 admin-only。",
+      "reason": "当前 Sidebar 把 system/tasks 放入 userItems，普通用户可见运维入口，违背产品信息架构。"
+    },
+    {
+      "id": "S10-V02-ADR-02",
+      "topic": "转换能力收敛",
+      "decision": "ConvertCenter 默认只展示 high/stable 且高保真的 P0 白名单；Word->Markdown、Markdown->Word、PDF->HTML、PNG->SVG 等不进入主流程。",
+      "reason": "动态暴露全 capabilities 会把 beta/medium 能力包装成核心功能，造成伪功能感。"
+    },
+    {
+      "id": "S10-V02-ADR-03",
+      "topic": "PDF 编辑分阶段",
+      "decision": "先稳定当前 PDF 页面整理器，再实现 pdf.js + annotation layer + pdf-lib 的真编辑。",
+      "reason": "当前实现是 PNG 页面重排，不是 PDF 编辑器；一步到位容易继续卡顿、重叠、错位。"
+    }
+  ],
+  "userSidebar": [
+    {"id": "dashboard", "label": "个人首页"},
+    {"id": "files", "label": "我的云盘"},
+    {"id": "convert", "label": "文件转换"},
+    {"id": "pdf", "label": "PDF 页面整理"}
+  ],
+  "adminOnlyRoutes": [
+    {"id": "analytics", "label": "管理员大数据舱"},
+    {"id": "system", "label": "系统监控"},
+    {"id": "tasks", "label": "任务监控"}
+  ],
+  "conversionWhitelist": [
+    "word_to_pdf",
+    "excel_to_pdf",
+    "pptx_to_pdf",
+    "markdown_to_pdf",
+    "markdown_to_html",
+    "svg_to_png",
+    "svg_to_pdf",
+    "png_to_pdf",
+    "jpg_to_pdf",
+    "jpeg_to_pdf",
+    "png_to_ico",
+    "pdf_to_images"
+  ],
+  "hiddenOrDeferredConversions": [
+    "word_to_markdown",
+    "markdown_to_word",
+    "pdf_to_html",
+    "png_to_svg",
+    "pdf_to_word",
+    "pdf_to_pptx",
+    "pptx_to_images"
+  ],
+  "tasks": [
+    {
+      "id": "S10-V02-T01",
+      "priority": "P0",
+      "topic": "修正路由与 Sidebar 角色隔离",
+      "acceptance": [
+        "User sidebar 只出现 dashboard/files/convert/pdf",
+        "User 角色不能通过旧 localStorage 停留在 system/tasks/analytics",
+        "Admin 角色仍可进入 analytics/system/tasks"
+      ]
+    },
+    {
+      "id": "S10-V02-T02",
+      "priority": "P0",
+      "topic": "转换中心高保真白名单与参数简化",
+      "acceptance": [
+        "默认只展示 conversionWhitelist",
+        "普通转换无 DPI/OCR/LZO 等复杂参数",
+        "Excel->PDF 只暴露自动适配/宽表格/打印友好三个预设"
+      ]
+    },
+    {
+      "id": "S10-V02-T03",
+      "priority": "P0",
+      "topic": "转换命名记忆",
+      "acceptance": [
+        "本地上传、云盘选择、转换输出共用 displayName",
+        "转换后下载建议名继承用户修改后的名称",
+        "最近一次 displayName 可按源文件记忆"
+      ]
+    },
+    {
+      "id": "S10-V02-T04",
+      "priority": "P0",
+      "topic": "PDF 页面整理稳定化",
+      "acceptance": [
+        "拖拽排序有占位且无重叠错位",
+        "页面图片预加载完成后再允许排序",
+        "删除未验证的分布式/worker 文案"
+      ]
+    },
+    {
+      "id": "S10-V02-T05",
+      "priority": "P1",
+      "topic": "PDF 真编辑阶段",
+      "acceptance": [
+        "pdf.js 阅读器支持缩放、翻页、页码跳转",
+        "annotation layer 支持高亮、矩形、箭头、文本框",
+        "pdf-lib 导出后批注位置误差小于 5px 等效比例"
+      ]
+    }
+  ],
+  "acceptance": [
+    "User sidebar 无 admin-only 路由入口",
+    "ConvertCenter 不展示低保真/实验转换作为主功能",
+    "转换参数默认极简且可解释",
+    "转换文件命名可继承用户重命名",
+    "PDF 页面整理无卡顿、重叠、超模、错位",
+    "未实现的 PDF 批注能力不得以可用按钮展示"
+  ],
+  "tests": [
+    "role-routing.spec.ts",
+    "sidebar-user.spec.ts",
+    "convert-capability-whitelist.spec.ts",
+    "convert-rename-memory.spec.ts",
+    "convert-simple-options.spec.ts",
+    "pdf-page-organizer.spec.ts",
+    "pdf-layout-stability.spec.ts",
+    "admin-routes.spec.ts"
+  ]
+}

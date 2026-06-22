@@ -34,6 +34,11 @@ class EventType(str, Enum):
     FILE_UPLOADED = "file_uploaded"
     FILE_DELETED = "file_deleted"
     FILE_DOWNLOADED = "file_downloaded"
+    FILE_RENAMED = "file_renamed"
+    FILE_MOVED = "file_moved"
+    FOLDER_CREATED = "folder_created"
+    FOLDER_DELETED = "folder_deleted"
+    FOLDER_RENAMED = "folder_renamed"
     CONVERSION_STARTED = "conversion_started"
     CONVERSION_COMPLETED = "conversion_completed"
     CONVERSION_FAILED = "conversion_failed"
@@ -48,6 +53,122 @@ class EventType(str, Enum):
     SERVICE_RESTART = "service_restart"
     SERVICE_DOWN = "service_down"
     API_REQUEST = "api_request"
+
+
+EVENT_DEFINITIONS = {
+    EventType.FILE_UPLOADED: {
+        "category": "file",
+        "resource_type": "file",
+        "action": "uploaded",
+        "severity": "success",
+        "title_zh": "文件上传成功",
+        "title_en": "File uploaded",
+    },
+    EventType.FILE_DELETED: {
+        "category": "file",
+        "resource_type": "file",
+        "action": "deleted",
+        "severity": "info",
+        "title_zh": "文件已删除",
+        "title_en": "File deleted",
+    },
+    EventType.FILE_DOWNLOADED: {
+        "category": "file",
+        "resource_type": "file",
+        "action": "downloaded",
+        "severity": "info",
+        "title_zh": "文件已下载",
+        "title_en": "File downloaded",
+    },
+    EventType.FILE_RENAMED: {
+        "category": "file",
+        "resource_type": "file",
+        "action": "renamed",
+        "severity": "info",
+        "title_zh": "文件已重命名",
+        "title_en": "File renamed",
+    },
+    EventType.FILE_MOVED: {
+        "category": "file",
+        "resource_type": "file",
+        "action": "moved",
+        "severity": "info",
+        "title_zh": "文件已移动",
+        "title_en": "File moved",
+    },
+    EventType.FOLDER_CREATED: {
+        "category": "folder",
+        "resource_type": "folder",
+        "action": "created",
+        "severity": "success",
+        "title_zh": "文件夹创建成功",
+        "title_en": "Folder created",
+    },
+    EventType.FOLDER_DELETED: {
+        "category": "folder",
+        "resource_type": "folder",
+        "action": "deleted",
+        "severity": "info",
+        "title_zh": "文件夹已删除",
+        "title_en": "Folder deleted",
+    },
+    EventType.FOLDER_RENAMED: {
+        "category": "folder",
+        "resource_type": "folder",
+        "action": "renamed",
+        "severity": "info",
+        "title_zh": "文件夹已重命名",
+        "title_en": "Folder renamed",
+    },
+    EventType.CONVERSION_STARTED: {
+        "category": "conversion",
+        "resource_type": "task",
+        "action": "started",
+        "severity": "info",
+        "title_zh": "转换任务已开始",
+        "title_en": "Conversion started",
+    },
+    EventType.CONVERSION_COMPLETED: {
+        "category": "conversion",
+        "resource_type": "task",
+        "action": "completed",
+        "severity": "success",
+        "title_zh": "文件转换成功",
+        "title_en": "Conversion completed",
+    },
+    EventType.CONVERSION_FAILED: {
+        "category": "conversion",
+        "resource_type": "task",
+        "action": "failed",
+        "severity": "error",
+        "title_zh": "文件转换失败",
+        "title_en": "Conversion failed",
+    },
+    EventType.PDF_REORDER_COMPLETED: {
+        "category": "pdf",
+        "resource_type": "pdf",
+        "action": "exported",
+        "severity": "success",
+        "title_zh": "PDF 导出成功",
+        "title_en": "PDF exported",
+    },
+    EventType.PDF_MERGE_COMPLETED: {
+        "category": "pdf",
+        "resource_type": "pdf",
+        "action": "merged",
+        "severity": "success",
+        "title_zh": "PDF 合并成功",
+        "title_en": "PDF merged",
+    },
+    EventType.PDF_SPLIT_COMPLETED: {
+        "category": "pdf",
+        "resource_type": "pdf",
+        "action": "split",
+        "severity": "success",
+        "title_zh": "PDF 拆分成功",
+        "title_en": "PDF split",
+    },
+}
 
 
 async def log_event(
@@ -68,11 +189,18 @@ async def log_event(
 
     now_ts = time.time()
     now_iso = datetime.utcnow().isoformat() + "Z"
+    definition = EVENT_DEFINITIONS.get(event_type, {})
 
     event = {
         "type": event_type.value,
         "message": message,
         "timestamp": now_iso,
+        "category": definition.get("category", "system"),
+        "resource_type": definition.get("resource_type", "system"),
+        "action": definition.get("action", event_type.value),
+        "severity": definition.get("severity", "info"),
+        "title_zh": definition.get("title_zh", event_type.value),
+        "title_en": definition.get("title_en", event_type.value),
         "user_id": user_id,
         "file_name": file_name,
         "file_size": file_size,

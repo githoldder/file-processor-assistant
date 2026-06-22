@@ -1,136 +1,22 @@
 \chapter{系统实现}
 
-\section{开发环境搭建}
+\section{个人首页真实数据实现}
 
-系统的开发环境基于 Docker Compose 构建，主要包含以下容器：
+个人首页通过 \texttt{listFiles(\{recursive: true\})} 统计文件数量与空间占用，通过 \texttt{listTasks} 获取成功和失败任务数量，并展示最近转换任务。若后端接口不可用，页面显示明确错误提示和重试入口，避免将默认零值误认为真实业务数据。
 
-\begin{itemize}
-  \item Hadoop 集群（NameNode + DataNode）：基于 Hadoop 3.3.6 镜像构建；
-  \item Spark 集群（Master + Worker）：基于 Spark 3.5.0 镜像构建；
-  \item Flask 后端服务：基于 Python 3.11 镜像构建，运行在 5000 端口；
-  \item React 前端应用：基于 Node.js 20 镜像构建，运行在 5173 端口。
-\end{itemize}
+\section{云盘上传与分类实现}
 
-Docker Compose 配置文件的简化示例如下：
+云盘默认页由拖拽上传区和分类文件块组成。用户可拖动文件到页面，也可点击上传文件或上传文件夹。系统根据扩展名将文件归为 PDF、图片、文档、表格、演示文稿、压缩包和其他文件，并使用不同颜色层级帮助用户识别。
 
-\begin{lstlisting}[caption={Docker Compose 配置文件}]
-version: '3.8'
-services:
-  namenode:
-    image: bde2020/hadoop-namenode:2.0.0-hadoop3.3.6-java8
-    environment:
-      - CLUSTER_NAME=test
-    ports:
-      - "9870:9870"
+\section{文件预览实现}
 
-  datanode:
-    image: bde2020/hadoop-datanode:2.0.0-hadoop3.3.6-java8
-    environment:
-      - SERVICE_PRECONDITION=namenode:9870
+文件预览从弹窗改为专门预览页。预览页保留返回云盘、下载、预览类型、文件大小和大视口内容区域。PDF 使用浏览器内嵌预览，图片使用自适应展示，文本和 HTML 通过安全 iframe 展示。
 
-  spark-master:
-    image: bitnami/spark:3.5.0
-    ports:
-      - "8080:8080"
-      - "7077:7077"
+\section{PDF 编辑室实现}
 
-  spark-worker:
-    image: bitnami/spark:3.5.0
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark-master:7077
+PDF Studio 默认进入编辑室。用户可以上传本地 PDF 或从云盘选择 PDF。系统提取页面预览图后，在页面上叠加批注层，支持画笔、高亮、矩形、箭头、文本和橡皮擦。底部缩略图用于选择页面、拖拽排序、旋转和删除页面；右侧导出面板提供云端页面重排导出和浏览器打印导出。
 
-  flask-api:
-    build: ./backend
-    ports:
-      - "5000:5000"
+\section{管理驾驶舱与遥测实现}
 
-  frontend:
-    build: ./file-cloud-frontend
-    ports:
-      - "5173:5173"
-\end{lstlisting}
+管理端通过 Spark 对上传、下载、转换、预览、失败等操作进行聚合，形成任务吞吐、失败率、文件类型分布和质量指标。前端使用 ECharts 展示趋势、拓扑、桑基图和质量仪表盘，作为课程报告中的实验截图来源。
 
-\section{数据处理实现}
-
-数据处理流程使用 PySpark 实现，核心代码如下：
-
-\begin{lstlisting}[language=Python, caption={Spark 数据处理核心代码}]
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, count, avg, sum, date_format
-
-def process_sales_data(spark, input_path, output_path):
-    """销售数据处理流水线"""
-
-    df = spark.read.csv(input_path, header=True, inferSchema=True)
-
-    cleaned_df = df.dropna().filter(col("amount") > 0)
-
-    summary_df = cleaned_df.groupBy(
-        date_format(col("timestamp"), "yyyy-MM").alias("month"),
-        col("product_category")
-    ).agg(
-        sum("amount").alias("total_sales"),
-        count("order_id").alias("order_count"),
-        avg("amount").alias("avg_order_value")
-    )
-
-    result = summary_df.collect()
-    return [row.asDict() for row in result]
-\end{lstlisting}
-
-\section{API 服务实现}
-
-Flask 后端服务的主要路由实现如下：
-
-\begin{lstlisting}[language=Python, caption={Flask API 路由实现}]
-from flask import Flask, jsonify
-from flask_cors import CORS
-
-app = Flask(__name__)
-CORS(app)
-
-@app.route('/api/v1/analytics/overview', methods=['GET'])
-def get_overview():
-    results = analytics_service.compute_overview()
-    return jsonify({"status": "success", "data": results})
-
-@app.route('/api/v1/analytics/sales', methods=['GET'])
-def get_sales_analysis():
-    period = request.args.get('period', 'monthly')
-    results = analytics_service.compute_sales_analysis(period)
-    return jsonify({"status": "success", "data": results})
-
-@app.route('/api/v1/analytics/user-behavior', methods=['GET'])
-def get_user_behavior():
-    results = analytics_service.compute_user_behavior()
-    return jsonify({"status": "success", "data": results})
-\end{lstlisting}
-
-\section{前端可视化实现}
-
-前端使用 React + ECharts 实现数据可视化，核心组件如下：
-
-\begin{lstlisting}[language=Python, caption={ECharts 图表组件实现（TypeScript 示意代码）}]
-import ReactECharts from 'echarts-for-react';
-
-const SalesTrendChart: React.FC<{ data: SalesData[] }> = ({ data }) => {
-  const option = {
-    tooltip: { trigger: 'axis' },
-    xAxis: {
-      type: 'category',
-      data: data.map(d => d.month),
-    },
-    yAxis: { type: 'value' },
-    series: [{
-      name: '销售额',
-      type: 'line',
-      data: data.map(d => d.total_sales),
-      smooth: true,
-      areaStyle: { opacity: 0.3 },
-    }],
-  };
-
-  return <ReactECharts option={option} style={{ height: 400 }} />;
-};
-\end{lstlisting}

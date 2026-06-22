@@ -1,77 +1,67 @@
-\chapter{实验与分析}
+\chapter{测试与结果分析}
 
-\section{实验环境}
-
-实验环境配置如表~\ref{tab:env} 所示。
+\section{测试环境}
 
 \begin{table}[htbp]
   \centering
-  \caption{实验环境配置}
-  \label{tab:env}
+  \caption{测试环境配置}
+  \label{tab:test-env}
   \begin{tabular}{ll}
     \toprule
     项目 & 配置 \\
     \midrule
-    操作系统 & macOS / Linux \\
-    CPU & 4 核 2.5GHz \\
-    内存 & 16 GB \\
-    Hadoop 版本 & 3.3.6 \\
-    Spark 版本 & 3.5.0 \\
-    Python 版本 & 3.11 \\
-    Node.js 版本 & 20 \\
+    前端 & React + TypeScript + Vite \\
+    后端 & FastAPI + MinIO + Redis/Celery \\
+    数据分析 & Spark / CSV / JSON 遥测数据 \\
+    PDF 处理 & Gotenberg / PyMuPDF 页面提取与重组 \\
+    验证方式 & TypeScript 编译、接口联调、浏览器截图 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\section{实验数据}
-
-实验使用模拟生成的数据集，包括：
-
-\begin{itemize}
-  \item 用户行为数据：包含 10000 个用户的 100 万条行为记录；
-  \item 销售订单数据：包含 50000 笔订单记录，时间跨度为 12 个月。
-\end{itemize}
-
-\section{实验结果}
-
-\subsection{数据处理性能}
-
-Spark 数据处理任务的运行时间统计如表~\ref{tab:performance} 所示。
+\section{功能测试}
 
 \begin{table}[htbp]
   \centering
-  \caption{Spark 任务运行时间}
-  \label{tab:performance}
-  \begin{tabular}{lrr}
+  \caption{核心功能测试用例}
+  \label{tab:function-tests}
+  \begin{tabularx}{\textwidth}{lllX}
     \toprule
-    任务类型 & 数据量 & 运行时间（秒） \\
+    编号 & 模块 & 操作 & 预期结果 \\
     \midrule
-    数据清洗 & 100 万条 & 12.3 \\
-    用户行为分析 & 100 万条 & 18.7 \\
-    销售趋势分析 & 5 万条 & 8.2 \\
-    数据质量报告 & 105 万条 & 15.1 \\
+    T01 & 首页 & 后端正常时刷新指标 & 展示真实文件数、空间、成功和失败任务 \\
+    T02 & 首页 & 后端不可用时刷新指标 & 展示不可用提示，不用零值伪装真实数据 \\
+    T03 & 云盘 & 拖拽上传文件 & 文件写入当前目录并进入对应分类块 \\
+    T04 & 云盘 & 点击 PDF 分类块 & 进入 PDF 文件列表，显示红色层级图标 \\
+    T05 & 预览 & 点击文件预览 & 进入专门预览页，大视口展示内容 \\
+    T06 & PDF 编辑室 & 添加画笔、高亮、文本、箭头 & 批注对象显示在当前页面上 \\
+    T07 & PDF 编辑室 & 打印导出 & 打印页包含页面图和批注层 \\
     \bottomrule
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
-\subsection{可视化效果}
+\section{算法指标}
 
-系统前端展示了多个分析视图，包括：
+文件类型占比可表示为：
+\[
+  r_i = \frac{n_i}{\sum_{j=1}^{k} n_j}
+\]
 
-\begin{itemize}
-  \item \textbf{仪表盘概览}：展示用户总数、订单总数、总销售额等关键指标；
-  \item \textbf{销售趋势}：按月展示销售额变化趋势；
-  \item \textbf{商品分布}：展示不同商品类别的销售额占比；
-  \item \textbf{用户活跃度}：展示日活跃用户数变化情况；
-  \item \textbf{转化分析}：展示用户从浏览到购买的转化漏斗。
-\end{itemize}
+存储占用率可表示为：
+\[
+  u = \frac{S_{used}}{S_{quota}} \times 100\%
+\]
+
+转换成功率可表示为：
+\[
+  p = \frac{T_{success}}{T_{success}+T_{failed}} \times 100\%
+\]
+
+平均任务时延可表示为：
+\[
+  \bar{L} = \frac{1}{n}\sum_{i=1}^{n}(t_{complete,i}-t_{create,i})
+\]
 
 \section{结果分析}
 
-实验结果表明：
-
-\begin{enumerate}
-  \item Spark 能够在大规模数据集上实现高效的数据处理，百万级数据的分析任务可在 20 秒内完成；
-  \item 基于 Flask 的 RESTful API 响应时间在 50ms 以内，满足实时查询需求；
-  \item ECharts 可视化图表能够直观展示数据分析结果，辅助用户快速理解数据特征。
-\end{enumerate}
+测试结果表明，CulCloud 已经从静态展示型界面转向真实文件处理平台。首页指标能够反映后端数据状态；云盘默认界面更符合主流云盘产品的信息架构；PDF Studio 具备基础办公批注能力；管理驾驶舱能够为报告提供可追溯的实验截图和数据证据。

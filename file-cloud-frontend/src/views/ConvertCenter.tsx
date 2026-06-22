@@ -4,9 +4,11 @@ import {
   getTaskStatus, 
   listFiles, 
   convertExistingFile,
-  uploadFile
+  uploadFile,
+  getConversionCapabilities,
+  listTasks
 } from '../services/api';
-import type { ConversionOptions } from '../services/api';
+import type { CapabilityGroup, CapabilityItem, ConversionOptions, TaskItem } from '../services/api';
 import { 
   FileUp, 
   Cloud, 
@@ -45,8 +47,22 @@ interface FileAnalysis {
   rowCount?: number;
 }
 
+const P0_WHITELIST = [
+  'word_to_pdf', 'excel_to_pdf', 'pptx_to_pdf', 'markdown_to_pdf', 'markdown_to_html',
+  'svg_to_png', 'svg_to_pdf', 'png_to_pdf', 'jpg_to_pdf', 'jpeg_to_pdf', 'png_to_ico',
+  'pdf_to_images'
+];
+
+const getDisplayName = (filename: string): string => {
+  const base = filename.split('?')[0].split('/').pop() || '';
+  const nameWithoutExt = base.includes('.') ? base.substring(0, base.lastIndexOf('.')) : base;
+  const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}[_-]/;
+  const cleaned = nameWithoutExt.replace(uuidRegex, '');
+  return cleaned;
+};
+
 export default function ConvertCenter() {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
   const [status, setStatus] = useState<ConversionStatus>('idle');
   const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null);
   const [actualFile, setActualFile] = useState<File | null>(null);
@@ -54,9 +70,14 @@ export default function ConvertCenter() {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [targetFormat, setTargetFormat] = useState('word_to_pdf');
-  const [fidelity, setFidelity] = useState('Auto');
+  const [displayName, setDisplayName] = useState('');
+  const [excelPreset, setExcelPreset] = useState<'fit' | 'wide' | 'print'>('fit');
+  const [showAdvancedExcel, setShowAdvancedExcel] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [fileAnalysis, setFileAnalysis] = useState<FileAnalysis | null>(null);
+  const [capabilities, setCapabilities] = useState<CapabilityItem[]>([]);
+  const [capabilityGroups, setCapabilityGroups] = useState<CapabilityGroup[]>([]);
+  const [loadingCapabilities, setLoadingCapabilities] = useState(false);
   const [excelLayout, setExcelLayout] = useState<ConversionOptions['excel_layout']>({
     page_size: 'A4',
     orientation: 'landscape',
@@ -66,10 +87,51 @@ export default function ConvertCenter() {
     repeat_header: true,
   });
   
+  const [activeTasks, setActiveTasks] = useState<TaskItem[]>([]);
+  const [historyTasks, setHistoryTasks] = useState<TaskItem[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(false);
+  
   // Cloud Selector State
   const [isCloudSelectorOpen, setIsCloudSelectorOpen] = useState(false);
   const [cloudFiles, setCloudFiles] = useState<any[]>([]);
   const [loadingCloud, setLoadingCloud] = useState(false);
+
+  useEffect(() => {
+    const loadCapabilities = async () => {
+      try {
+        setLoadingCapabilities(true);
+        const res = await getConversionCapabilities();
+        setCapabilities(res.capabilities || []);
+        setCapabilityGroups(res.groups || []);
+      } catch (err) {
+        console.error(err);
+        setErrorMessage(t.zh ? '转换能力矩阵加载失败' : 'Failed to load conversion capabilities');
+      } finally {
+        setLoadingCapabilities(false);
+      }
+    };
+    loadCapabilities();
+  }, []);
+
+  const fetchTasksData = async () => {
+    try {
+      setLoadingTasks(true);
+      const res = await listTasks({ limit: 100 });
+      const items = res.items || [];
+      const active = items.filter((t) => ['queued', 'pending', 'processing'].includes(t.status));
+      const history = items.filter((t) => ['success', 'failed'].includes(t.status));
+      setActiveTasks(active);
+      setHistoryTasks(history);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingTasks(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasksData();
+  }, [status, taskId]);
 
   const fetchCloudFiles = async () => {
     try {
@@ -89,6 +151,19 @@ export default function ConvertCenter() {
   };
 
   const isExcelConversion = () => targetFormat === 'excel_to_pdf' || targetFormat === 'excel_to_csv';
+
+  const selectedExtension = selectedFile ? `.${getExtension(selectedFile.name)}` : '';
+
+  const availableCapabilities = selectedExtension
+    ? capabilities.filter((cap) => cap.from_ext.toLowerCase() === selectedExtension.toLowerCase() && P0_WHITELIST.includes(cap.key))
+    : capabilities.filter(cap => P0_WHITELIST.includes(cap.key));
+
+  const groupedAvailableCapabilities = capabilityGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((cap) => availableCapabilities.some((candidate) => candidate.key === cap.key)),
+    }))
+    .filter((group) => group.items.length > 0);
 
   const buildConversionOptions = (): ConversionOptions | undefined => {
     if (!isExcelConversion()) return undefined;
@@ -122,32 +197,69 @@ export default function ConvertCenter() {
     setFileAnalysis({ extension, category });
   };
 
-  const handleFileSelect = (name: string, size: string, type: string, isCloud = false) => {
+  const handleFileSelect = (name: string, size: string, type: string, isCloud = false, fileObj?: File) => {
     setSelectedFile({ name, size, type, isCloud });
     setStatus('detected');
     setErrorMessage('');
     const lowerName = name.toLowerCase();
-    // Simple auto-detection logic
+    
     if (lowerName.endsWith('.docx') || lowerName.endsWith('.doc')) setTargetFormat('word_to_pdf');
-    else if (lowerName.endsWith('.pdf')) setTargetFormat('pdf_to_word');
+    else if (lowerName.endsWith('.pdf')) setTargetFormat('pdf_to_images');
     else if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls') || lowerName.endsWith('.csv')) setTargetFormat('excel_to_pdf');
     else if (lowerName.endsWith('.pptx')) setTargetFormat('pptx_to_pdf');
+    else if (lowerName.endsWith('.md')) setTargetFormat('markdown_to_pdf');
+    else if (lowerName.endsWith('.svg')) setTargetFormat('svg_to_png');
+    else if (lowerName.endsWith('.png')) setTargetFormat('png_to_pdf');
+    else if (lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) setTargetFormat('jpg_to_pdf');
     else setTargetFormat('word_to_pdf');
+
+    const defaultName = getDisplayName(name);
+    const fileKey = isCloud ? `cloud:${name}` : (fileObj ? `local:${fileObj.name}:${fileObj.size}:${fileObj.lastModified}` : `local:${name}`);
+    try {
+      const mapJson = localStorage.getItem('culcloud_conversion_names');
+      const map = mapJson ? JSON.parse(mapJson) : {};
+      if (map[fileKey]) {
+        setDisplayName(map[fileKey]);
+      } else {
+        setDisplayName(defaultName);
+      }
+    } catch (err) {
+      setDisplayName(defaultName);
+    }
   };
 
+  useEffect(() => {
+    if (!selectedFile || availableCapabilities.length === 0) return;
+    if (!availableCapabilities.some((cap) => cap.key === targetFormat)) {
+      setTargetFormat(availableCapabilities[0].key);
+    }
+  }, [selectedFile?.name, capabilities.length]);
+
   const handleStartConversion = async () => {
+    if (!selectedFile) return;
     setStatus('processing');
     setProgress(5);
     try {
+      const fileKey = selectedFile.isCloud 
+        ? `cloud:${selectedFile.name}`
+        : (actualFile ? `local:${actualFile.name}:${actualFile.size}:${actualFile.lastModified}` : `local:${selectedFile.name}`);
+      try {
+        const mapJson = localStorage.getItem('culcloud_conversion_names');
+        const map = mapJson ? JSON.parse(mapJson) : {};
+        map[fileKey] = displayName;
+        localStorage.setItem('culcloud_conversion_names', JSON.stringify(map));
+      } catch (err) {
+        console.error(err);
+      }
+
       let res;
-      const options = buildConversionOptions();
+      const options = buildConversionOptions() || {};
+      const apiOptions = { ...options, displayName };
       if (selectedFile?.isCloud) {
-        res = await convertExistingFile(selectedFile.name, targetFormat, options);
+        res = await convertExistingFile(selectedFile.name, targetFormat, apiOptions);
       } else if (actualFile) {
-        // Upload the file to S3 API first so it appears in "My Files"
         const uploadRes = await uploadFile(actualFile);
-        // Assuming uploadRes has an object_name property based on standard response
-        res = await convertExistingFile(uploadRes.object_name || uploadRes.filename || actualFile.name, targetFormat, options);
+        res = await convertExistingFile(uploadRes.object_name || uploadRes.filename || actualFile.name, targetFormat, apiOptions);
       } else {
         return;
       }
@@ -314,53 +426,145 @@ export default function ConvertCenter() {
                       value={targetFormat}
                       onChange={(e) => setTargetFormat(e.target.value)}
                       className="w-full bg-surface-container-low border border-outline-variant rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-primary/10 transition-all appearance-none cursor-pointer outline-none shadow-sm"
+                      disabled={loadingCapabilities || availableCapabilities.length === 0}
                     >
-                      <option value="word_to_pdf">{t.zh ? '便携式文档格式 (.pdf)' : 'Portable Document Format (.pdf)'}</option>
-                      <option value="pdf_to_word">{t.zh ? '微软 Word (.docx)' : 'Microsoft Word (.docx)'}</option>
-                      <option value="excel_to_pdf">{t.zh ? 'Excel 转 PDF (.pdf)' : 'Excel to PDF (.pdf)'}</option>
-                      <option value="excel_to_csv">{t.zh ? 'Excel 转 CSV (.csv)' : 'Excel to CSV (.csv)'}</option>
-                      <option value="pptx_to_pdf">{t.zh ? 'PPTX 转 PDF (.pdf)' : 'PPTX to PDF (.pdf)'}</option>
-                      <option value="pdf_to_html">{t.zh ? 'PDF 转 HTML (.html)' : 'PDF to HTML (.html)'}</option>
+                      {groupedAvailableCapabilities.map((group) => (
+                        <optgroup key={group.group} label={group.name}>
+                          {group.items.map((cap) => (
+                            <option key={cap.key} value={cap.key}>
+                              {cap.name} ({cap.to_ext})
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
                     </select>
                     <ChevronDown size={20} className="absolute right-5 top-1/2 -translate-y-1/2 text-outline pointer-events-none" />
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <label className="text-[10px] font-black text-outline uppercase tracking-[0.2em] block">{t.convert.dpi}</label>
-                  <div className="flex p-1.5 bg-surface-container-low rounded-2xl gap-1 border border-outline-variant/30 shadow-inner">
-                    {['300', '600', 'Auto'].map((d) => (
-                      <button 
-                        key={d}
-                        onClick={() => setFidelity(d)}
-                        className={cn(
-                          "flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all",
-                          fidelity === d ? "bg-white shadow-sm text-primary" : "text-outline hover:bg-white/50"
-                        )}
-                      >
-                        {d} {d !== 'Auto' && 'DPI'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <label className="text-[10px] font-black text-outline uppercase tracking-[0.2em] block">{t.convert.processing}</label>
-                  <div className="flex items-center gap-6 py-3">
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                      <input type="checkbox" defaultChecked className="w-5 h-5 rounded-lg border-outline-variant text-primary focus:ring-primary/20 transition-all" />
-                      <span className="text-xs font-black text-outline group-hover:text-on-surface uppercase tracking-wider">OCR</span>
-                    </label>
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                      <input type="checkbox" className="w-5 h-5 rounded-lg border-outline-variant text-primary focus:ring-primary/20 transition-all" />
-                      <span className="text-xs font-black text-outline group-hover:text-on-surface uppercase tracking-wider">LZO</span>
-                    </label>
-                  </div>
+                <div className="space-y-4 lg:col-span-2">
+                  <label className="text-[10px] font-black text-outline uppercase tracking-[0.2em] block">
+                    {t.zh ? '自定义输出文件名（不含扩展名）' : 'Custom Output Filename (No extension)'}
+                  </label>
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="w-full bg-surface-container-low border border-outline-variant rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-primary/10 transition-all outline-none shadow-sm text-on-surface"
+                    placeholder={t.zh ? '输入输出文件名...' : 'Enter output filename...'}
+                  />
                 </div>
               </div>
 
-              {(fileAnalysis || isExcelConversion()) && (
-                <div className="px-8 pb-8 grid grid-cols-1 xl:grid-cols-[1fr_1.2fr] gap-6">
+              {selectedFile && (
+                <div className="px-8 pb-6 space-y-4">
+                  <div className="rounded-2xl border border-outline-variant/40 bg-surface-container-low/35 p-5">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-[10px] font-black text-outline uppercase tracking-[0.2em]">
+                          {t.zh ? '当前支持的高保真转换' : 'Supported High-Fidelity Formats'}
+                        </p>
+                        <p className="mt-1 text-sm font-black text-on-surface">
+                          {availableCapabilities.length > 0
+                            ? (t.zh ? `支持 ${availableCapabilities.length} 种高保真输出格式` : `Supports ${availableCapabilities.length} high-fidelity output format(s)`)
+                            : (t.zh ? '该格式暂不支持高保真转换。如需其他实验性能力，请至‘实验转换能力’中查看。' : 'High-fidelity conversion is not supported for this extension. Check "Experimental Capabilities" for beta options.')}
+                        </p>
+                      </div>
+                      {selectedExtension === '.pdf' && (
+                        <a href="#" onClick={(e) => { e.preventDefault(); }} className="text-[10px] font-black uppercase tracking-widest text-primary">
+                          {t.zh ? 'PDF 拆分/合并请使用 PDF 页面整理' : 'Use PDF Organizer for split / merge'}
+                        </a>
+                      )}
+                    </div>
+                    {availableCapabilities.length > 0 && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {availableCapabilities.map((cap) => (
+                          <button
+                            key={cap.key}
+                            onClick={() => setTargetFormat(cap.key)}
+                            className={cn(
+                              'rounded-xl border px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all',
+                              targetFormat === cap.key ? 'border-primary bg-primary/10 text-primary' : 'border-outline-variant bg-white text-outline hover:border-primary/40',
+                            )}
+                          >
+                            {cap.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {isExcelConversion() && (
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-outline uppercase tracking-[0.2em] block">
+                        {t.zh ? '页面适配模式' : 'Page Fit Mode'}
+                      </label>
+                      <div className="flex p-1.5 bg-surface-container-low rounded-2xl gap-1 border border-outline-variant/30 max-w-lg shadow-inner">
+                        {[
+                          { id: 'fit', label: t.zh ? '自动适配' : 'Auto Fit' },
+                          { id: 'wide', label: t.zh ? '宽表格' : 'Wide Sheet' },
+                          { id: 'print', label: t.zh ? '打印友好' : 'Print Friendly' }
+                        ].map((preset) => (
+                          <button
+                            key={preset.id}
+                            onClick={() => {
+                              setExcelPreset(preset.id as any);
+                              if (preset.id === 'fit') {
+                                setExcelLayout({
+                                  page_size: 'A4',
+                                  orientation: 'landscape',
+                                  max_columns: 8,
+                                  font_size: 8,
+                                  repeat_header: true,
+                                  include_all_sheets: false
+                                });
+                              } else if (preset.id === 'wide') {
+                                setExcelLayout({
+                                  page_size: 'A3',
+                                  orientation: 'landscape',
+                                  max_columns: 16,
+                                  font_size: 7,
+                                  repeat_header: true,
+                                  include_all_sheets: false
+                                });
+                              } else {
+                                setExcelLayout({
+                                  page_size: 'A4',
+                                  orientation: 'portrait',
+                                  max_columns: 6,
+                                  font_size: 9,
+                                  repeat_header: true,
+                                  include_all_sheets: false
+                                });
+                              }
+                            }}
+                            className={cn(
+                              "flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all",
+                              excelPreset === preset.id ? "bg-white shadow-sm text-primary" : "text-outline hover:bg-white/50"
+                            )}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(fileAnalysis || isExcelConversion()) && (
+                    <div>
+                      <button
+                        onClick={() => setShowAdvancedExcel(!showAdvancedExcel)}
+                        className="text-xs font-black text-primary uppercase tracking-widest hover:underline flex items-center gap-2"
+                      >
+                        {showAdvancedExcel ? (t.zh ? '收起高级布局设置' : 'Hide Advanced Layout Settings') : (t.zh ? '展开高级布局设置...' : 'Expand Advanced Layout Settings...')}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {showAdvancedExcel && (fileAnalysis || isExcelConversion()) && (
+                <div className="px-8 pb-8 grid grid-cols-1 xl:grid-cols-[1fr_1.2fr] gap-6 animate-fadeIn">
                   <div className="rounded-2xl border border-outline-variant/50 bg-surface-container-low/40 p-6 space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm">
@@ -413,7 +617,7 @@ export default function ConvertCenter() {
                         <div>
                           <h3 className="text-sm font-black tracking-tight">{t.zh ? 'Excel 导出布局' : 'Excel Export Layout'}</h3>
                           <p className="text-[10px] font-black text-outline uppercase tracking-widest">
-                            {t.zh ? '控制页面、列数和字体，减少错位与溢出' : 'Control page, columns and font to avoid overflow'}
+                            {t.zh ? '控制页面、列数 and 字体，减少错位与溢出' : 'Control page, columns and font to avoid overflow'}
                           </p>
                         </div>
                       </div>
@@ -538,7 +742,13 @@ export default function ConvertCenter() {
                   {status === 'detected' && (
                     <button 
                       onClick={handleStartConversion}
-                      className="bg-primary text-on-primary px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                      disabled={availableCapabilities.length === 0}
+                      className={cn(
+                        "px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl transition-all",
+                        availableCapabilities.length === 0
+                          ? "bg-surface-container text-outline-variant cursor-not-allowed shadow-none"
+                          : "bg-primary text-on-primary shadow-primary/30 hover:scale-[1.02] active:scale-[0.98]"
+                      )}
                     >
                       {t.convert.initialize}
                     </button>
@@ -647,20 +857,88 @@ export default function ConvertCenter() {
         )}
       </AnimatePresence>
 
-      {/* Simplified History/Queue info */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 opacity-60">
-         <div className="p-8 border-2 border-dashed border-outline-variant rounded-3xl flex flex-col items-center justify-center gap-4 text-center">
-            <div className="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center">
-               <FilePdf className="w-6 h-6 text-outline" />
+      {/* Dynamic Task Monitor lists */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Active Batch Processes */}
+        {activeTasks.length > 0 ? (
+          <div className="border border-outline-variant rounded-3xl bg-white p-6 min-h-[200px] flex flex-col shadow-sm">
+            <h3 className="text-sm font-black uppercase tracking-widest text-on-surface mb-4 flex items-center justify-between">
+              <span>{lang === 'zh' ? '活跃批量任务' : 'Active Batch Tasks'}</span>
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-black text-primary">{activeTasks.length}</span>
+            </h3>
+            <div className="flex-1 overflow-auto max-h-60 space-y-3">
+              {activeTasks.map((t) => (
+                <div key={t.task_id} className="flex items-center justify-between p-3.5 bg-surface-container-low/40 rounded-2xl border border-outline-variant/30">
+                  <div className="min-w-0 flex-1 pr-4">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[10px] font-black text-on-surface truncate">{t.task_id.slice(0, 12)}</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-surface-container-high text-outline">{t.kind}</span>
+                    </div>
+                    <p className="text-[10px] font-bold text-outline mt-1">{t.created_at ? new Date(t.created_at).toLocaleString() : '--'}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-primary">{t.status}</span>
+                  </div>
+                </div>
+              ))}
             </div>
-            <p className="text-xs font-bold text-outline uppercase tracking-widest">{t.convert.noActive}</p>
-         </div>
-         <div className="p-8 border-2 border-dashed border-outline-variant rounded-3xl flex flex-col items-center justify-center gap-4 text-center">
+          </div>
+        ) : (
+          <div className="p-8 border-2 border-dashed border-outline-variant rounded-3xl flex flex-col items-center justify-center gap-4 text-center min-h-[200px] bg-surface-container-low/5">
             <div className="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center">
-               <ImageIcon className="w-6 h-6 text-outline" />
+              <FilePdf className="w-6 h-6 text-outline" />
             </div>
-            <p className="text-xs font-bold text-outline uppercase tracking-widest">{t.convert.historyEmpty}</p>
-         </div>
+            <p className="text-xs font-black text-outline uppercase tracking-widest">{t.convert.noActive}</p>
+          </div>
+        )}
+
+        {/* Pipeline History */}
+        {historyTasks.length > 0 ? (
+          <div className="border border-outline-variant rounded-3xl bg-white p-6 min-h-[200px] flex flex-col shadow-sm">
+            <h3 className="text-sm font-black uppercase tracking-widest text-on-surface mb-4 flex items-center justify-between">
+              <span>{lang === 'zh' ? '历史处理记录' : 'Pipeline History'}</span>
+              <span className="rounded-full bg-surface-container-low px-2 py-0.5 text-[10px] font-black text-outline">{historyTasks.length}</span>
+            </h3>
+            <div className="flex-1 overflow-auto max-h-60 space-y-3">
+              {historyTasks.map((t) => (
+                <div key={t.task_id} className="flex items-center justify-between p-3.5 bg-surface-container-low/20 rounded-2xl border border-outline-variant/30 hover:bg-surface-container-low/40 transition-colors">
+                  <div className="min-w-0 flex-1 pr-4">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[10px] font-black text-on-surface truncate">{t.task_id.slice(0, 12)}</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-surface-container-high text-outline">{t.kind}</span>
+                    </div>
+                    <p className="text-[10px] font-bold text-outline mt-1">
+                      {t.created_at ? new Date(t.created_at).toLocaleString() : '--'}
+                      {t.started_at && t.completed_at && ` · ${((new Date(t.completed_at).getTime() - new Date(t.started_at).getTime()) / 1000).toFixed(1)}s`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {t.status === 'success' ? (
+                      <>
+                        {t.result_url && (
+                          <a href={t.result_url} target="_blank" rel="noopener noreferrer" className="p-1.5 hover:bg-primary/10 rounded-lg text-primary transition-all" title={lang === 'zh' ? '下载结果' : 'Download Result'}>
+                            <Download size={14} />
+                          </a>
+                        )}
+                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">{lang === 'zh' ? '成功' : 'Success'}</span>
+                      </>
+                    ) : (
+                      <span className="text-[10px] font-black uppercase tracking-wider text-error bg-error/5 px-2 py-0.5 rounded-lg border border-error/15" title={t.error}>{lang === 'zh' ? '失败' : 'Failed'}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="p-8 border-2 border-dashed border-outline-variant rounded-3xl flex flex-col items-center justify-center gap-4 text-center min-h-[200px] bg-surface-container-low/5">
+            <div className="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center">
+              <ImageIcon className="w-6 h-6 text-outline" />
+            </div>
+            <p className="text-xs font-black text-outline uppercase tracking-widest">{t.convert.historyEmpty}</p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,0 +1,32 @@
+# 文档工程 Sprint 定义与分工
+
+## Sprint 目标
+
+基于当前真实系统完成课程大作业说明书：政策合规性调研、竞品调研、需求市场调研、算法公式、三线表、系统设计图、UML 工程图、UI 截图和真实可追溯 `refs.bib`。
+
+## 章节任务
+
+| 编号 | 交付物 | 负责人建议 | 验收标准 |
+| --- | --- | --- | --- |
+| D01 | 政策合规性调研 | 资料组 | 至少 4 个政府/权威来源，正文能落到系统控制点 |
+| D02 | 竞品调研 | 产品组 | 对比云盘上传、分类、预览、PDF 编辑体验 |
+| D03 | 市场需求调研 | 产品组 | 明确学生/教师/评委三类需求 |
+| D04 | 算法公式 | 技术组 | Spark 聚合、转化率、失败率、存储占用、任务队列指标 |
+| D05 | 三线表 | 文档组 | 技术栈表、功能模块表、测试用例表、数据字段表 |
+| D06 | 系统设计图 | 架构组 | 组件图、数据流图、部署图，可由 PlantUML/Mermaid 导出 |
+| D07 | UML 工程图 | 工程组 | 用例图、类图/模块图、时序图 |
+| D08 | UI 截图 | 前端组 | Dashboard、MyFiles、ConvertCenter、PDF Studio、Analytics |
+| D09 | BibTeX | 文献组 | 政策、产品、技术文档、算法论文均可追溯 |
+
+## 算法公式候选
+
+1. 文件类型占比：\( r_i = n_i / \sum_{j=1}^{k} n_j \)。
+2. 存储占用率：\( u = S_{used} / S_{quota} \times 100\% \)。
+3. 转换成功率：\( p = T_{success} / (T_{success}+T_{failed}) \times 100\% \)。
+4. 平均任务时延：\( \bar{L} = \frac{1}{n}\sum_{i=1}^{n}(t_{complete,i}-t_{create,i}) \)。
+5. Spark 聚合：按 `action`、`file_type`、`date` 分组执行 count/sum/avg，支撑用户侧和管理侧指标。
+
+## Python 画图字体约束
+
+中文图表优先使用 macOS `PingFang SC`，脚本中设置 `matplotlib.rcParams["font.sans-serif"] = ["PingFang SC", "Arial Unicode MS", "SimHei"]`，并设置 `axes.unicode_minus = False`，避免中文乱码和负号渲染错误。
+

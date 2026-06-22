@@ -644,8 +644,93 @@ class DocumentConverter:
     def process_pdf_pages(self, page_configs: list, fetch_pdf_bytes_callback) -> bytes:
         import fitz
         import io
+        import math
         new_doc = fitz.open()
         opened_docs = {}
+
+        def color_from_hex(value: str):
+            clean = (value or "#0b5cff").lstrip("#")
+            if len(clean) != 6:
+                clean = "0b5cff"
+            try:
+                return tuple(int(clean[i:i + 2], 16) / 255 for i in (0, 2, 4))
+            except ValueError:
+                return (0.043, 0.361, 1.0)
+
+        def coord_width(page, config: dict):
+            return float(config.get("canvas_width") or page.rect.width or 1)
+
+        def coord_height(page, config: dict):
+            return float(config.get("canvas_height") or page.rect.height or 1)
+
+        def point(page, raw, config: dict):
+            return fitz.Point(
+                float(raw.get("x", 0)) / coord_width(page, config) * page.rect.width,
+                float(raw.get("y", 0)) / coord_height(page, config) * page.rect.height,
+            )
+
+        def scalar_x(page, raw, config: dict):
+            return float(raw or 0) / coord_width(page, config) * page.rect.width
+
+        def scalar_y(page, raw, config: dict):
+            return float(raw or 0) / coord_height(page, config) * page.rect.height
+
+        def draw_annotation(page, annotation: dict, config: dict):
+            tool = annotation.get("tool")
+            color = color_from_hex(annotation.get("color", "#0b5cff"))
+            width = max(0.5, scalar_x(page, annotation.get("size", 3), config))
+
+            if tool == "pen":
+                points = [point(page, p, config) for p in annotation.get("points", []) if isinstance(p, dict)]
+                if len(points) < 2:
+                    return
+                for start, end in zip(points, points[1:]):
+                    page.draw_line(start, end, color=color, width=width)
+                return
+
+            x = scalar_x(page, annotation.get("x", 0), config)
+            y = scalar_y(page, annotation.get("y", 0), config)
+            ann_width = scalar_x(page, annotation.get("width", 0), config)
+            ann_height = scalar_y(page, annotation.get("height", 0), config)
+
+            if tool == "rect":
+                rect = fitz.Rect(x, y, x + ann_width, y + ann_height)
+                rect.normalize()
+                page.draw_rect(rect, color=color, width=width)
+                return
+
+            if tool in {"line", "arrow"}:
+                raw_points = annotation.get("points", [])
+                if len(raw_points) >= 2:
+                    start = point(page, raw_points[0], config)
+                    end = point(page, raw_points[-1], config)
+                else:
+                    start = fitz.Point(x, y)
+                    end = fitz.Point(x + ann_width, y + ann_height)
+                page.draw_line(start, end, color=color, width=width)
+                if tool == "arrow":
+                    angle = math.atan2(end.y - start.y, end.x - start.x)
+                    head = max(width * 5, scalar_x(page, 18, config))
+                    for sign in (-1, 1):
+                        branch = fitz.Point(
+                            end.x - head * math.cos(angle + sign * math.pi / 7),
+                            end.y - head * math.sin(angle + sign * math.pi / 7),
+                        )
+                        page.draw_line(end, branch, color=color, width=width)
+                return
+
+            if tool == "text":
+                text = str(annotation.get("text") or "").strip()
+                if not text:
+                    return
+                font_size = max(6, scalar_y(page, annotation.get("size", 18), config))
+                rect = fitz.Rect(
+                    x,
+                    y,
+                    x + max(ann_width, scalar_x(page, 180, config)),
+                    y + max(ann_height, font_size * 1.8),
+                )
+                page.insert_textbox(rect, text, fontsize=font_size, color=color, fontname="helv")
         
         try:
             for config in page_configs:
@@ -664,6 +749,9 @@ class DocumentConverter:
                     new_page = new_doc[-1]
                     if rotation:
                         new_page.set_rotation(rotation)
+                    for annotation in config.get("annotations", []) or []:
+                        if isinstance(annotation, dict):
+                            draw_annotation(new_page, annotation, config)
             
             output = io.BytesIO()
             new_doc.save(output)

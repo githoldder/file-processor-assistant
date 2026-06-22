@@ -1,42 +1,32 @@
-\chapter{相关技术介绍}
+\chapter{相关技术与调研}
 
-\section{Hadoop 生态}
+\section{政策合规依据}
 
-Apache Hadoop 是一个开源的分布式计算框架，其核心包括 Hadoop Distributed File System（HDFS）和 MapReduce 计算模型。HDFS 提供高可靠性的分布式存储能力，支持海量数据的存储与管理。
+本系统涉及用户上传文件、文件名、任务记录、预览缓存和转换结果，因此需要参考《中华人民共和国网络安全法》《中华人民共和国数据安全法》《中华人民共和国个人信息保护法》和《促进大数据发展行动纲要》等政策文件。系统设计中采用最小必要采集、用户文件可删除、预览缓存隔离、任务日志留痕和错误状态可解释等方式，将合规要求映射到具体功能。
 
-在本项目中，HDFS 作为底层存储系统，负责存储原始数据文件和分析结果数据。通过 HDFS 的副本机制确保数据的可靠性，利用其数据本地性特性提升计算效率。
+\section{云盘与文件处理竞品}
 
-\section{Spark 计算框架}
+主流云盘产品普遍支持拖拽上传、文件夹组织、文件类型识别、搜索、共享和大视口预览。对课程项目而言，最重要的不是复杂协同，而是让用户快速完成“上传资料、找到资料、预览资料、转换资料、导出资料”的闭环。因此 CulCloud 将首页搜索和通知等未完成的伪功能移除，保留真实队列、失败任务和文件操作链路。
 
-Apache Spark 是一种基于内存的分布式计算框架，相比传统的 MapReduce 模型，Spark 在迭代计算和交互式查询方面具有显著优势。Spark 提供了丰富的 API，包括：
+\section{PDF 办公编辑竞品}
 
-\begin{itemize}
-  \item \textbf{Spark SQL}：用于结构化数据的查询与分析，支持 SQL 语法和 DataFrame API；
-  \item \textbf{Spark MLlib}：机器学习库，提供了分类、回归、聚类、协同过滤等常用算法；
-  \item \textbf{Spark Streaming}：实时流处理框架，支持准实时的数据处理。
-\end{itemize}
+PDF 工具类产品通常具有 PDF 阅读器、页码跳转、缩放、文本高亮、画笔、图形、箭头、文本框、橡皮擦、打印和导出等能力。本系统当前通过 PDF 页面图像预览叠加批注层实现轻量编辑，并保留后端页面重排导出能力。后续可引入 pdf.js、Fabric.js 与 pdf-lib，将批注对象按 PDF 坐标写回文件。
 
-在本项目中，使用 Spark SQL 进行数据的 ETL（Extract, Transform, Load）处理，使用 Spark MLlib 进行用户行为分析等挖掘任务。
+\section{核心技术}
 
-\section{Flask Web 框架}
+\subsection{React 与 TypeScript}
 
-Flask 是一个轻量级的 Python Web 框架，具有简单易用、扩展性强等特点。通过 Flask-RESTful 扩展可以快速构建 RESTful API 服务。在本项目中，Flask 作为后端服务框架，负责：
+前端采用 React 与 TypeScript 构建模块化界面，主要视图包括 Dashboard、MyFiles、ConvertCenter、PDFStudio、TaskMonitor、SystemStatus 和 Analytics。TypeScript 用于约束接口返回值、任务状态和文件实体，降低前后端对接风险。
 
-\begin{itemize}
-  \item 提供数据查询接口，支持前端按条件检索分析结果；
-  \item 提供统计分析接口，返回处理后的聚合数据；
-  \item 管理任务队列，支持异步提交 Spark 计算任务。
-\end{itemize}
+\subsection{FastAPI 与任务队列}
 
-\section{数据可视化技术}
+后端提供文件、预览、转换、任务和系统健康等 REST API。耗时转换任务通过异步任务记录和 polling 查询状态，前端根据成功、失败和处理中状态展示真实进度。
 
-数据可视化是大数据分析的重要环节，能够将复杂的数据以直观的图表形式呈现。本项目使用以下可视化技术：
+\subsection{MinIO、HDFS 与 Spark}
 
-\begin{itemize}
-  \item \textbf{ECharts}：基于 JavaScript 的开源可视化库，支持丰富的图表类型，包括折线图、柱状图、饼图、散点图等；
-  \item \textbf{React}：用于构建用户界面的 JavaScript 库，组件化的开发方式便于构建复杂的可视化仪表盘。
-\end{itemize}
+MinIO 负责对象存储和下载链接生成，HDFS/Spark 负责课程大数据实验链路。Spark 可对上传、转换、下载、预览等遥测数据按时间、动作和文件类型聚合，生成管理端分析指标。
 
-\section{Docker 容器化}
+\subsection{PDF 渲染与批注}
 
-Docker 是一种轻量级的容器化技术，能够将应用及其依赖打包到标准化的容器中，实现环境的快速部署和一致性保障。在本项目中，所有服务均通过 Docker 容器部署，确保开发环境与生产环境的一致性。
+PDF 页面提取由后端服务生成页面预览图，前端在页面图上叠加 SVG/canvas 式批注层。批注对象包括画笔轨迹、高亮轨迹、矩形、箭头和文本，支持在打印导出时同步渲染。
+

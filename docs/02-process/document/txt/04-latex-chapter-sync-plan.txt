@@ -1,0 +1,17 @@
+# LaTeX 章节同步计划
+
+## 模板来源
+
+`00-course-template-textified.txt` 已从 `docs/01-resources/课程大作业说明书-模板.docx` 抽取。后续章节写作以该文本为格式依据，以当前 CulCloud 系统为内容依据。
+
+## LaTeX 章节映射
+
+| LaTeX 文件 | 章节主题 | 内容来源 |
+| --- | --- | --- |
+| `data/chap01.tex` | 绪论 | 政策背景、竞品问题、课程项目目标 |
+| `data/chap02.tex` | 相关技术与竞品分析 | Hadoop/Spark/FastAPI/React/MinIO/PDF.js 思路 |
+| `data/chap03.tex` | 系统分析与总体设计 | 角色、功能模块、数据流、合规控制 |
+| `data/chap04.tex` | 系统实现 | 前端四模块、后端 API、PDF Studio、遥测分析 |
+| `data/chap05.tex` | 测试与结果分析 | 功能测试、UI 截图、性能与可用性指标 |
+| `data/chap06.tex` | 总结与展望 | 已完成能力、限制、后续 PDF 真写回 |
+

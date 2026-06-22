@@ -1,6 +1,6 @@
 # PRD Index
 
-Last Updated: 2026-06-18 23:20
+Last Updated: 2026-06-21 01:55
 
 This folder is the requirements and execution-control center for CulCloud Platform.
 
@@ -31,8 +31,8 @@ The Markdown file is for human review. The JSON file is the execution state sour
 
 ## Current Active Sprint
 
-- Human PRD: [sprints/sprint09/sprint09-prd-260615-v0.1.md](/Users/caolei/Desktop/culcloud-platform/prds/sprints/sprint09/sprint09-prd-260615-v0.1.md)
-- Agent board: [sprints/sprint09/sprint09-prd-260615-v0.1.json](/Users/caolei/Desktop/culcloud-platform/prds/sprints/sprint09/sprint09-prd-260615-v0.1.json)
+- Human PRD: [sprints/sprint10/sprint10-prd-260621-v0.2.md](/Users/caolei/Desktop/culcloud-platform/prds/sprints/sprint10/sprint10-prd-260621-v0.2.md)
+- Agent board: [sprints/sprint10/sprint10-prd-260621-v0.2.json](/Users/caolei/Desktop/culcloud-platform/prds/sprints/sprint10/sprint10-prd-260621-v0.2.json)
 
 ## Current Sprint Direction
 
@@ -45,3 +45,4 @@ The Markdown file is for human review. The JSON file is the execution state sour
 - Sprint 7: upgrade admin Analytics into the default data cockpit, with hidden module dock, hotkeys, business data replacement, cluster status and Health panels.
 - Sprint 8: complete document engineering: txt chapters, UML/engineering diagrams, technology logos, UI screenshots, LaTeX injection and final PDF compilation.
 - Sprint 9: dual-role product polish, admin cockpit observability, and incremental user-event telemetry sync over the historical Spark baseline.
+- Sprint 10: user-side real capability convergence: strict user/admin route isolation, server-enforced high-fidelity conversion whitelist, conversion name memory, simplified parameters, and phased PDF page organization before true editing.

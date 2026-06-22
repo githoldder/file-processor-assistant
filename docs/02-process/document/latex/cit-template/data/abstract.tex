@@ -1,9 +1,13 @@
 \begin{abstract}
-  本文设计并实现了一个基于 Spark 与 Flask 的大数据分析与可视化系统。系统采用 Hadoop 生态存储海量数据，使用 Spark 进行高效的离线数据处理与分析，并通过 Flask 构建 RESTful API 服务，前端使用 React 框架实现数据的可视化展示。系统涵盖了数据采集、数据清洗、数据分析、数据可视化等完整的大数据处理流程，能够对用户行为数据、销售订单数据等多源数据进行多维度分析，并以图表形式直观呈现分析结果。实验结果表明，该系统能够有效处理 TB 级别的数据量，具有良好的可扩展性和实时响应能力。
+  本文设计并实现了一个面向课程大作业场景的 CulCloud 云盘与大数据分析平台。系统围绕学生日常文件处理需求，集成个人首页、云盘上传与分类、文件预览、格式转换、PDF 编辑室、任务监控和管理端数据驾驶舱等模块。前端采用 React 与 TypeScript 构建交互界面，后端通过 FastAPI 提供文件、预览、转换和任务 API，存储层结合 MinIO 与 HDFS，分析层使用 Spark 对上传、转换、下载、预览等遥测行为进行聚合分析。
 
-  本系统的核心贡献包括：（1）设计了一套基于 Spark SQL 和 MLlib 的大数据分析流水线；（2）实现了基于 Flask 的 REST API 与前端可视化交互方案；（3）构建了完整的课程大作业报告模板，支持自动化编译。
+  针对原型中首页数据不真实、云盘默认列表缺少层次、预览弹窗空间不足以及 PDF Studio 功能不完整等问题，本文完成了真实指标接入、拖拽/点击上传、块状文件分类、专门预览页和 PDF canvas 批注工具的改造。系统支持画笔、图形、箭头、文本、橡皮擦、文本高亮、页面整理和打印导出，能够覆盖课程报告所需的主要办公编辑场景。实验结果表明，该系统能够形成从文件上传、处理、预览、分析到文档证据沉淀的完整闭环。
+
+  \textbf{关键词：}云盘；文件转换；PDF 编辑；Spark；数据可视化；课程大作业
 \end{abstract}
 
 \begin{abstract*}
-  This paper designs and implements a big data analysis and visualization system based on Spark and Flask. The system adopts the Hadoop ecosystem for massive data storage, uses Spark for efficient offline data processing and analysis, builds RESTful API services through Flask, and implements data visualization on the frontend using the React framework. The system covers the complete big data processing workflow including data collection, data cleaning, data analysis, and data visualization. It can perform multi-dimensional analysis on multi-source data such as user behavior data and sales order data, and present the analysis results intuitively in the form of charts. Experimental results show that the system can effectively process TB-level data, with good scalability and real-time response capabilities.
+  This paper designs and implements CulCloud, a cloud file management and big data analytics platform for course project scenarios. The system integrates a personal dashboard, cloud-drive upload and categorization, file preview, format conversion, PDF Studio, task monitoring, and an administrative analytics cockpit. The frontend is built with React and TypeScript, while the backend exposes file, preview, conversion, and task APIs through FastAPI. MinIO and HDFS are used for storage, and Spark aggregates telemetry events such as upload, conversion, download, and preview actions.
+
+  To address issues in the previous prototype, including non-explanatory zero metrics, flat file lists, small preview modals, and incomplete PDF Studio functionality, the system introduces live dashboard metrics, drag-and-click upload, block-based file categories, a dedicated preview page, and canvas-style PDF annotation tools. PDF Studio supports pen drawing, shapes, arrows, text, eraser, text highlight, page organization, and print export, covering the main office-editing workflow required by the course report.
 \end{abstract*}
