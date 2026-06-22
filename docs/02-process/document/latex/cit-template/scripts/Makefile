@@ -1,4 +1,4 @@
-# Makefile for CIT Course Report (大数据分析与可视化)
+# Makefile for CIT Course Report (大数据与云计算)
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))/..
 MAIN = thuthesis-example
 PDF = $(MAIN).pdf
@@ -18,8 +18,8 @@ compile:
 	cd $(ROOT_DIR) && $(LATEX) -interaction=nonstopmode $(MAIN)
 	cd $(ROOT_DIR) && $(LATEX) -interaction=nonstopmode $(MAIN)
 	@if [ -f $(ROOT_DIR)/$(PDF) ]; then \
-		mv $(ROOT_DIR)/$(PDF) $(ROOT_DIR)/$(OUT_DIR)/大数据分析与可视化课程大作业说明书.pdf; \
-		echo "==> Compilation completed. Output saved to $(OUT_DIR)/大数据分析与可视化课程大作业说明书.pdf"; \
+		mv $(ROOT_DIR)/$(PDF) $(ROOT_DIR)/$(OUT_DIR)/大数据与云计算课程大作业说明书.pdf; \
+		echo "==> Compilation completed. Output saved to $(OUT_DIR)/大数据与云计算课程大作业说明书.pdf"; \
 	else \
 		echo "==> ERROR: PDF generation failed."; \
 		exit 1; \

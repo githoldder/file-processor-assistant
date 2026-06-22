@@ -1,0 +1,190 @@
+{
+  "sprint": "11",
+  "version": "0.1",
+  "status": "Planned",
+  "lastUpdated": "2026-06-22 16:50",
+  "object": "将 LaTeX 课程大作业说明书从 7 章骨架扩充为 10000--13000 中文字符的均衡正文，并建立主智能体分发、子智能体分章扩写、主智能体验收的写作流程。",
+  "baseline": {
+    "counter": "python3 docs/02-process/scripts/latex_chapter_audit.py",
+    "totalCjkApprox": 6500,
+    "targetTotalCjk": "10000-13000",
+    "chapterTargets": {
+      "chap01.tex": "1400-1800",
+      "chap02.tex": "1600-2200",
+      "chap03.tex": "1800-2400",
+      "chap04.tex": "1800-2600",
+      "chap05.tex": "2600-3600",
+      "chap06.tex": "1800-2600",
+      "chap07.tex": "900-1300"
+    }
+  },
+  "decisions": [
+    {
+      "id": "S11-ADR-01",
+      "topic": "整体达标优先",
+      "decision": "以 7 章总字数与章节均衡为验收目标，不允许单章过量文本掩盖其他章节空心。",
+      "reason": "课程报告评分关注整体结构完整性；单章堆字会导致模板章节失衡。"
+    },
+    {
+      "id": "S11-ADR-02",
+      "topic": "多智能体写作模式",
+      "decision": "主智能体负责任务分发和质量验收，子智能体只负责指定章节的结构化 LaTeX patch。",
+      "reason": "分章扩写可以控制上下文污染，主体验收可以统一术语、事实和门禁。"
+    },
+    {
+      "id": "S11-ADR-03",
+      "topic": "计数器强制使用",
+      "decision": "所有扩写回合必须运行 latex_chapter_audit.py，以计数器而非模型感觉判断字数。",
+      "reason": "模型无法稳定控制输出长度，必须依赖计数器避免正文少于图表。"
+    }
+  ],
+  "agents": [
+    {
+      "id": "main",
+      "role": "主智能体",
+      "responsibilities": [
+        "读取模板、PRD、门禁和章节现状",
+        "分发章节任务",
+        "验收结构化 patch",
+        "统一术语和事实",
+        "运行计数器、静态扫描和编译",
+        "记录日志分级和残余风险"
+      ]
+    },
+    {
+      "id": "chapter-agent-a",
+      "scope": "chap01.tex + chap07.tex",
+      "goal": "补齐绪论与总结闭环"
+    },
+    {
+      "id": "chapter-agent-b",
+      "scope": "chap02.tex",
+      "goal": "补齐技术栈选择理由"
+    },
+    {
+      "id": "chapter-agent-c",
+      "scope": "chap03.tex",
+      "goal": "补齐需求、可行性和合规分析"
+    },
+    {
+      "id": "chapter-agent-d",
+      "scope": "chap04.tex",
+      "goal": "补齐架构、数据流、部署和持久化设计"
+    },
+    {
+      "id": "chapter-agent-e",
+      "scope": "chap05.tex",
+      "goal": "补齐核心实现链路"
+    },
+    {
+      "id": "chapter-agent-f",
+      "scope": "chap06.tex",
+      "goal": "补齐白盒测试和结果分析"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "S11-T01",
+      "priority": "P0",
+      "topic": "封面微调",
+      "owner": "main",
+      "acceptance": [
+        "logo 相比上一版上移",
+        "封面无页眉或顶部横线",
+        "PDF 封面渲染检查通过"
+      ]
+    },
+    {
+      "id": "S11-T02",
+      "priority": "P0",
+      "topic": "第 1/7 章扩写",
+      "owner": "chapter-agent-a",
+      "acceptance": [
+        "chap01 达到 1400--1800 字或有合理保留说明",
+        "chap07 达到 900--1300 字或有合理保留说明",
+        "绪论与总结互相呼应"
+      ]
+    },
+    {
+      "id": "S11-T03",
+      "priority": "P0",
+      "topic": "第 2 章扩写",
+      "owner": "chapter-agent-b",
+      "acceptance": [
+        "chap02 达到 1600--2200 字或有合理保留说明",
+        "技术介绍回到 CulCloud 实际链路",
+        "不写技术百科式空话"
+      ]
+    },
+    {
+      "id": "S11-T04",
+      "priority": "P0",
+      "topic": "第 3 章扩写",
+      "owner": "chapter-agent-c",
+      "acceptance": [
+        "chap03 达到 1800--2400 字或有合理保留说明",
+        "包含角色、需求、非功能、可行性和合规分析",
+        "不得虚构未实现用户或指标"
+      ]
+    },
+    {
+      "id": "S11-T05",
+      "priority": "P0",
+      "topic": "第 4 章扩写",
+      "owner": "chapter-agent-d",
+      "acceptance": [
+        "chap04 达到 1800--2600 字或有合理保留说明",
+        "包含架构、数据流、任务状态、对象路径和持久化设计",
+        "图表需要前后解释"
+      ]
+    },
+    {
+      "id": "S11-T06",
+      "priority": "P0",
+      "topic": "第 5 章扩写",
+      "owner": "chapter-agent-e",
+      "acceptance": [
+        "chap05 达到 2600--3600 字或有合理保留说明",
+        "覆盖我的文件、转换中心、预览、PDF Studio 和管理驾驶舱",
+        "截图规划不得替代正文"
+      ]
+    },
+    {
+      "id": "S11-T07",
+      "priority": "P0",
+      "topic": "第 6 章扩写",
+      "owner": "chapter-agent-f",
+      "acceptance": [
+        "chap06 达到 1800--2600 字或有合理保留说明",
+        "包含白盒测试、转换矩阵、预览矩阵、日志持久化和重启验证",
+        "测试表格后必须有结论"
+      ]
+    },
+    {
+      "id": "S11-T08",
+      "priority": "P0",
+      "topic": "总体验收",
+      "owner": "main",
+      "acceptance": [
+        "7 章合计达到 10000--13000 中文字符",
+        "计数器、静态扫描和 LaTeX 编译通过",
+        "日志分级记录 fatal/undefined/overfull/underfull 状态",
+        "输出 PDF 文件存在且封面视觉检查通过"
+      ]
+    }
+  ],
+  "gates": [
+    "python3 docs/02-process/scripts/latex_chapter_audit.py",
+    "rg -n '\\\\*\\\\*|```|`|^#|file:///Users|/Users/caolei/' docs/02-process/document/latex/cit-template/data docs/02-process/document/latex/cit-template/thuthesis-example.tex docs/02-process/document/latex/cit-template/ref || true",
+    "rg -n '\\\\begin\\\\{tabular\\\\}\\\\{[^}]*\\\\||\\\\hline|\\\\begin\\\\{tikzpicture\\\\}|\\\\begin\\\\{axis\\\\}|\\\\begin\\\\{mermaid\\\\}' docs/02-process/document/latex/cit-template/data docs/02-process/document/latex/cit-template/thuthesis-example.tex || true",
+    "make -C docs/02-process/document/latex/cit-template/scripts clean compile",
+    "rg -n '(^!|Undefined control sequence|LaTeX Warning: Reference|undefined|Undefined|Overfull|Underfull|Missing character|Citation|Warning)' docs/02-process/document/latex/cit-template/thuthesis-example.log || true"
+  ],
+  "acceptance": [
+    "封面 logo 上移且无页眉",
+    "7 章总字数达标且章节均衡",
+    "子智能体产出均为结构化 LaTeX patch",
+    "主智能体完成计数、编译、静态扫描和日志分级",
+    "最终 PDF 路径为 docs/02-process/document/latex/cit-template/output/大数据与云计算课程大作业说明书.pdf"
+  ]
+}

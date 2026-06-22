@@ -1,32 +1,59 @@
-\chapter{相关技术与调研}
+\chapter{相关软件及技术简介}
 
-\section{政策合规依据}
+本章介绍 CulCloud 平台开发过程中使用的主要技术，包括前端框架、后端服务、对象存储、任务队列、文件转换、PDF 渲染和大数据分析组件。
 
-本系统涉及用户上传文件、文件名、任务记录、预览缓存和转换结果，因此需要参考《中华人民共和国网络安全法》《中华人民共和国数据安全法》《中华人民共和国个人信息保护法》和《促进大数据发展行动纲要》等政策文件。系统设计中采用最小必要采集、用户文件可删除、预览缓存隔离、任务日志留痕和错误状态可解释等方式，将合规要求映射到具体功能。
+\section{前端开发技术}
 
-\section{云盘与文件处理竞品}
+\subsection{React 组件化开发}
 
-主流云盘产品普遍支持拖拽上传、文件夹组织、文件类型识别、搜索、共享和大视口预览。对课程项目而言，最重要的不是复杂协同，而是让用户快速完成“上传资料、找到资料、预览资料、转换资料、导出资料”的闭环。因此 CulCloud 将首页搜索和通知等未完成的伪功能移除，保留真实队列、失败任务和文件操作链路。
+前端采用 React 框架构建高度模块化的单页面应用界面\cite{reactdocs}。系统将各类主要业务视图（如 Dashboard、MyFiles、ConvertCenter、PDFStudio 等）抽象为独立的组件单元。为在组件间高效共享状态，系统设计了全局上下文 DashboardContext 机制（见 file-cloud-frontend/src/context/useDashboard.tsx），统一维护当前激活视图和用户角色（demo\_user 或 admin）。在角色切换时，系统执行乐观更新并请求后端同步状态，触发组件树重渲染，并在顶层 AppShell 容器上动态绑定或移除 admin 特定的样式类（如 theme-admin 和 theme-admin-bg），在无刷新的情况下实现界面主题色彩与视图权限的平滑过渡。
 
-\section{PDF 办公编辑竞品}
+\subsection{TypeScript 类型约束}
 
-PDF 工具类产品通常具有 PDF 阅读器、页码跳转、缩放、文本高亮、画笔、图形、箭头、文本框、橡皮擦、打印和导出等能力。本系统当前通过 PDF 页面图像预览叠加批注层实现轻量编辑，并保留后端页面重排导出能力。后续可引入 pdf.js、Fabric.js 与 pdf-lib，将批注对象按 PDF 坐标写回文件。
+为保障前端稳定性，项目引入 TypeScript 进行静态类型约束，所有通信协议与页面状态均在 file-cloud-frontend/src/types.ts 中显式定义。例如，ViewState 联合类型限定了合法的视图，FileItem 接口规范了文件实体属性（如名称、大小及 iconType 文件夹或文件类型分类），Task 接口对异步任务的核心状态（queued, processing, success, failed）进行建模。在文件分类、路由流转和转换任务状态变更时，强类型约束确保在编译期捕获属性缺失或类型不匹配问题，防止由于未知任务状态或未定义（undefined）属性引起的运行时类型崩溃。
 
-\section{核心技术}
+\subsection{Vite 与界面构建}
 
-\subsection{React 与 TypeScript}
+Vite 负责本地开发和前端构建。系统在课程演示中通过 PM2 启动前端服务，保证浏览器预览地址稳定，减少因临时命令退出导致的演示中断。
 
-前端采用 React 与 TypeScript 构建模块化界面，主要视图包括 Dashboard、MyFiles、ConvertCenter、PDFStudio、TaskMonitor、SystemStatus 和 Analytics。TypeScript 用于约束接口返回值、任务状态和文件实体，降低前后端对接风险。
+\section{后端服务技术}
 
-\subsection{FastAPI 与任务队列}
+\subsection{FastAPI 接口服务}
 
-后端提供文件、预览、转换、任务和系统健康等 REST API。耗时转换任务通过异步任务记录和 polling 查询状态，前端根据成功、失败和处理中状态展示真实进度。
+后端采用 FastAPI 提供文件、预览、转换、任务和系统健康等 REST API\cite{fastapi}。FastAPI 深度集成 Pydantic 库，利用 Python 类型提示实现自动化的数据校验。前端提交的所有请求体（如 JSON 格式的批注重组配置 PDFProcessRequest，详见 backend/app/models/schemas.py）都会在路由入口层被严格校验。一旦参数缺失或类型违规，FastAPI 直接拦截请求并返回错误响应，确保业务逻辑层接收到的数据安全合规，有效防范异常输入，并借助自动生成的 OpenAPI 文档显著降低联调与接口测试成本。
 
-\subsection{MinIO、HDFS 与 Spark}
+\subsection{Redis 与 Celery 任务队列}
 
-MinIO 负责对象存储和下载链接生成，HDFS/Spark 负责课程大数据实验链路。Spark 可对上传、转换、下载、预览等遥测数据按时间、动作和文件类型聚合，生成管理端分析指标。
+针对 Gotenberg 文件转换等耗时且依赖外部组件的计算密集型任务，系统设计了 Redis 与 Celery 配合的异步调度机制以防止 FastAPI 进程阻塞。Redis 既作为 Celery 任务队列的 Broker 传递消息，又作为缓存管理近期任务状态与时间线日志（详见 backend/app/services/task\_queue.py）。任务状态数据设置了 24 小时生存时间（TTL）以节省内存，且其生命周期（queued, processing, success, failed）索引于 Redis 有序集合中。前端提交请求后立即获取 task\_id，Celery 工作进程异步调度执行，前端则通过发起短轮询（HTTP GET）追踪 Redis 中的最新状态，实时渲染进度并呈现下载链接。
 
-\subsection{PDF 渲染与批注}
+\subsection{MinIO 对象存储}
 
-PDF 页面提取由后端服务生成页面预览图，前端在页面图上叠加 SVG/canvas 式批注层。批注对象包括画笔轨迹、高亮轨迹、矩形、箭头和文本，支持在打印导出时同步渲染。
+系统底层存储基于 MinIO 实现\cite{minio}。由于对象存储是扁平结构，并不支持物理级目录树，CulCloud 采用“对象名称前缀模拟法”（详见 backend/app/routers/folders.py 虚拟文件夹逻辑）。创建文件夹时，系统写入带有特定路径前缀的空标记对象（如写入以斜杠及 .keep 结尾的对象）；浏览特定路径时，将 list\_objects 的 recursive 参数设为 False，过滤出以斜杠结尾的对象作为子文件夹并映射为文件树。当执行重命名或文件移动时，后端会通过路径级联分析，利用 CopyObject 复制所有前缀匹配的键至新路径，再批量删除源对象，在扁平架构上实现层级目录管理。
 
+\section{文件处理技术}
+
+\subsection{Office 与 PDF 转换}
+
+系统通过 LibreOffice、Gotenberg 或后端转换服务处理 Office 到 PDF、PDF 到图片、Markdown 到 PDF、文本到 PDF、图片到 PDF 等转换链路\cite{gotenberg}。转换中心仅向用户暴露经过验证的 P0 能力，避免展示尚未跑通的实验功能。
+
+\subsection{CSV、Markdown 与文本渲染}
+
+CSV 预览使用表格化 HTML 渲染，Markdown 预览使用 HTML 渲染，TXT 预览使用纯文本展示。此类轻量格式不需要复杂转换即可完成浏览器内预览，适合作为云盘预览能力的基础类型。
+
+\subsection{PDF 页面渲染与批注}
+
+PDF 页面提取由后端服务生成页面预览图，前端在页面图上叠加批注层；浏览器内 PDF 阅读和页面理解能力则以 PDF.js 的渲染模型作为重要参照\cite{pdfjs}。批注对象包括画笔轨迹、高亮轨迹、矩形、箭头和文本，支持在打印导出时同步渲染。
+
+\section{大数据分析技术}
+
+\subsection{HDFS 与 Spark}
+
+HDFS/Spark 负责课程大数据实验链路。HDFS 提供分布式文件系统抽象，Spark 则提供统一的大数据计算引擎\cite{apachehadoop,shvachko2010hdfs,apachespark,zaharia2016spark}。Spark 可对上传、转换、下载、预览等遥测数据按时间、动作和文件类型聚合，生成管理端分析指标。
+
+\subsection{ECharts 可视化}
+
+前端使用 ECharts 展示趋势图、文件类型分布、任务状态、失败率和质量指标。可视化结果既服务管理驾驶舱，也作为课程报告中的实验截图来源。
+
+\section{本章小结}
+
+本章介绍了系统涉及的前端、后端、对象存储、任务队列、文件转换、PDF 渲染和大数据分析技术。这些技术共同支撑 CulCloud 从单纯文件列表扩展为可上传、可预览、可转换、可编辑和可分析的课程平台。

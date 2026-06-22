@@ -19,3 +19,10 @@
 - 截图占位符 → \includegraphics
 - 章节编号 → \chapter / \section / \subsection
 - LaTeX 特殊字符转义
+
+## LaTeX 正文结构
+
+- 正文对齐课程模板的 7 章结构：绪论、相关软件及技术简介、系统分析、系统总体设计、系统详细设计及实现、系统测试、总结与展望
+- 大章下至少细化到二级标题；涉及多个实现点、测试点或技术点时继续细化到三级标题
+- 图、表、公式必须在正文中引用，并在附近解释其输入、输出和结论
+- 正文扩写后运行 `python3 docs/02-process/scripts/latex_chapter_audit.py` 检查字数和图表密度

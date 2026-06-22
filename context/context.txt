@@ -247,5 +247,45 @@
 - `file-cloud-frontend/src/views/Analytics.tsx`
 - `context/context.txt`
 
+## Session Update: 2026-06-22 — Rollback to Commit 08ae437
 
+### Completed
+- [Rollback] Performed git hard reset to revert the codebase back to commit `08ae437` (feat(sprint10): add doc/csv conversions, media previews, fix history status bug, extend tests).
+- [Rollback] Preserved local uncommitted documentation and LaTeX-related changes using git stash and popping them successfully.
+- [Service Verification] Executed frontend build type checking and Vite compilation successfully.
+- [Service Verification] Restarted `culcloud-frontend-dev` PM2 service to apply the rolled back code.
 
+### Changed Files
+- Rollback of files under `file-cloud-frontend/` modified after commit `08ae437`.
+- `context/context.txt`
+
+## Session Update: 2026-06-22 — Sprint 11 Document Expansion, Integrity Gate Validation & Compilation Success
+
+### Completed
+- [Feature] Expanded LaTeX document across all 7 chapters to a total of 11,491 CJK characters, fitting the Sprint 11 PRD requirement of 10,000–13,000.
+- [Design] Incorporated academic-grade analysis of React state contexts, TypeScript types, FastAPI Pydantic parameters, Redis/Celery queue design, MinIO directories mapping simulation, custom Pointer Reorder DND algorithm with boundary prevention, and ECharts theme wrapper telemetry.
+- [Verification] Conducted full quality gates checks (no horizontal lines/vertical bars, no tikzpicture, no markdown syntax leaks, no absolute paths).
+- [Verification] Successfully compiled the project using XeLaTeX into a 33-page PDF with 100% clean log files (no overfull/underfull boxes or missing citations).
+
+### Changed Files
+- `docs/02-process/document/latex/cit-template/data/chap01.tex`
+- `docs/02-process/document/latex/cit-template/data/chap02.tex`
+- `docs/02-process/document/latex/cit-template/data/chap03.tex`
+- `docs/02-process/document/latex/cit-template/data/chap04.tex`
+- `docs/02-process/document/latex/cit-template/data/chap05.tex`
+- `docs/02-process/document/latex/cit-template/data/chap06.tex`
+- `docs/02-process/document/latex/cit-template/data/chap07.tex`
+- `context/context.txt`
+
+## Session Update: 2026-06-22 — Sprint 12 S12-T01/02 Abstract Expansion & Acknowledgements Fix
+
+### Completed
+- [Feature] Expanded Chinese abstract to 496 CJK characters, satisfying the 450--650 PRD requirement with complete structured sections (pain points, system proposal, implementations, verification, and course value).
+- [Feature] Appended English Keywords line to the abstract block.
+- [Bug] Fixed school name mismatch by renaming "常州工业职业技术学院" to "常州工学院" in `acknowledgements.tex`.
+- [Verification] Built XeLaTeX report successfully without warning logs (0 missing citations/references); final PDF remains 33 pages.
+
+### Changed Files
+- `docs/02-process/document/latex/cit-template/data/abstract.tex`
+- `docs/02-process/document/latex/cit-template/data/acknowledgements.tex`
+- `context/context.txt`

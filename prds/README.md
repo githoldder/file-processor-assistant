@@ -1,6 +1,6 @@
 # PRD Index
 
-Last Updated: 2026-06-22 15:25
+Last Updated: 2026-06-22 19:20
 
 This folder is the requirements and execution-control center for CulCloud Platform.
 
@@ -31,8 +31,8 @@ The Markdown file is for human review. The JSON file is the execution state sour
 
 ## Current Active Sprint
 
-- Human PRD: [sprints/sprint10/sprint10-prd-260621-v0.2.md](/Users/caolei/Desktop/culcloud-platform/prds/sprints/sprint10/sprint10-prd-260621-v0.2.md)
-- Agent board: [sprints/sprint10/sprint10-prd-260621-v0.2.json](/Users/caolei/Desktop/culcloud-platform/prds/sprints/sprint10/sprint10-prd-260621-v0.2.json)
+- Human PRD: [sprints/sprint12/sprint12-prd-260622-v0.1.md](/Users/caolei/Desktop/culcloud-platform/prds/sprints/sprint12/sprint12-prd-260622-v0.1.md)
+- Agent board: [sprints/sprint12/sprint12-prd-260622-v0.1.json](/Users/caolei/Desktop/culcloud-platform/prds/sprints/sprint12/sprint12-prd-260622-v0.1.json)
 
 ## Current Sprint Direction
 
@@ -46,3 +46,5 @@ The Markdown file is for human review. The JSON file is the execution state sour
 - Sprint 8: complete document engineering: txt chapters, UML/engineering diagrams, technology logos, UI screenshots, LaTeX injection and final PDF compilation.
 - Sprint 9: dual-role product polish, admin cockpit observability, and incremental user-event telemetry sync over the historical Spark baseline.
 - Sprint 10: user-side real capability convergence: strict user/admin route isolation, server-enforced high-fidelity conversion whitelist, conversion name memory, cloud folder movement, preview/log persistence clarification, and phased PDF page organization before true editing.
+- Sprint 11: LaTeX course report expansion: main-agent orchestration, chapter sub-agent writing, 7-chapter balanced expansion to 10000--13000 Chinese characters, and compile/count/visual gates.
+- Sprint 12: evidence-chain hardening: abstract/acknowledgements repair, source retrieval, BibTeX hallucination audit, market/competitor charts, tech logos, screenshot stitching and code-derived UML.

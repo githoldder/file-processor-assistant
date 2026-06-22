@@ -1,0 +1,167 @@
+{
+  "sprint": "12",
+  "version": "0.1",
+  "status": "Planned",
+  "lastUpdated": "2026-06-22 19:20",
+  "objective": "补齐 CulCloud LaTeX 报告的摘要、致谢、外部信息源、参考文献真实性、市场竞品图表、技术栈 logo、工程 UML 和最终引用/图文排版门禁。",
+  "scope": {
+    "in": [
+      "LaTeX 摘要与致谢",
+      "外部信息源检索与归档",
+      "refs.bib 真实性审计",
+      "政策截图拼接",
+      "市场与竞品调研数据跑图",
+      "技术栈 logo SVG 获取",
+      "代码驱动 UML 生成",
+      "LaTeX 注入与编译验收"
+    ],
+    "out": [
+      "前端业务代码改动",
+      "后端业务代码改动",
+      "未经核验的数据或参考文献",
+      "无来源的市场规模和性能结论"
+    ]
+  },
+  "directories": {
+    "policy": "docs/01-resources/references/policy/",
+    "competitors": "docs/01-resources/references/competitors/",
+    "market": "docs/01-resources/references/market/",
+    "techStack": "docs/01-resources/references/tech-stack/",
+    "logos": "docs/01-resources/references/logos/",
+    "githubCommunity": "docs/01-resources/references/github-community/",
+    "bibAudit": "docs/01-resources/references/bib-audit/",
+    "marketData": "docs/02-process/data/market-research/",
+    "competitorData": "docs/02-process/data/competitor-research/",
+    "techLogosSvg": "docs/02-process/document/latex/cit-template/figures-svg/tech-logos/",
+    "stitchedPng": "docs/02-process/document/latex/cit-template/figures-png/stitched/",
+    "umlGenerated": "docs/02-process/Figure/uml-generated/"
+  },
+  "tasks": [
+    {
+      "id": "S12-T01",
+      "priority": "P0",
+      "topic": "摘要扩写与关键词补齐",
+      "ownedFiles": [
+        "docs/02-process/document/latex/cit-template/data/abstract.tex"
+      ],
+      "acceptance": [
+        "中文摘要 450--650 字",
+        "英文摘要补齐 Keywords",
+        "摘要覆盖背景痛点、系统方案、关键实现、测试验证和课程价值"
+      ]
+    },
+    {
+      "id": "S12-T02",
+      "priority": "P0",
+      "topic": "致谢穿帮修复",
+      "ownedFiles": [
+        "docs/02-process/document/latex/cit-template/data/acknowledgements.tex"
+      ],
+      "acceptance": [
+        "学校名称与封面一致",
+        "指导教师与封面一致或标注待复核",
+        "不出现其他学校、其他项目或毕业论文式穿帮话术"
+      ]
+    },
+    {
+      "id": "S12-T03",
+      "priority": "P0",
+      "topic": "前五章信息检索计划与来源清单",
+      "ownedDirs": [
+        "docs/01-resources/references/"
+      ],
+      "acceptance": [
+        "覆盖政策、竞品、市场、技术栈、GitHub 社区来源",
+        "每条来源记录 URL、访问日期、使用章节、支撑论点和可信度等级",
+        "前五章外部事实可回溯"
+      ]
+    },
+    {
+      "id": "S12-T04",
+      "priority": "P0",
+      "topic": "refs.bib 真实性与引用闭环审计",
+      "ownedFiles": [
+        "docs/02-process/document/latex/cit-template/ref/refs.bib"
+      ],
+      "acceptance": [
+        "每条 BibTeX 条目有核验记录",
+        "无明显幻觉文献",
+        "引用与正文使用位置形成闭环",
+        "评估 nocite 全量引用风险"
+      ]
+    },
+    {
+      "id": "S12-T05",
+      "priority": "P0",
+      "topic": "figures-png 截图拼接",
+      "ownedDirs": [
+        "docs/02-process/document/latex/cit-template/figures-png/",
+        "docs/02-process/document/latex/cit-template/figures-png/stitched/"
+      ],
+      "acceptance": [
+        "保留原图和拼接图",
+        "拼接脚本可复跑",
+        "过长截图拆分，避免 LaTeX 大面积空白"
+      ]
+    },
+    {
+      "id": "S12-T06",
+      "priority": "P0",
+      "topic": "市场与竞品调研数据整理和 Python 跑图",
+      "ownedDirs": [
+        "docs/02-process/data/market-research/",
+        "docs/02-process/data/competitor-research/"
+      ],
+      "acceptance": [
+        "有原始数据、清洗数据和跑图脚本",
+        "输出 PNG/PDF 图表",
+        "图表支撑第 1/2/3 章论点",
+        "无来源数据不得写成事实"
+      ]
+    },
+    {
+      "id": "S12-T07",
+      "priority": "P1",
+      "topic": "技术栈官网/GitHub/社区 logo SVG 抓取",
+      "ownedDirs": [
+        "docs/02-process/document/latex/cit-template/figures-svg/tech-logos/",
+        "docs/01-resources/references/logos/"
+      ],
+      "acceptance": [
+        "SVG 来源可回溯",
+        "记录 license 或品牌使用说明",
+        "优先使用官方、Simple Icons 或项目仓库资源"
+      ]
+    },
+    {
+      "id": "S12-T08",
+      "priority": "P0",
+      "topic": "基于项目代码生成工程 UML 图",
+      "ownedDirs": [
+        "docs/02-process/Figure/uml-generated/"
+      ],
+      "acceptance": [
+        "生成用例图、组件图、时序图、状态图、部署图中的核心集合",
+        "UML 源文件和渲染产物同时保存",
+        "图内容与当前代码结构一致"
+      ]
+    },
+    {
+      "id": "S12-T09",
+      "priority": "P0",
+      "topic": "LaTeX 注入与交付验收",
+      "acceptance": [
+        "摘要、致谢、参考文献、图表和 UML 注入 LaTeX",
+        "编译通过",
+        "log 无 fatal、undefined citation/reference、overfull hbox",
+        "PDF 视觉检查无孤立大图表空白"
+      ]
+    }
+  ],
+  "verification": [
+    "python3 docs/02-process/scripts/latex_chapter_audit.py",
+    "make -C docs/02-process/document/latex/cit-template/scripts clean compile",
+    "rg -n '(^!|Undefined control sequence|LaTeX Warning: Reference|undefined|Undefined|Overfull|Underfull|Missing character|Citation|Warning)' docs/02-process/document/latex/cit-template/thuthesis-example.log || true",
+    "rg -n '\\\\*\\\\*|```|`|^#|file:///Users|/Users/caolei/' docs/02-process/document/latex/cit-template/data docs/02-process/document/latex/cit-template/thuthesis-example.tex docs/02-process/document/latex/cit-template/ref || true"
+  ]
+}

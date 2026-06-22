@@ -6,49 +6,45 @@
 \input{thusetup}
 \begin{document}
 \begin{titlepage}
-\newgeometry{top=1.85cm,bottom=2.1cm,left=2.55cm,right=2.55cm}
+\newgeometry{top=1.55cm,bottom=2.2cm,left=2.55cm,right=2.55cm}
 \thispagestyle{empty}
 
-\begin{flushright}
-  {\fontsize{14pt}{16pt}\selectfont\fbox{\rule{0pt}{0.78cm}\makebox[2.65cm]{KC021-1}}}
-\end{flushright}
-
-\vspace{1.05cm}
+\vspace*{0.82cm}
 
 \begin{center}
-  \includegraphics[width=7.15cm]{cover/cit-cover-template.png}
+  \includegraphics[width=8.8cm]{cover/log.jpg}
 
-  \vspace{1.12cm}
+  \vspace{1.0cm}
 
-  {\rmfamily\fontsize{16pt}{20pt}\selectfont
-  CHANGZHOU\quad INSTITUTE\quad OF\quad TECHNOLOGY\par}
-
-  \vspace{1.55cm}
-
-  {\heiti\bfseries\fontsize{30pt}{36pt}\selectfont 课程大作业说明书\par}
+  {\heiti\bfseries\fontsize{24pt}{30pt}\selectfont 课\quad 程\quad 大\quad 作\quad 业\quad 说\quad 明\quad 书\par}
 \end{center}
 
-\vspace{1.35cm}
+\vspace{0.75cm}
 
 \begingroup
 \setlength{\parindent}{0pt}
-\fontsize{18pt}{24pt}\selectfont
-\newcommand{\coverlabel}[1]{\makebox[3.55cm][l]{\heiti\bfseries #1}}
-\newcommand{\coverlabelfour}[1]{\coverlabel{\makebox[4em][s]{#1}：}}
-\newcommand{\coverline}[1]{\underline{\makebox[7.9cm][c]{#1}}}
+\fontsize{18pt}{28pt}\selectfont
+\newcommand{\coverwideline}[1]{\underline{\makebox[13.7cm][c]{#1}}}
+\newcommand{\coverinfoleft}[2]{\makebox[3.0cm][l]{#1}\underline{\makebox[3.65cm][c]{#2}}}
+\newcommand{\coverinforight}[2]{\makebox[1.6cm][l]{#1}\underline{\makebox[3.3cm][c]{#2}}}
+
 \begin{center}
-\begin{minipage}{11.8cm}
-  \coverlabelfour{课程名}\coverline{大数据分析与可视化（Q）}\par\vspace{0.62cm}
-  \coverlabelfour{题目}\coverline{\fontsize{14pt}{24pt}\selectfont CulCloud 云盘与大数据分析}\par\vspace{0.3cm}
-  \hspace*{3.55cm}\coverline{\fontsize{14pt}{24pt}\selectfont 平台设计与实现}\par\vspace{1.08cm}
-  \coverlabelfour{二级学院}\coverline{计算机信息工程学院}\par\vspace{0.3cm}
-  \coverlabelfour{专业}\coverline{软件工程}\par\vspace{0.3cm}
-  \coverlabelfour{班级}\coverline{23 软件一}\par\vspace{0.3cm}
-  \coverlabelfour{学号姓名}\coverline{23030301\quad 曹\quad 磊}\par\vspace{0.3cm}
-  \hspace*{3.55cm}\coverline{23030302\quad 陈佳明}\par\vspace{0.3cm}
-  \hspace*{3.55cm}\coverline{23030303\quad 陈晓楠}\par\vspace{0.3cm}
-  \hspace*{3.55cm}\coverline{23030304\quad 程志阳}\par\vspace{0.3cm}
-  \coverlabelfour{指导教师}\coverline{李亦飞}\par
+  \coverwideline{大数据与云计算（Q）}\par
+  \vspace{0.46cm}
+  \coverwideline{CulCloud 云盘与大数据分析平台}\par
+\end{center}
+
+\vspace{1.48cm}
+
+\begin{center}
+\begin{minipage}{12.9cm}
+  二级学院（直属学部）：\underline{\makebox[6.25cm][c]{计算机信息工程学院}}\par\vspace{0.42cm}
+  \coverinfoleft{专业：}{软件工程}\hspace{0.3cm}\coverinforight{班级：}{23 软件一}\par\vspace{0.42cm}
+  \coverinfoleft{学生姓名：}{曹磊}\hspace{0.3cm}\coverinforight{学号：}{23030301}\par\vspace{0.42cm}
+  \coverinfoleft{学生姓名：}{陈佳明}\hspace{0.3cm}\coverinforight{学号：}{23030302}\par\vspace{0.42cm}
+  \coverinfoleft{学生姓名：}{陈晓楠}\hspace{0.3cm}\coverinforight{学号：}{23030303}\par\vspace{0.42cm}
+  \coverinfoleft{学生姓名：}{程志阳}\hspace{0.3cm}\coverinforight{学号：}{23030304}\par\vspace{0.42cm}
+  \coverinfoleft{学生姓名：}{}\hspace{0.3cm}\coverinforight{学号：}{}\par
 \end{minipage}
 \end{center}
 \endgroup
@@ -79,9 +75,9 @@
 \input{data/chap04}
 \input{data/chap05}
 \input{data/chap06}
+\input{data/chap07}
 \input{data/acknowledgements}
 % 参考文献
-\nocite{*}
 \bibliography{ref/refs}  % 参考文献使用 BibTeX 编译
 % \printbibliography       % 参考文献使用 BibLaTeX 编译
 
