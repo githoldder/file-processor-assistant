@@ -250,14 +250,13 @@ async def rename_folder(path: str, new_name: str = Form(...)):
 @router.put("/move")
 async def move_to_folder(object_name: str = Form(...), target_folder: str = Form(...)):
     target_prefix = _normalize_folder_path(target_folder)
-    if not target_prefix:
-        raise HTTPException(status_code=400, detail="Invalid target folder")
 
     client = get_minio_client()
-    try:
-        client.stat_object(BUCKET, target_prefix)
-    except Exception:
-        raise HTTPException(status_code=404, detail="Target folder not found")
+    if target_prefix:
+        try:
+            client.stat_object(BUCKET, target_prefix)
+        except Exception:
+            raise HTTPException(status_code=404, detail="Target folder not found")
 
     try:
         client.stat_object(BUCKET, object_name)
@@ -267,6 +266,12 @@ async def move_to_folder(object_name: str = Form(...), target_folder: str = Form
     try:
         basename = object_name.rsplit("/", 1)[-1]
         new_object_name = f"{target_prefix}{basename}"
+        if new_object_name == object_name:
+            return {
+                "status": "success",
+                "object_name": object_name,
+                "filename": _display_name(object_name),
+            }
 
         client.copy_object(BUCKET, new_object_name, CopySource(BUCKET, object_name))
         client.remove_object(BUCKET, object_name)

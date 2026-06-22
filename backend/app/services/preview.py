@@ -3,6 +3,7 @@ import os
 import io
 import hashlib
 import html
+import csv
 from typing import Optional
 
 import markdown
@@ -21,14 +22,16 @@ MAX_TEXT_SIZE = 5 * 1024 * 1024
 
 PREVIEWABLE_IMAGE_EXTS = {".png", ".jpg", ".jpeg"}
 PREVIEWABLE_TEXT_EXTS = {".txt"}
+PREVIEWABLE_CSV_EXTS = {".csv"}
 PREVIEWABLE_MD_EXTS = {".md"}
 PREVIEWABLE_PDF_EXTS = {".pdf"}
 PREVIEWABLE_SVG_EXTS = {".svg"}
-PREVIEWABLE_OFFICE_EXTS = {".docx", ".xlsx", ".xls", ".pptx"}
+PREVIEWABLE_OFFICE_EXTS = {".doc", ".docx", ".xlsx", ".xls", ".pptx"}
 
 ALL_PREVIEWABLE = (
     PREVIEWABLE_IMAGE_EXTS
     | PREVIEWABLE_TEXT_EXTS
+    | PREVIEWABLE_CSV_EXTS
     | PREVIEWABLE_MD_EXTS
     | PREVIEWABLE_PDF_EXTS
     | PREVIEWABLE_SVG_EXTS
@@ -47,6 +50,8 @@ def _preview_object_name(object_name: str) -> str:
         return f"{PREVIEW_PREFIX}{hashed}{ext}"
     if ext in PREVIEWABLE_TEXT_EXTS:
         return f"{PREVIEW_PREFIX}{hashed}.txt"
+    if ext in PREVIEWABLE_CSV_EXTS:
+        return f"{PREVIEW_PREFIX}{hashed}.html"
     if ext in PREVIEWABLE_MD_EXTS:
         return f"{PREVIEW_PREFIX}{hashed}.html"
     if ext in PREVIEWABLE_PDF_EXTS:
@@ -63,6 +68,8 @@ def _detect_preview_type(object_name: str) -> str:
         return "image"
     if ext in PREVIEWABLE_TEXT_EXTS:
         return "text"
+    if ext in PREVIEWABLE_CSV_EXTS:
+        return "html"
     if ext in PREVIEWABLE_MD_EXTS:
         return "html"
     if ext in PREVIEWABLE_PDF_EXTS:
@@ -145,6 +152,9 @@ async def stream_preview_content(object_name: str):
     if ext in PREVIEWABLE_TEXT_EXTS:
         return await _stream_text(client, object_name)
 
+    if ext in PREVIEWABLE_CSV_EXTS:
+        return await _stream_csv_html(client, object_name)
+
     if ext in PREVIEWABLE_MD_EXTS:
         return await _stream_markdown_html(client, object_name)
 
@@ -213,6 +223,53 @@ img {{ max-width: 100%; }}
 table {{ border-collapse: collapse; width: 100%; }}
 th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
 </style></head><body>{html_body}</body></html>"""
+
+        return stat, lambda: _iter_bytes(wrapped.encode("utf-8")), "text/html; charset=utf-8"
+    except S3Error:
+        return None
+
+
+async def _stream_csv_html(client: Minio, object_name: str):
+    try:
+        stat = client.stat_object(BUCKET, object_name)
+        if stat.size > MAX_TEXT_SIZE:
+            return None
+
+        response = client.get_object(BUCKET, object_name)
+        raw = response.read()
+        response.close()
+        response.release_conn()
+
+        text = raw.decode("utf-8-sig", errors="replace")
+        rows = list(csv.reader(io.StringIO(text)))
+        preview_rows = rows[:500]
+        max_cols = max((len(row) for row in preview_rows), default=0)
+
+        table_rows = []
+        for idx, row in enumerate(preview_rows):
+            cells = []
+            for col_idx in range(max_cols):
+                value = row[col_idx] if col_idx < len(row) else ""
+                tag = "th" if idx == 0 else "td"
+                cells.append(f"<{tag}>{html.escape(value)}</{tag}>")
+            table_rows.append(f"<tr>{''.join(cells)}</tr>")
+
+        clipped = len(rows) > len(preview_rows)
+        notice = (
+            f"<p class=\"notice\">Showing first {len(preview_rows)} of {len(rows)} rows.</p>"
+            if clipped else ""
+        )
+        wrapped = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>
+body {{ font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 24px; color: #1f2937; }}
+.notice {{ color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }}
+.table-wrap {{ overflow: auto; border: 1px solid #e2e8f0; border-radius: 12px; }}
+table {{ border-collapse: collapse; width: 100%; font-size: 13px; }}
+th, td {{ border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; white-space: nowrap; }}
+th {{ position: sticky; top: 0; background: #f8fafc; font-weight: 800; }}
+tr:nth-child(even) td {{ background: #f9fafb; }}
+</style></head><body>{notice}<div class="table-wrap"><table>{''.join(table_rows)}</table></div></body></html>"""
 
         return stat, lambda: _iter_bytes(wrapped.encode("utf-8")), "text/html; charset=utf-8"
     except S3Error:

@@ -153,6 +153,9 @@ async def list_files(
             if obj.object_name == prefix_filter:
                 continue
             if _is_folder(obj):
+                folder_path = obj.object_name.removesuffix("/.keep").rstrip("/")
+                if folder_path == p:
+                    continue
                 folder_set[obj.object_name.removesuffix("/.keep").rstrip("/") + "/"] = _build_folder_entry(obj)
                 continue
             if _is_system_prefix(obj.object_name):

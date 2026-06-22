@@ -39,6 +39,7 @@ import {
   PreviewMetadata,
   listFiles,
   renameFile,
+  moveToFolder,
   uploadFile,
 } from '../services/api';
 
@@ -121,6 +122,10 @@ function directoryOf(objectName: string) {
   return idx > -1 ? objectName.slice(0, idx) : '';
 }
 
+function displayPath(path: string) {
+  return path ? `/${path}` : '/';
+}
+
 function highlight(text: string, query: string) {
   const q = query.trim();
   if (!q) return text;
@@ -154,6 +159,10 @@ export default function MyFiles() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [renamingFile, setRenamingFile] = useState<FileEntry | null>(null);
   const [folderToDelete, setFolderToDelete] = useState<FolderEntry | null>(null);
+  const [movingFile, setMovingFile] = useState<FileEntry | null>(null);
+  const [targetFolder, setTargetFolder] = useState('');
+  const [draggingObjectName, setDraggingObjectName] = useState<string | null>(null);
+  const [dropTargetFolder, setDropTargetFolder] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [folderContents, setFolderContents] = useState<Record<string, { folders: FolderEntry[]; files: FileEntry[] }>>({});
@@ -249,6 +258,19 @@ export default function MyFiles() {
     return list;
   }, [filteredFolders, sortBy]);
 
+  const folderOptions = useMemo(() => {
+    const byPath = new Map<string, FolderEntry>();
+    folders.forEach((folder) => byPath.set(folder.path, folder));
+    Object.values(folderContents as Record<string, { folders: FolderEntry[]; files: FileEntry[] }>).forEach((entry) => {
+      entry.folders.forEach((folder) => byPath.set(folder.path, folder));
+    });
+    files.forEach((file) => {
+      const dir = directoryOf(file.object_name);
+      if (dir) byPath.set(dir, { path: dir, last_modified: null });
+    });
+    return Array.from(byPath.values()).sort((a, b) => a.path.localeCompare(b.path));
+  }, [folders, folderContents, files]);
+
   const handleUploadList = async (selectedFiles: FileList | null, directoryMode = false) => {
     if (!selectedFiles?.length) return;
     try {
@@ -277,6 +299,36 @@ export default function MyFiles() {
     await handleUploadList(event.dataTransfer.files);
   };
 
+  const moveFile = async (file: FileEntry, folderPath: string) => {
+    const normalizedTarget = folderPath === '/' ? '' : folderPath;
+    const sourceFolder = directoryOf(file.object_name);
+    if (sourceFolder === normalizedTarget) return;
+    try {
+      setError('');
+      await moveToFolder(file.object_name, normalizedTarget);
+      setMovingFile(null);
+      setTargetFolder('');
+      setDraggingObjectName(null);
+      setDropTargetFolder(null);
+      setExpandedFolder(null);
+      setFolderContents({});
+      await fetchFiles();
+    } catch (err) {
+      console.error(err);
+      setError(t.zh ? '移动文件失败' : 'Failed to move file');
+    }
+  };
+
+  const handleFolderDrop = async (event: React.DragEvent<HTMLDivElement>, folder: FolderEntry) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setDropTargetFolder(null);
+    const objectName = event.dataTransfer.getData('application/x-culcloud-object');
+    const file = files.find((item) => item.object_name === objectName);
+    if (!file) return;
+    await moveFile(file, folder.path);
+  };
+
   const toggleFolder = async (folder: FolderEntry) => {
     if (expandedFolder === folder.path) {
       setExpandedFolder(null);
@@ -286,7 +338,8 @@ export default function MyFiles() {
     if (folderContents[folder.path]) return;
     try {
       const res = await listFiles({ prefix: folder.path });
-      setFolderContents(prev => ({ ...prev, [folder.path]: { folders: res.folders || [], files: res.files || [] } }));
+      const childFolders = (res.folders || []).filter((child) => child.path !== folder.path);
+      setFolderContents(prev => ({ ...prev, [folder.path]: { folders: childFolders, files: res.files || [] } }));
     } catch (err) {
       console.error(err);
       setError(t.zh ? '读取文件夹内容失败' : 'Failed to load folder contents');
@@ -382,6 +435,16 @@ export default function MyFiles() {
     }
   };
 
+  const openMoveDialog = (file: FileEntry) => {
+    setMovingFile(file);
+    setTargetFolder('/');
+  };
+
+  const handleMoveSubmit = async () => {
+    if (!movingFile) return;
+    await moveFile(movingFile, targetFolder);
+  };
+
   const goUp = () => {
     if (!pathParts.length) return;
     setCurrentPrefix(pathParts.slice(0, -1).join('/'));
@@ -405,6 +468,9 @@ export default function MyFiles() {
             <h1 className="truncate text-2xl font-black tracking-tight">{previewFile.filename || previewFile.object_name}</h1>
             <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-outline">
               {previewMeta?.preview_type || (previewLoading ? (t.zh ? '预览生成中' : 'Generating preview') : (t.zh ? '文件预览' : 'File preview'))} · {formatSize(previewFile.size)}
+            </p>
+            <p className="mt-2 truncate text-[10px] font-black uppercase tracking-widest text-outline/70">
+              {t.zh ? '云盘路径：' : 'Cloud path: '}{displayPath(directoryOf(previewFile.object_name))}
             </p>
           </div>
           <div className="min-h-[72vh] bg-surface-container-lowest p-6">
@@ -633,10 +699,23 @@ export default function MyFiles() {
                     {sortedFolders.map((folder) => {
                       const isOpen = expandedFolder === folder.path;
                       const inner = folderContents[folder.path] || { folders: [], files: [] };
-                      const innerFolders = inner.folders || [];
+                      const innerFolders = (inner.folders || []).filter((childFolder) => childFolder.path !== folder.path);
                       const innerFiles = inner.files || [];
                       return (
-                        <div key={folder.path} className="overflow-hidden rounded-2xl border border-outline-variant/30 bg-surface-container-low/40 transition-all group">
+                        <div
+                          key={folder.path}
+                          onDragOver={(event) => {
+                            if (!draggingObjectName) return;
+                            event.preventDefault();
+                            setDropTargetFolder(folder.path);
+                          }}
+                          onDragLeave={() => setDropTargetFolder(null)}
+                          onDrop={(event) => handleFolderDrop(event, folder)}
+                          className={cn(
+                            'overflow-hidden rounded-2xl border border-outline-variant/30 bg-surface-container-low/40 transition-all group',
+                            dropTargetFolder === folder.path && 'border-primary bg-primary/5 shadow-[0_0_0_4px_rgba(11,92,255,0.08)]',
+                          )}
+                        >
                           <div className="flex items-center justify-between p-4 hover:bg-surface-container-low">
                             <button onClick={() => toggleFolder(folder)} className="flex min-w-0 flex-1 items-center gap-4 text-left">
                               <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border', typeTone('folder'))}>
@@ -645,8 +724,9 @@ export default function MyFiles() {
                               <div className="min-w-0">
                                 <h4 className="text-sm font-black tracking-tight text-on-surface truncate">{highlight(folder.name || folder.path, searchTerm)}</h4>
                                 <p className="text-[9px] font-black text-outline uppercase tracking-widest mt-0.5">
-                                  {folder.last_modified ? new Date(folder.last_modified).toLocaleString() : '--'}
+                                  {t.zh ? '云盘路径：' : 'Cloud path: '}{displayPath(folder.path)}
                                 </p>
+                                <p className="mt-1 text-[9px] font-black uppercase tracking-widest text-outline/70">{folder.last_modified ? new Date(folder.last_modified).toLocaleString() : '--'}</p>
                               </div>
                               <ChevronRight className={cn('h-3.5 w-3.5 text-outline transition-transform', isOpen && 'rotate-90')} />
                             </button>
@@ -671,7 +751,7 @@ export default function MyFiles() {
                                         </div>
                                         <div className="min-w-0">
                                           <span className="block truncate text-xs font-black">{childFolder.name || childFolder.path.split('/').pop()}</span>
-                                          <span className="block truncate text-[8px] font-black uppercase tracking-widest text-outline">{childFolder.path}</span>
+                                          <span className="block truncate text-[8px] font-black uppercase tracking-widest text-outline">{displayPath(childFolder.path)}</span>
                                         </div>
                                       </button>
                                       <button onClick={() => setCurrentPrefix(childFolder.path)} className="rounded-lg px-2.5 py-1 text-[10px] font-black text-primary hover:bg-primary/10 transition-colors">
@@ -682,17 +762,36 @@ export default function MyFiles() {
                                   {innerFiles.length ? innerFiles.map((file) => {
                                     const Icon = fileIcon(file);
                                     return (
-                                      <div key={file.object_name} className="flex items-center justify-between rounded-xl bg-surface-container-low/40 px-4 py-3">
+                                      <div
+                                        key={file.object_name}
+                                        draggable
+                                        onDragStart={(event) => {
+                                          setDraggingObjectName(file.object_name);
+                                          event.dataTransfer.setData('application/x-culcloud-object', file.object_name);
+                                          event.dataTransfer.effectAllowed = 'move';
+                                        }}
+                                        onDragEnd={() => {
+                                          setDraggingObjectName(null);
+                                          setDropTargetFolder(null);
+                                        }}
+                                        className="flex items-center justify-between rounded-xl bg-surface-container-low/40 px-4 py-3"
+                                      >
                                         <div className="flex min-w-0 items-center gap-3">
                                           <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg border bg-white', typeTone(filterFor(file)))}>
                                             <Icon className="h-4 w-4" />
                                           </div>
-                                          <span className="truncate text-xs font-black">{file.filename || file.object_name}</span>
+                                          <div className="min-w-0">
+                                            <span className="block truncate text-xs font-black">{file.filename || file.object_name}</span>
+                                            <span className="block truncate text-[8px] font-black uppercase tracking-widest text-outline">{displayPath(directoryOf(file.object_name))}</span>
+                                          </div>
                                         </div>
                                         <div className="flex items-center gap-3">
                                           <span className="text-[9px] font-black text-outline">{formatSize(file.size)}</span>
                                           <button onClick={() => openPreview(file)} className="rounded-lg px-2.5 py-1 text-[10px] font-black text-primary hover:bg-primary/10 transition-colors">
                                             {t.zh ? '预览' : 'Preview'}
+                                          </button>
+                                          <button onClick={() => openMoveDialog(file)} className="rounded-lg px-2.5 py-1 text-[10px] font-black text-primary hover:bg-primary/10 transition-colors">
+                                            {t.zh ? '移动到' : 'Move'}
                                           </button>
                                         </div>
                                       </div>
@@ -752,7 +851,20 @@ export default function MyFiles() {
                     {sortedFiles.map((file) => {
                       const Icon = fileIcon(file);
                       return (
-                        <div key={file.object_name} className="flex items-center justify-between p-4 bg-surface-container-low/30 rounded-2xl border border-outline-variant/30 hover:bg-surface-container-low transition-all group">
+                        <div
+                          key={file.object_name}
+                          draggable
+                          onDragStart={(event) => {
+                            setDraggingObjectName(file.object_name);
+                            event.dataTransfer.setData('application/x-culcloud-object', file.object_name);
+                            event.dataTransfer.effectAllowed = 'move';
+                          }}
+                          onDragEnd={() => {
+                            setDraggingObjectName(null);
+                            setDropTargetFolder(null);
+                          }}
+                          className="flex items-center justify-between p-4 bg-surface-container-low/30 rounded-2xl border border-outline-variant/30 hover:bg-surface-container-low transition-all group"
+                        >
                           <div className="flex items-center gap-4 min-w-0">
                             <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border bg-white', typeTone(filterFor(file)))}>
                               <Icon className="w-5 h-5" />
@@ -762,11 +874,9 @@ export default function MyFiles() {
                               <p className="text-[9px] font-black text-outline uppercase tracking-widest mt-0.5">
                                 {formatSize(file.size)} · {file.last_modified ? new Date(file.last_modified).toLocaleString() : '--'}
                               </p>
-                              {!currentPrefix && directoryOf(file.object_name) && (
-                                <p className="mt-1 truncate text-[9px] font-bold text-outline/70">
-                                  {t.zh ? '位置：' : 'Path: '}{directoryOf(file.object_name)}
-                                </p>
-                              )}
+                              <p className="mt-1 truncate text-[9px] font-bold text-outline/70" title={file.object_name}>
+                                {t.zh ? '云盘路径：' : 'Cloud path: '}{displayPath(directoryOf(file.object_name))}
+                              </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -778,6 +888,9 @@ export default function MyFiles() {
                             </button>
                             <button onClick={() => { setRenamingFile(file); setNewName(file.filename || file.object_name); }} className="p-2 hover:bg-primary/10 text-primary rounded-xl transition-all" title={t.zh ? '重命名' : 'Rename'}>
                               <Edit2 size={16} />
+                            </button>
+                            <button onClick={() => openMoveDialog(file)} className="px-3 py-2 hover:bg-primary/10 text-primary rounded-xl transition-all text-[10px] font-black uppercase tracking-widest" title={t.zh ? '移动到文件夹' : 'Move to folder'}>
+                              {t.zh ? '移动到' : 'Move'}
                             </button>
                             <button onClick={() => handleDelete(file)} className="p-2 hover:bg-error/10 text-error rounded-xl transition-all" title={t.zh ? '删除' : 'Delete'}>
                               <Trash2 size={16} />
@@ -843,6 +956,34 @@ export default function MyFiles() {
             <div className="flex gap-4">
               <button onClick={() => setFolderToDelete(null)} className="flex-1 py-4 border border-outline-variant rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-surface-container-low transition-all">{t.zh ? '取消' : 'Cancel'}</button>
               <button onClick={confirmDeleteFolder} className="flex-1 py-4 bg-error text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-error/20 hover:brightness-110 transition-all">{t.zh ? '确认删除' : 'Delete'}</button>
+            </div>
+          </Modal>
+        )}
+
+        {movingFile && (
+          <Modal onClose={() => setMovingFile(null)}>
+            <h3 className="text-2xl font-black tracking-tight text-on-surface">{t.zh ? '移动文件' : 'Move File'}</h3>
+            <div className="rounded-2xl border border-outline-variant bg-surface-container-low p-4">
+              <p className="truncate text-sm font-black">{movingFile.filename || movingFile.object_name}</p>
+              <p className="mt-1 truncate text-[10px] font-black uppercase tracking-widest text-outline">
+                {t.zh ? '当前位置：' : 'Current path: '}{displayPath(directoryOf(movingFile.object_name))}
+              </p>
+            </div>
+            <select
+              value={targetFolder}
+              onChange={(event) => setTargetFolder(event.target.value)}
+              className="w-full rounded-2xl border border-outline-variant bg-surface-container-low px-5 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-primary/10"
+            >
+              <option value="/">{t.zh ? '云盘根目录 /' : 'Drive root /'}</option>
+              {folderOptions
+                .filter((folder) => folder.path !== directoryOf(movingFile.object_name))
+                .map((folder) => (
+                  <option key={folder.path} value={folder.path}>{displayPath(folder.path)}</option>
+                ))}
+            </select>
+            <div className="flex gap-4">
+              <button onClick={() => setMovingFile(null)} className="flex-1 py-4 border border-outline-variant rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-surface-container-low transition-all">{t.zh ? '取消' : 'Cancel'}</button>
+              <button onClick={handleMoveSubmit} className="flex-1 py-4 bg-primary text-on-primary rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all">{t.zh ? '移动' : 'Move'}</button>
             </div>
           </Modal>
         )}
