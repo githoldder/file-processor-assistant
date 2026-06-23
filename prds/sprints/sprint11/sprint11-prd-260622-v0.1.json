@@ -3,7 +3,7 @@
   "version": "0.1",
   "status": "Planned",
   "lastUpdated": "2026-06-22 16:50",
-  "object": "将 LaTeX 课程大作业说明书从 7 章骨架扩充为 10000--13000 中文字符的均衡正文，并建立主智能体分发、子智能体分章扩写、主智能体验收的写作流程。",
+  "object": "将 LaTeX 报告从 7 章骨架扩充为 10000--13000 中文字符的均衡正文，并建立主智能体分发、子智能体分章扩写、主智能体验收的写作流程。",
   "baseline": {
     "counter": "python3 docs/02-process/scripts/latex_chapter_audit.py",
     "totalCjkApprox": 6500,

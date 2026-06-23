@@ -4,7 +4,7 @@ Last Updated: 2026-06-22 16:50
 
 ## 背景
 
-当前课程大作业说明书已经完成 Word 模板封面对齐、7 章结构拆分和基础 LaTeX 门禁。`latex_chapter_audit.py` 显示正文已经具备完整骨架，但整体仍是扩写稿：7 章合计约 6500 个中文字符，距离课程报告期望的 10000--13000 个中文字符仍有明显差距。
+当前 LaTeX 报告已经完成 Word 模板封面对齐、7 章结构拆分和基础 LaTeX 门禁。`latex_chapter_audit.py` 显示正文已经具备完整骨架，但整体仍是扩写稿：7 章合计约 6500 个中文字符，距离课程报告期望的 10000--13000 个中文字符仍有明显差距。
 
 本 Sprint 的目标不是让某一章堆出大量文字，而是让 7 个章节按照课程模板逻辑共同达标。扩写必须围绕真实系统、真实 PRD、真实测试和真实截图规划展开，避免出现单章膨胀、图表堆叠、AI 腔空话、Markdown 残留和编译警告瞒报。
 
@@ -42,7 +42,7 @@ Last Updated: 2026-06-22 16:50
 
 ### 第 2 章 相关软件及技术简介
 
-目标是让技术栈选择具有解释力。扩写重点包括 React/TypeScript/Vite、FastAPI、MinIO、Redis/Celery、LibreOffice/Gotenberg、PDF 渲染、Spark/ECharts 的作用边界，以及为什么这些技术适合课程大作业。避免泛泛介绍技术百科，必须回到 CulCloud 实际链路。
+目标是让技术栈选择具有解释力。扩写重点包括 React/TypeScript/Vite、FastAPI、MinIO、Redis/Celery、LibreOffice/Gotenberg、PDF 渲染、Spark/ECharts 的作用边界，以及为什么这些技术适合办公与教学资料管理系统。避免泛泛介绍技术百科，必须回到 CulCloud 实际链路。
 
 ### 第 3 章 系统分析
 

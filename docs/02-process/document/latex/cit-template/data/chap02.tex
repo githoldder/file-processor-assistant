@@ -6,35 +6,124 @@
 
 \subsection{React 组件化开发}
 
-前端采用 React 框架构建高度模块化的单页面应用界面\cite{reactdocs}。系统将各类主要业务视图（如 Dashboard、MyFiles、ConvertCenter、PDFStudio 等）抽象为独立的组件单元。为在组件间高效共享状态，系统设计了全局上下文 DashboardContext 机制（见 file-cloud-frontend/src/context/useDashboard.tsx），统一维护当前激活视图和用户角色（demo\_user 或 admin）。在角色切换时，系统执行乐观更新并请求后端同步状态，触发组件树重渲染，并在顶层 AppShell 容器上动态绑定或移除 admin 特定的样式类（如 theme-admin 和 theme-admin-bg），在无刷新的情况下实现界面主题色彩与视图权限的平滑过渡。
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.42\textwidth,height=3.2cm,keepaspectratio]{logos-pdf/logo-react.pdf}
+  \caption{React 标识}
+  \label{fig:chap02-react-logo}
+\end{figure}
+
+前端采用 React 框架构建高度模块化的单页面应用界面\cite{reactdocs}。React 的核心优势在于用组件描述界面状态，再由虚拟 DOM 与渲染调度机制完成局部更新，这与 CulCloud 多视图切换、文件列表刷新、转换任务轮询和 PDF 工具状态同步的需求高度匹配。系统将 Dashboard、MyFiles、ConvertCenter、PDFStudio 等主要业务视图抽象为独立组件单元，并把导航、用户角色、任务状态、通知提示等跨页面数据收敛到共享状态中，避免多个页面重复维护同一份界面上下文。
+
+为在组件间高效共享状态，系统设计了全局上下文 DashboardContext 机制（见 file-cloud-frontend/src/context/useDashboard.tsx），统一维护当前激活视图和用户角色（demo\_user 或 admin）。在角色切换时，系统执行乐观更新并请求后端同步状态，触发组件树重渲染，并在顶层 AppShell 容器上动态绑定或移除 admin 特定的样式类（如 theme-admin 和 theme-admin-bg），在无刷新的情况下实现界面主题色彩与视图权限的平滑过渡。
 
 \subsection{TypeScript 类型约束}
 
-为保障前端稳定性，项目引入 TypeScript 进行静态类型约束，所有通信协议与页面状态均在 file-cloud-frontend/src/types.ts 中显式定义。例如，ViewState 联合类型限定了合法的视图，FileItem 接口规范了文件实体属性（如名称、大小及 iconType 文件夹或文件类型分类），Task 接口对异步任务的核心状态（queued, processing, success, failed）进行建模。在文件分类、路由流转和转换任务状态变更时，强类型约束确保在编译期捕获属性缺失或类型不匹配问题，防止由于未知任务状态或未定义（undefined）属性引起的运行时类型崩溃。
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.38\textwidth,height=3cm,keepaspectratio]{logos-pdf/logo-typescript.pdf}
+  \caption{TypeScript 标识}
+  \label{fig:chap02-typescript-logo}
+\end{figure}
+
+为保障前端稳定性，项目引入 TypeScript 进行静态类型约束，所有通信协议与页面状态均在 file-cloud-frontend/src/types.ts 中显式定义。例如，ViewState 联合类型限定了合法的视图，FileItem 接口规范了文件实体属性（如名称、大小及 iconType 文件夹或文件类型分类），Task 接口对异步任务的核心状态（queued, processing, success, failed）进行建模。在文件分类、路由流转和转换任务状态变更时，强类型约束确保在编译期捕获属性缺失或类型不匹配问题，防止由于未知任务状态或未定义（undefined）属性引起的运行时类型崩溃。对于文件预览与转换中心这类状态分支较多的页面，TypeScript 还可以将可预览类型、可转换类型和后端任务状态显式化，使新增格式时更容易发现遗漏的渲染分支。
 
 \subsection{Vite 与界面构建}
 
-Vite 负责本地开发和前端构建。系统在课程演示中通过 PM2 启动前端服务，保证浏览器预览地址稳定，减少因临时命令退出导致的演示中断。
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.38\textwidth,height=3cm,keepaspectratio]{logos-pdf/logo-vite.pdf}
+  \caption{Vite 标识}
+  \label{fig:chap02-vite-logo}
+\end{figure}
+
+Vite 负责本地开发和前端构建。相较于传统打包器在开发阶段整体构建应用的模式，Vite 利用浏览器原生 ES Module 能力按需加载源码，在页面修改后通过热更新快速反馈，因此适合 CulCloud 这种前端交互频繁、页面状态较多的开发过程。系统在日常预览中通过 PM2 启动前端服务，保证浏览器预览地址稳定，减少因临时命令退出导致的服务中断；在构建阶段，Vite 将 React 与 TypeScript 代码编译为静态资源，交由本地服务或容器环境托管。
+
+\subsection{HTML5 Canvas 交互渲染}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.34\textwidth,height=2.7cm,keepaspectratio]{logos-pdf/logo-html5-canvas.pdf}
+  \caption{HTML5 Canvas 标识}
+  \label{fig:chap02-canvas-logo}
+\end{figure}
+
+HTML5 Canvas 是系统 PDF Studio 和管理驾驶舱中不可忽略的前端渲染基础\cite{mdncanvas}。在 PDF Studio 中，系统将 PDF 页面预览图作为底层视觉对象，再通过前端坐标系记录画笔、高亮、矩形、箭头和文本等批注数据；在打印导出和页面重排时，前端需要把 Canvas 容器中的逻辑坐标、缩放比例和页面尺寸同步传给后端，避免批注位置在不同缩放状态下发生偏移。管理驾驶舱中的 ECharts 默认也依赖 CanvasRenderer 完成图表绘制，因此前端测试不仅要检查 DOM 是否出现，还需要检查 canvas 像素是否非空，防止图表组件白屏但页面结构仍然存在的假通过。
 
 \section{后端服务技术}
 
 \subsection{FastAPI 接口服务}
 
-后端采用 FastAPI 提供文件、预览、转换、任务和系统健康等 REST API\cite{fastapi}。FastAPI 深度集成 Pydantic 库，利用 Python 类型提示实现自动化的数据校验。前端提交的所有请求体（如 JSON 格式的批注重组配置 PDFProcessRequest，详见 backend/app/models/schemas.py）都会在路由入口层被严格校验。一旦参数缺失或类型违规，FastAPI 直接拦截请求并返回错误响应，确保业务逻辑层接收到的数据安全合规，有效防范异常输入，并借助自动生成的 OpenAPI 文档显著降低联调与接口测试成本。
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.38\textwidth,height=3cm,keepaspectratio]{logos-pdf/logo-fastapi.pdf}
+  \caption{FastAPI 标识}
+  \label{fig:chap02-fastapi-logo}
+\end{figure}
+
+后端采用 FastAPI 提供文件、预览、转换、任务和系统健康等 REST API\cite{fastapi}。FastAPI 深度集成 Pydantic 库，利用 Python 类型提示实现自动化的数据校验。前端提交的所有请求体（如 JSON 格式的批注重组配置 PDFProcessRequest，详见 backend/app/models/schemas.py）都会在路由入口层被严格校验。一旦参数缺失或类型违规，FastAPI 直接拦截请求并返回错误响应，确保业务逻辑层接收到的数据安全合规，有效防范异常输入，并借助自动生成的 OpenAPI 文档显著降低联调与接口测试成本。由于文件处理接口需要同时处理普通 JSON、文件流、下载响应和异步任务查询，FastAPI 的类型化路由与依赖注入机制也便于将鉴权、对象存储客户端、任务服务和日志服务拆成可测试的独立模块。
+
+\subsection{Flask 分析服务}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.34\textwidth,height=2.7cm,keepaspectratio]{logos-pdf/logo-flask.pdf}
+  \caption{Flask 标识}
+  \label{fig:chap02-flask-logo}
+\end{figure}
+
+除 FastAPI 文件处理后端外，系统还保留了独立的 Flask 分析服务\cite{flaskdocs}。该服务位于 flask-analytics 目录，主要负责读取 Spark 离线分析产物、服务健康快照和演示数据，并将其整理为管理驾驶舱可直接消费的 JSON 接口。将分析 API 与文件处理 API 分离，可以让 FastAPI 聚焦上传、预览、转换和任务状态，Flask 则聚焦统计指标、趋势数据和可视化面板数据契约。这样的分层也便于在 PM2 中单独重启分析服务，避免数据看板调试影响文件处理主链路。
 
 \subsection{Redis 与 Celery 任务队列}
 
-针对 Gotenberg 文件转换等耗时且依赖外部组件的计算密集型任务，系统设计了 Redis 与 Celery 配合的异步调度机制以防止 FastAPI 进程阻塞。Redis 既作为 Celery 任务队列的 Broker 传递消息，又作为缓存管理近期任务状态与时间线日志（详见 backend/app/services/task\_queue.py）。任务状态数据设置了 24 小时生存时间（TTL）以节省内存，且其生命周期（queued, processing, success, failed）索引于 Redis 有序集合中。前端提交请求后立即获取 task\_id，Celery 工作进程异步调度执行，前端则通过发起短轮询（HTTP GET）追踪 Redis 中的最新状态，实时渲染进度并呈现下载链接。
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.38\textwidth}
+    \centering
+    \includegraphics[height=3cm,keepaspectratio]{logos-pdf/logo-redis.pdf}
+  \end{minipage}
+  \hspace{0.08\textwidth}
+  \begin{minipage}{0.38\textwidth}
+    \centering
+    \includegraphics[height=3cm,keepaspectratio]{logos-pdf/logo-celery.pdf}
+  \end{minipage}
+  \caption{Redis 与 Celery 标识}
+  \label{fig:chap02-redis-celery-logo}
+\end{figure}
+
+针对 Gotenberg 文件转换等耗时且依赖外部组件的计算密集型任务，系统设计了 Redis 与 Celery 配合的异步调度机制以防止 FastAPI 进程阻塞。Redis 既作为 Celery 任务队列的 Broker 传递消息，又作为缓存管理近期任务状态与时间线日志（详见 backend/app/services/task\_queue.py）。任务状态数据设置了 24 小时生存时间（TTL）以节省内存，且其生命周期（queued, processing, success, failed）索引于 Redis 有序集合中。前端提交请求后立即获取 task\_id，Celery 工作进程异步调度执行，前端则通过发起短轮询（HTTP GET）追踪 Redis 中的最新状态，实时渲染进度并呈现下载链接。该设计将请求响应链路与实际转换耗时解耦，避免用户在浏览器中等待 Office 或 PDF 转换完成，也为失败重试、队列监控和历史记录展示提供了统一状态入口。
 
 \subsection{MinIO 对象存储}
 
-系统底层存储基于 MinIO 实现\cite{minio}。由于对象存储是扁平结构，并不支持物理级目录树，CulCloud 采用“对象名称前缀模拟法”（详见 backend/app/routers/folders.py 虚拟文件夹逻辑）。创建文件夹时，系统写入带有特定路径前缀的空标记对象（如写入以斜杠及 .keep 结尾的对象）；浏览特定路径时，将 list\_objects 的 recursive 参数设为 False，过滤出以斜杠结尾的对象作为子文件夹并映射为文件树。当执行重命名或文件移动时，后端会通过路径级联分析，利用 CopyObject 复制所有前缀匹配的键至新路径，再批量删除源对象，在扁平架构上实现层级目录管理。
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.42\textwidth,height=3.2cm,keepaspectratio]{logos-pdf/logo-minio.pdf}
+  \caption{MinIO 标识}
+  \label{fig:chap02-minio-logo}
+\end{figure}
+
+系统底层存储基于 MinIO 实现\cite{minio}。MinIO 兼容 S3 对象存储协议，适合在本地 Docker Compose 环境中提供可控、可迁移、低依赖的文件存储服务。由于对象存储是扁平结构，并不支持物理级目录树，CulCloud 采用“对象名称前缀模拟法”（详见 backend/app/routers/folders.py 虚拟文件夹逻辑）。创建文件夹时，系统写入带有特定路径前缀的空标记对象（如写入以斜杠及 .keep 结尾的对象）；浏览特定路径时，将 list\_objects 的 recursive 参数设为 False，过滤出以斜杠结尾的对象作为子文件夹并映射为文件树。当执行重命名或文件移动时，后端会通过路径级联分析，利用 CopyObject 复制所有前缀匹配的键至新路径，再批量删除源对象，在扁平架构上实现层级目录管理。
 
 \section{文件处理技术}
 
 \subsection{Office 与 PDF 转换}
 
-系统通过 LibreOffice、Gotenberg 或后端转换服务处理 Office 到 PDF、PDF 到图片、Markdown 到 PDF、文本到 PDF、图片到 PDF 等转换链路\cite{gotenberg}。转换中心仅向用户暴露经过验证的 P0 能力，避免展示尚未跑通的实验功能。
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.38\textwidth}
+    \centering
+    \includegraphics[height=3cm,keepaspectratio]{logos-pdf/logo-libreoffice.pdf}
+  \end{minipage}
+  \hspace{0.08\textwidth}
+  \begin{minipage}{0.38\textwidth}
+    \centering
+    \includegraphics[height=3cm,keepaspectratio]{logos-pdf/logo-gotenberg.pdf}
+  \end{minipage}
+  \caption{LibreOffice 与 Gotenberg 标识}
+  \label{fig:chap02-libreoffice-gotenberg-logo}
+\end{figure}
+
+系统通过 LibreOffice、Gotenberg 或后端转换服务处理 Office 到 PDF、PDF 到图片、Markdown 到 PDF、文本到 PDF、图片到 PDF 等转换链路\cite{gotenberg}。Gotenberg 将 Chromium、LibreOffice 与 PDF 处理引擎封装为容器化 HTTP 服务，使后端能够通过统一接口提交转换任务，而不必在业务进程内直接管理 Office 进程生命周期。转换中心仅向用户暴露经过验证的 P0 能力，避免展示尚未跑通的实验功能。对于 DOCX、XLSX、PPTX 等文件，系统优先走异步队列和转换服务生成预览或下载结果；对于文本、Markdown、CSV 等轻量格式，则尽量使用本地解析和浏览器渲染降低转换成本。
 
 \subsection{CSV、Markdown 与文本渲染}
 
@@ -42,18 +131,77 @@ CSV 预览使用表格化 HTML 渲染，Markdown 预览使用 HTML 渲染，TXT 
 
 \subsection{PDF 页面渲染与批注}
 
-PDF 页面提取由后端服务生成页面预览图，前端在页面图上叠加批注层；浏览器内 PDF 阅读和页面理解能力则以 PDF.js 的渲染模型作为重要参照\cite{pdfjs}。批注对象包括画笔轨迹、高亮轨迹、矩形、箭头和文本，支持在打印导出时同步渲染。
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.38\textwidth,height=3cm,keepaspectratio]{logos-pdf/logo-pdfjs.pdf}
+  \caption{PDF.js 标识}
+  \label{fig:chap02-pdfjs-logo}
+\end{figure}
+
+PDF 页面提取由后端服务生成页面预览图，前端在页面图上叠加批注层；浏览器内 PDF 阅读和页面理解能力则以 PDF.js 的渲染模型作为重要参照\cite{pdfjs}。PDF.js 的核心思路是在浏览器中解析 PDF 页面并渲染到 Canvas，适合实现缩放、翻页、页面定位和前端批注层对齐。CulCloud 当前实现更偏向稳定的页面图预览与双层批注模型：底层页面图保证不同浏览器中的显示一致性，上层批注对象包括画笔轨迹、高亮轨迹、矩形、箭头和文本，支持在打印导出时同步渲染。
+
+在实现细节上，PDF 批注并不是简单地把鼠标轨迹画在页面上，而是需要维护“页面坐标、容器坐标、缩放比例、导出尺寸”之间的对应关系。前端保存批注时记录 canvas\_width、canvas\_height 与各批注节点的相对位置，后端在重排或导出时据此还原页面级坐标。这一设计解释了为什么系统需要同时介绍 PDF.js 和 Canvas：前者提供 PDF 页面理解和渲染模型，后者承担交互式批注层、图形绘制和像素级可视化验证。
+
+\section{运行与部署技术}
+
+\subsection{PM2 进程管理}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.40\textwidth,height=3cm,keepaspectratio]{logos-pdf/logo-pm2.pdf}
+  \caption{PM2 标识}
+  \label{fig:chap02-pm2-logo}
+\end{figure}
+
+PM2 用于管理本地开发和展示阶段的前端服务与 Flask 分析服务\cite{pm2docs}。项目根目录中的 ecosystem.config.js 明确区分 flask-analytics、culcloud-frontend-dev、culcloud-frontend-preview 等进程，使开发者可以通过统一命令启动、重启、查看日志和恢复服务。相较于手动打开多个终端分别运行命令，PM2 能够记录进程状态、集中输出日志，并在服务异常退出时自动拉起，适合保障本地预览环境的稳定性。
+
+\subsection{Docker Compose 容器编排}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.40\textwidth,height=3cm,keepaspectratio]{logos-pdf/logo-docker-compose.pdf}
+  \caption{Docker Compose 标识}
+  \label{fig:chap02-docker-compose-logo}
+\end{figure}
+
+Docker Compose 用于编排 Redis、MinIO、Gotenberg、FastAPI、Flask Analytics 以及相关数据服务\cite{dockerdocscompose}。项目中的 docker-compose.yml 和 docker-compose.demo.yml 将容器镜像、端口、环境变量、挂载卷和服务依赖写入声明式配置，使整套平台能够通过一条命令恢复运行环境。与 PM2 管理应用进程不同，Docker Compose 更适合承载状态型和依赖复杂的基础服务，例如 MinIO 需要挂载对象存储目录，Redis 需要稳定端口和网络别名，Gotenberg 需要独立容器隔离 LibreOffice 与 Chromium 运行环境。二者结合后，系统形成“PM2 管应用、Compose 管基础设施”的混合部署策略。
 
 \section{大数据分析技术}
 
 \subsection{HDFS 与 Spark}
 
-HDFS/Spark 负责课程大数据实验链路。HDFS 提供分布式文件系统抽象，Spark 则提供统一的大数据计算引擎\cite{apachehadoop,shvachko2010hdfs,apachespark,zaharia2016spark}。Spark 可对上传、转换、下载、预览等遥测数据按时间、动作和文件类型聚合，生成管理端分析指标。
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.38\textwidth}
+    \centering
+    \includegraphics[height=3cm,keepaspectratio]{logos-pdf/logo-apache-hadoop.pdf}
+  \end{minipage}
+  \hspace{0.08\textwidth}
+  \begin{minipage}{0.38\textwidth}
+    \centering
+    \includegraphics[height=3cm,keepaspectratio]{logos-pdf/logo-apache-spark.pdf}
+  \end{minipage}
+  \caption{Hadoop 与 Spark 标识}
+  \label{fig:chap02-hadoop-spark-logo}
+\end{figure}
+
+HDFS/Spark 负责平台数据分析链路。HDFS 提供分布式文件系统抽象，Spark 则提供统一的大数据计算引擎\cite{apachehadoop,shvachko2010hdfs,apachespark,zaharia2016spark}。在本系统中，日志数据规模尚未达到真实生产级大数据体量，但通过 HDFS 与 Spark 组织分析链路，可以把上传、转换、下载、预览等遥测数据按时间、动作和文件类型聚合，生成管理端分析指标。该设计的重点不是追求复杂算法，而是让资料处理平台具备从业务事件到分析结果的完整数据流。
 
 \subsection{ECharts 可视化}
 
-前端使用 ECharts 展示趋势图、文件类型分布、任务状态、失败率和质量指标。可视化结果既服务管理驾驶舱，也作为课程报告中的实验截图来源。
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.38\textwidth,height=3cm,keepaspectratio]{logos-pdf/logo-apache-echarts.pdf}
+  \caption{Apache ECharts 标识}
+  \label{fig:chap02-echarts-logo}
+\end{figure}
+
+前端使用 ECharts 展示趋势图、文件类型分布、任务状态、失败率和质量指标。ECharts 提供折线图、柱状图、饼图、雷达图等常见图表能力，并支持响应式容器、主题配置和交互提示，适合嵌入管理驾驶舱。CulCloud 将 Spark 聚合结果转换为前端可直接消费的数据结构，再由 ECharts 呈现文件类型分布、转换成功率和近期操作趋势，使管理端能够快速判断系统运行状态和用户使用热点。
 
 \section{本章小结}
 
-本章介绍了系统涉及的前端、后端、对象存储、任务队列、文件转换、PDF 渲染和大数据分析技术。这些技术共同支撑 CulCloud 从单纯文件列表扩展为可上传、可预览、可转换、可编辑和可分析的课程平台。
+本章介绍了系统涉及的前端、后端、对象存储、任务队列、文件转换、PDF 渲染、运行部署和大数据分析技术。这些技术共同支撑 CulCloud 从单纯文件列表扩展为可上传、可预览、可转换、可编辑和可分析的资料处理平台。
+
+从工程分层看，React、TypeScript、Vite 和 Canvas 负责构建浏览器侧的高交互界面，FastAPI 负责承载文件处理主链路，Flask 则作为轻量分析服务承担驾驶舱数据接口，二者形成“主业务服务”和“分析辅助服务”的边界。Redis 与 Celery 将耗时转换任务从同步请求中拆离，MinIO 负责对象化存储，Gotenberg、LibreOffice 和 PDF.js 分别补足 Office 转换、PDF 生成和页面渲染能力。PM2 与 Docker Compose 的组合则对应本地展示和容器化依赖两类运行场景，使系统既能快速预览，也能保持转换、缓存和对象存储等基础服务的可复现性。
+
+这些技术并不是孤立堆叠，而是围绕文件流转闭环进行组合：用户上传资料后，后端写入对象存储并记录元数据；需要预览或转换时，任务队列调度转换服务生成结果；需要批注时，前端通过 PDF 页面图和 Canvas 批注层维护坐标关系；需要管理分析时，日志与遥测数据进入 Spark 聚合链路并由 ECharts 呈现。后续章节将在此基础上进一步说明需求建模、总体架构、核心模块实现和测试验证方法。

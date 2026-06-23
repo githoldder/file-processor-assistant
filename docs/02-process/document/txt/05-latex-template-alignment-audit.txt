@@ -89,7 +89,7 @@
 1. `python3 docs/02-process/scripts/latex_chapter_audit.py`
 2. `make -C docs/02-process/document/latex/cit-template/scripts clean compile`
 
-编译已通过，输出 PDF 为 `docs/02-process/document/latex/cit-template/output/大数据分析与可视化课程大作业说明书.pdf`。日志中未发现 undefined reference、missing figure 或 overfull box；存在 5 条 underfull hbox 提示，主要来自封面字段和第 4 章较长的 `\texttt{}` 字段列表，后续排版精修时处理。
+编译已通过，输出 PDF 为 `docs/02-process/document/latex/cit-template/output/大数据与云计算课程大作业说明书.pdf`。日志中未发现 undefined reference、missing figure 或 overfull box；存在 5 条 underfull hbox 提示，主要来自封面字段和第 4 章较长的 `\texttt{}` 字段列表，后续排版精修时处理。
 
 ## 7. 下一步任务项
 

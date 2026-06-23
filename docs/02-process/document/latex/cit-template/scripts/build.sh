@@ -1,5 +1,5 @@
 #!/bin/bash
-# CIT LaTeX Build Script — 课程大作业说明书
+# CIT LaTeX Build Script
 set -e
 
 cd "$(dirname "$0")/.."
