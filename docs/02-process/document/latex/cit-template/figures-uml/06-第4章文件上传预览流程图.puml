@@ -1,0 +1,56 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam shadowing false
+
+title CulCloud 第4章 文件上传、整理与预览流程图
+
+start
+:用户在 MyFiles 拖拽文件/文件夹;
+:前端读取 currentPrefix 和 relativePath;
+:POST /api/v1/files/upload;
+:files.py 执行 _sanitize_path;
+if (路径是否包含 .. ?) then (是)
+  :返回 400 Path traversal detected;
+  stop
+else (否)
+  :生成 UUID 前缀对象名\n{prefix}/{uuid}_{filename};
+  :写入 MinIO culcloud-bucket;
+  :log_event(FILE_UPLOADED)\n写入 Redis logs:recent/logs:timeline;
+endif
+:前端重新 GET /api/v1/files?prefix=...;
+:files.py 根据对象前缀与 .keep 合成文件夹/文件列表;
+
+if (用户需要移动文件?) then (是)
+  :PUT /api/v1/folders/move;
+  :folders.py 校验目标文件夹存在;
+  :MinIO copy_object 到目标前缀;
+  :MinIO remove_object 删除原对象;
+  :log_event(FILE_MOVED);
+endif
+
+if (用户打开预览?) then (是)
+  :GET /api/v1/preview/{object_name};
+  :preview.py 按扩展名判断 preview_type;
+  if (图片/PDF/音视频?) then (原始流)
+    :GET /preview/{object}/content\n直接 stream MinIO 对象;
+  elseif (TXT/CSV/Markdown?) then (HTML/Text)
+    :读取对象内容;
+    :TXT 返回文本\nCSV/Markdown 渲染隔离 HTML;
+  elseif (Office?) then (PDF 缓存)
+    :计算 previews/{md5}.pdf;
+    if (缓存已存在?) then (是)
+      :返回缓存 PDF;
+    else (否)
+      :调用 Gotenberg 转 PDF;
+      :写入 previews/ 缓存;
+    endif
+  else (不支持)
+    :返回 404 或 unsupported;
+  endif
+endif
+
+:前端 PreviewFrame 根据 preview_type\n渲染 img/audio/video/iframe/text;
+stop
+
+@enduml

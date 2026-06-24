@@ -28,6 +28,24 @@
   \label{fig:cloud-storage-market-demand}
 \end{figure}
 
+除了大容量存储需求外，用户对多格式文件在线转换的频率和效率要求也呈现快速增长。根据 DataIntelo 发布的最新研究数据，全球文件转换软件市场规模在 2025 年约为 28.0 亿美元，预计 2026 年将达到 31.0 亿美元，并于 2034 年增长至 62.0 亿美元，复合年增长率为 8.00\%\cite{dataintelofileconversion2025}。如图~\ref{fig:file-conversion-market} 所示，这一增长主要由企业和教育机构在日常业务中对异构数据的格式兼容、版本控制和文件标准化要求推动。在具体需求类别中，视频文件转换占比最高，达到 32.5\%，而以 PDF 和 Office 办公套件为代表的文档文件转换以 19.8\% 的比例位居前列，图像文件（21.7\%）和音频文件（18.3\%）同样占据了庞大的市场份额。这表明在多格式协作场景下，用户经常需要在文档、图像、视频等各种类型之间进行转换，平台必须提供稳定且支持白名单过滤的后台异步转换链路，以应对高并发、大容量的格式处理请求。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{figures-png/fig03-file-conversion-market.png}
+  \caption{全球多格式文件转换软件市场趋势与需求分布}
+  \label{fig:file-conversion-market}
+\end{figure}
+
+与此同时，作为通用格式标准的 PDF 文件的阅读、页面重组与在线编辑需求也越发迫切。DataIntelo 的全球调研摘要指出，全球 PDF 编辑软件市场规模在 2025 年已达 48.0 亿美元，2026 年预计将增长至 52.7 亿美元，并于 2034 年达到 112.0 亿美元，年均复合增长率高达 9.80\%\cite{dataintelopdfeditor2026}。如图~\ref{fig:pdf-editing-demand} 所示，PDF 因其卓越的跨平台排版一致性和安全性而成为数字化办公的核心媒介。通过对 Adobe Acrobat Online、Smallpdf、iLovePDF、PDF24 和 PDFescape 等 5 家主流在线 PDF 处理工具进行横向功能调研发现，页面重组（如提取、排序）、页面旋转与删除、多文档合并这三项基础操作在所有工具中均得到 100\% 的覆盖支持（5/5），手写与文本批注的覆盖率也达到 80\%（4/5），而相对复杂的电子签名与表单设计覆盖率为 60\%（3/5）。这一规律反映出，用户在日常文档流转中最核心的痛点并非极其复杂的排版微调，而是高频的“页面重排、基础批注与合并导出”。因此，平台通过在前端集成轻量级且防边界溢出的 PDF Studio，能够覆盖用户绝大多数的高频 PDF 处理诉求，从而省去其在第三方付费或复杂工具间跳转的麻烦。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{figures-png/fig04-pdf-editing-demand.png}
+  \caption{全球 PDF 编辑软件市场规模与主流工具功能覆盖率}
+  \label{fig:pdf-editing-demand}
+\end{figure}
+
 在实际使用中，办公白领、教师和学生面对的痛点并不只是“文件存在哪里”，而是文件在不同工具之间迁移时产生的效率损耗。Word、PDF、Excel、CSV、Markdown、图片和压缩包往往分散在本地目录、聊天软件、网盘和在线转换站点中，用户需要反复下载、上传、转换、再下载，转换结果与原文件的目录关系也容易丢失。对教师而言，课件、作业附件、批注稿和统计表需要长期沉淀；对学生而言，实验截图、报告草稿、数据集和演示材料需要快速整理；对普通办公人员而言，合同、表格和 PDF 批注需要在短时间内完成预览、转换和归档。以上需求共同指向一个轻量但完整的资料工作台。
 
 \subsection{需求缺口}

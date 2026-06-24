@@ -1,0 +1,94 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+title CulCloud 第5章 详细设计核心组件图
+
+package "我的文件详细实现" #E8F5E9 {
+  [MyFiles.tsx\ncurrentPrefix/typeFilter/previewMeta] as MyFiles
+  [PreviewFrame\nimage/audio/video/text/html/pdf] as PreviewFrame
+  [files.py\nupload/list/search/download/stat/rename/share/delete] as FilesRouter
+  [folders.py\ncreate/browse/delete/rename/move] as FoldersRouter
+}
+
+package "转换中心详细实现" #E3F2FD {
+  [ConvertCenter.tsx\nselectedFile/targetFormat/status/taskId] as ConvertCenter
+  [P0_WHITELIST\n前端过滤] as FEWhitelist
+  [convert.py\nP0_WHITELIST 后端拒绝] as ConvertRouter
+  [conversion_capabilities.py\n能力矩阵] as Capabilities
+  [DocumentConverter\n格式转换实现] as Converter
+}
+
+package "PDF Studio 详细实现" #F3E5F5 {
+  [PDFStudio.tsx\nWorkspacePage + Annotation] as PDFStudio
+  [extractPdfPages\n/convert/pdf/extract-pages] as ExtractPages
+  [processPdf\n/convert/pdf/process] as ProcessPdf
+  [process_pdf_pages\n页面重组/旋转/批注写入] as ProcessPages
+}
+
+package "可观察性详细实现" #FFF3E0 {
+  [Dashboard.tsx\n真实指标] as Dashboard
+  [TaskMonitor.tsx\n任务列表/失败] as TaskMonitor
+  [SystemStatus.tsx\n健康与日志] as SystemStatus
+  [Analytics.tsx\n数据驾驶舱] as Analytics
+  [task_queue.py + task_tracker.py] as TaskServices
+  [log_collector.py] as LogCollector
+  [health_checker.py] as HealthChecker
+  [flask-analytics/services/analytics.py] as FlaskAnalytics
+}
+
+database "MinIO\nfiles/previews/conversions" as MinIO
+database "Redis\ntask/log/health indexes" as Redis
+[Gotenberg] as Gotenberg
+folder "data/spark-output" as SparkOutput
+
+MyFiles --> FilesRouter
+MyFiles --> FoldersRouter
+MyFiles --> PreviewFrame
+PreviewFrame --> FilesRouter : /files/content/*
+FilesRouter --> MinIO
+FoldersRouter --> MinIO
+FilesRouter --> LogCollector
+FoldersRouter --> LogCollector
+
+ConvertCenter --> FEWhitelist
+ConvertCenter --> Capabilities
+ConvertCenter --> ConvertRouter
+FEWhitelist .. ConvertRouter : 必须保持一致
+ConvertRouter --> Converter
+ConvertRouter --> TaskServices
+ConvertRouter --> LogCollector
+Converter --> Gotenberg
+Converter --> MinIO
+TaskServices --> Redis
+LogCollector --> Redis
+
+PDFStudio --> ExtractPages
+PDFStudio --> ProcessPdf
+ExtractPages --> Converter
+ExtractPages --> MinIO : previews/{preview_id}/page_N.png
+ProcessPdf --> ProcessPages
+ProcessPages --> MinIO : conversions/{task_id}_*.pdf
+ProcessPdf --> TaskServices
+ProcessPdf --> LogCollector
+
+Dashboard --> FilesRouter
+Dashboard --> TaskServices
+TaskMonitor --> TaskServices
+SystemStatus --> HealthChecker
+SystemStatus --> LogCollector
+Analytics --> FlaskAnalytics
+Analytics --> TaskServices
+Analytics --> HealthChecker
+FlaskAnalytics --> SparkOutput
+HealthChecker --> Redis
+
+note bottom
+本图按当前代码真实实现绘制：
+转换和 PDF 导出由 FastAPI BackgroundTasks 后台执行，
+任务可见性由 Redis task:{id}/tasks:index/tasks:* 维护。
+end note
+
+@enduml

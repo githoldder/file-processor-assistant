@@ -1,0 +1,68 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam shadowing false
+skinparam actorStyle awesome
+skinparam usecase {
+  BorderColor #334155
+  BackgroundColor #FFFFFF
+  FontSize 13
+}
+skinparam rectangle {
+  BorderColor #64748B
+  BackgroundColor #F8FAFC
+}
+skinparam ArrowColor #334155
+skinparam ArrowThickness 1.1
+
+title CulCloud 第3章 核心用例图
+
+left to right direction
+
+actor "用户" as User
+actor "管理员" as Admin
+
+rectangle "CulCloud 云端资料处理平台" {
+  package "用户端" {
+    usecase "管理云端文件" as UC_File
+    usecase "上传文件" as UC_Upload
+    usecase "整理文件夹" as UC_Organize
+    usecase "预览文件" as UC_Preview
+    usecase "转换文件格式" as UC_Convert
+    usecase "编辑 PDF 文档" as UC_PDF
+    usecase "下载处理结果" as UC_Download
+  }
+
+  package "管理端" {
+    usecase "监控处理任务" as UC_TaskMonitor
+    usecase "查看系统状态" as UC_System
+    usecase "查看分析驾驶舱" as UC_Analytics
+  }
+
+  usecase "查询处理状态" as UC_TaskStatus
+}
+
+User --> UC_File
+User --> UC_Convert
+User --> UC_PDF
+
+Admin --> UC_TaskMonitor
+Admin --> UC_System
+Admin --> UC_Analytics
+
+UC_File ..> UC_Upload : <<include>>
+UC_File ..> UC_Organize : <<include>>
+UC_Convert ..> UC_TaskStatus : <<include>>
+UC_PDF ..> UC_TaskStatus : <<include>>
+UC_TaskMonitor ..> UC_TaskStatus : <<include>>
+
+UC_Preview ..> UC_File : <<extend>>
+UC_PDF ..> UC_Preview : <<extend>>
+UC_Download ..> UC_Convert : <<extend>>
+
+note bottom
+用例只表达参与者可感知的系统行为；
+内部接口、组件名称和部署细节不进入用例图。
+end note
+
+@enduml

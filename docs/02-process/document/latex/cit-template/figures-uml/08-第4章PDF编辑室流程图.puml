@@ -1,0 +1,54 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam shadowing false
+
+title CulCloud 第4章 PDF 编辑室页面整理与导出流程图
+
+start
+:用户进入 PDFStudio.tsx;
+if (来源是本地 PDF?) then (本地)
+  :uploadFile(file)\nPOST /api/v1/files/upload;
+  :获得 object_name;
+else (云端)
+  :listFiles(recursive=true);
+  :筛选 .pdf 文件并选择;
+endif
+
+:POST /api/v1/convert/pdf/extract-pages;
+:convert.py 从 MinIO 读取 PDF bytes;
+:DocumentConverter.pdf_to_images(dpi=120);
+:每页 PNG 写入\npreviews/{preview_id}/page_N.png;
+:返回 pages[{page_num,url,width,height}];
+:前端构建 WorkspacePage[];
+
+repeat
+  :用户执行页面操作;
+  if (拖拽排序?) then (是)
+    :更新 pages 数组顺序;
+  endif
+  if (旋转/删除?) then (是)
+    :更新 page.rotation 或移除页面;
+  endif
+  if (批注?) then (是)
+    :在页面图层上记录 Annotation\npen/rect/arrow/line/text;
+  endif
+repeat while (继续编辑?) is (是)
+
+:用户点击导出 PDF;
+:buildProcessPayload(includeAnnotations=true);
+:POST /api/v1/convert/pdf/process;
+:set_task_status(pending)\nBackgroundTasks 启动 async_pdf_process_task;
+:DocumentConverter.process_pdf_pages\n按 source_object_name + page_num 重组;
+:批注坐标按 canvas_width/canvas_height\n映射到 PDF 页面;
+:写入 MinIO conversions/{task_id}_{filename}.pdf;
+:set_task_status(success, result_url);
+:前端轮询 getTaskStatus(taskId);
+if (success?) then (是)
+  :展示下载链接;
+else (failed)
+  :展示错误原因;
+endif
+stop
+
+@enduml

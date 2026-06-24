@@ -1,0 +1,63 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam shadowing false
+
+title CulCloud 第4章 格式转换任务时序图
+
+actor "用户" as User
+participant "ConvertCenter.tsx" as FE
+participant "services/api.ts" as Api
+participant "convert.py\nFastAPI Router" as Convert
+participant "task_queue.py\nset_task_status" as Queue
+database "Redis" as Redis
+participant "BackgroundTasks\nasync_convert_task" as BG
+participant "DocumentConverter" as Converter
+participant "Gotenberg/PyMuPDF/ReportLab/PIL" as Engine
+database "MinIO" as MinIO
+participant "tasks.py" as Tasks
+
+User -> FE : 选择本地或云端文件\n选择 target_format
+FE -> FE : 根据扩展名自动推荐格式\n并过滤 P0_WHITELIST
+FE -> Api : convertExistingFile 或 uploadFile 后 convertExistingFile
+Api -> Convert : POST /api/v1/convert/existing
+Convert -> Convert : _assert_p0_whitelist(target_format)
+Convert -> MinIO : get_object(source object)
+Convert -> Queue : set_task_status(task_id, pending)
+Queue -> Redis : SET task:{id}\nHSET tasks:index\nZADD tasks:timeline/tasks:queued
+Convert -> BG : add_task(async_convert_task)
+Convert --> Api : {task_id, status: pending}
+Api --> FE : 保存 taskId，进入 processing UI
+
+BG -> Queue : set_task_status(processing)
+Queue -> Redis : 更新 task:{id}\nZREM queued/ZADD processing
+BG -> Converter : 调用对应转换函数
+Converter -> Engine : Gotenberg 或本地库处理
+Engine --> Converter : result_bytes
+Converter --> BG : output bytes + ext
+BG -> MinIO : PUT conversions/{task_id}_{name}.{ext}
+BG -> Queue : set_task_status(success, result_url)
+Queue -> Redis : 更新 completed\n记录 result_url
+BG -> Redis : log_event(CONVERSION_COMPLETED)
+
+loop 每 3-5 秒短轮询
+  FE -> Api : getTaskStatus(taskId)
+  Api -> Tasks : GET /api/v1/tasks/{task_id}
+  Tasks -> Redis : HGET tasks:index 或 GET task:{id}
+  Tasks --> Api : status/result_url/error
+  Api --> FE : 更新进度/历史/下载按钮
+end
+
+alt 转换失败
+  BG -> Queue : set_task_status(failed, error)
+  Queue -> Redis : ZADD tasks:failed\nLPUSH tasks:recent_failures
+  BG -> Redis : log_event(CONVERSION_FAILED)
+  FE -> FE : 展示 error 字段
+end
+
+note over Convert,BG
+代码现状使用 FastAPI BackgroundTasks 执行异步转换；
+Redis 负责状态追踪与管理端可见性。
+end note
+
+@enduml

@@ -1,0 +1,75 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+title CulCloud 第3章 功能性需求分解图
+
+package "用户端功能需求" #E8F5E9 {
+  [个人首页\nDashboard.tsx] as Dashboard
+  [我的文件\nMyFiles.tsx] as MyFiles
+  [转换中心\nConvertCenter.tsx] as ConvertCenter
+  [PDF 编辑室\nPDFStudio.tsx] as PDFStudio
+}
+
+package "管理端功能需求" #E3F2FD {
+  [数据分析驾驶舱\nAnalytics.tsx] as Analytics
+  [任务监控\nTaskMonitor.tsx] as TaskMonitor
+  [系统状态\nSystemStatus.tsx] as SystemStatus
+}
+
+package "后端业务 API" #FFF3E0 {
+  [files.py\n上传/列表/下载/删除/重命名/分享] as FilesAPI
+  [folders.py\n目录创建/浏览/移动] as FoldersAPI
+  [preview.py\n预览元数据/内容/缓存清理] as PreviewAPI
+  [convert.py\n转换/PDF 页面处理] as ConvertAPI
+  [tasks.py\n任务列表/统计/失败] as TasksAPI
+  [system.py + logs.py\n健康检查/操作日志] as OpsAPI
+  [auth.py\n用户/管理员角色] as AuthAPI
+}
+
+package "基础能力需求" #F3E5F5 {
+  database "MinIO\n对象存储" as MinIO
+  database "Redis\n任务/日志/健康快照" as Redis
+  [Gotenberg\nOffice/HTML 转 PDF] as Gotenberg
+  [DocumentConverter\nPyMuPDF/OpenPyXL/ReportLab/PIL] as Converter
+  [Flask Analytics\nSpark 输出读取] as Flask
+}
+
+Dashboard --> FilesAPI : 文件数/容量
+Dashboard --> TasksAPI : 转换成功/失败
+MyFiles --> FilesAPI
+MyFiles --> FoldersAPI
+MyFiles --> PreviewAPI
+ConvertCenter --> ConvertAPI
+ConvertCenter --> TasksAPI
+PDFStudio --> FilesAPI : 选择/上传 PDF
+PDFStudio --> ConvertAPI : extract-pages/process
+PDFStudio --> TasksAPI : 导出状态
+TaskMonitor --> TasksAPI
+SystemStatus --> OpsAPI
+Analytics --> FilesAPI
+Analytics --> TasksAPI
+Analytics --> OpsAPI
+Analytics --> Flask
+
+FilesAPI --> MinIO
+FoldersAPI --> MinIO
+PreviewAPI --> MinIO
+PreviewAPI --> Gotenberg
+ConvertAPI --> MinIO
+ConvertAPI --> Redis
+ConvertAPI --> Converter
+Converter --> Gotenberg
+TasksAPI --> Redis
+OpsAPI --> Redis
+Flask --> "data/spark-output/*.json" as SparkOutput
+
+note right of ConvertAPI
+实际代码使用 FastAPI BackgroundTasks
+和 Redis 状态追踪；不是独立任务 worker。
+P0 白名单由前后端共同维护。
+end note
+
+@enduml

@@ -1,0 +1,69 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+title CulCloud 第4章 管理驾驶舱与 Spark 分析管线图
+
+actor "管理员" as Admin
+
+package "实时业务数据" #E8F5E9 {
+  [文件操作 API] as FileOps
+  [转换任务 API] as TaskOps
+  [系统健康 API] as HealthOps
+  [操作日志 API] as LogOps
+}
+
+package "Redis/MinIO 在线状态" #FFF3E0 {
+  database "MinIO 对象元数据\n文件数/容量/类型" as MinIO
+  database "Redis 任务索引\ntasks:*" as RedisTasks
+  database "Redis 日志\nlogs:*" as RedisLogs
+  database "Redis 健康\nhealth:*" as RedisHealth
+}
+
+package "离线/准实时分析" #F3E5F5 {
+  folder "data/raw/telemetry.csv" as TelemetryCSV
+  [PySpark\nculcloud_analytics.py] as SparkJob
+  folder "data/spark-output/*.json" as SparkOutput
+  [Flask Analytics :5050\napp.py] as FlaskAPI
+  [AnalyticsService\n读取 JSON 聚合结果] as AnalyticsSvc
+}
+
+package "前端大屏" #E3F2FD {
+  [Analytics.tsx] as AnalyticsView
+  [AnalyticsSlides.tsx\n拓扑/处理/质量三屏] as Slides
+  [EChartsWrapper.tsx] as ECharts
+}
+
+Admin --> AnalyticsView
+AnalyticsView --> FileOps : /api/v1/files
+AnalyticsView --> TaskOps : /api/v1/tasks/stats\n/api/v1/tasks/queue-length
+AnalyticsView --> HealthOps : /api/v1/system/health
+AnalyticsView --> LogOps : /api/v1/logs/timeline
+AnalyticsView --> FlaskAPI : /api/analytics/*
+AnalyticsView --> Slides
+Slides --> ECharts
+
+FileOps --> MinIO
+TaskOps --> RedisTasks
+HealthOps --> RedisHealth
+LogOps --> RedisLogs
+
+TelemetryCSV --> SparkJob
+SparkJob --> SparkOutput
+FlaskAPI --> AnalyticsSvc
+AnalyticsSvc --> SparkOutput
+
+note right of SparkJob
+输出包括:
+telemetry_overview
+format_distribution
+conversion_stats
+traffic_trend
+quality_report
+error_heatmap
+conversion_matrix
+end note
+
+@enduml

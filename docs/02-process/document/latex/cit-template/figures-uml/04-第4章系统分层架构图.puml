@@ -1,0 +1,111 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+title CulCloud 第4章 系统分层架构图
+
+package "表示层 React + Vite + TypeScript" #E8F5E9 {
+  [App.tsx\n视图懒加载] as App
+  [Dashboard] as Dashboard
+  [MyFiles] as MyFiles
+  [ConvertCenter] as ConvertCenter
+  [PDFStudio] as PDFStudio
+  [Analytics] as Analytics
+  [TaskMonitor/SystemStatus] as OpsViews
+  [services/api.ts\nAPI Client] as APIClient
+}
+
+package "业务 API 层 FastAPI :8000" #E3F2FD {
+  [main.py\nrouter 注册/lifespan] as MainAPI
+  [auth router] as Auth
+  [files router] as Files
+  [folders router] as Folders
+  [preview router] as Preview
+  [convert router] as Convert
+  [tasks router] as Tasks
+  [system/logs router] as SystemLogs
+}
+
+package "领域服务层 Python Services" #FFF3E0 {
+  [DocumentConverter] as DocumentConverter
+  [MinIO Client] as MinioClient
+  [Task Queue/Tracker] as TaskService
+  [Log Collector] as LogService
+  [Health Checker] as HealthService
+  [Preview Service] as PreviewService
+  [Conversion Capabilities] as CapabilityService
+}
+
+package "分析服务层 Flask + Spark" #F3E5F5 {
+  [Flask Analytics :5050] as Flask
+  [AnalyticsService] as AnalyticsService
+  [PySpark Pipeline\nscripts/spark/culcloud_analytics.py] as Spark
+}
+
+package "基础设施层 Docker Compose / PM2" #ECEFF1 {
+  database "MinIO\nculcloud-bucket" as MinIO
+  database "Redis\n任务/日志/健康状态" as Redis
+  [Gotenberg :3000] as Gotenberg
+  folder "data/raw" as RawData
+  folder "data/spark-output" as SparkOutput
+  [PM2\nfrontend + flask] as PM2
+  [Docker Compose\napi + redis + minio + gotenberg] as Compose
+}
+
+App --> Dashboard
+App --> MyFiles
+App --> ConvertCenter
+App --> PDFStudio
+App --> Analytics
+App --> OpsViews
+Dashboard --> APIClient
+MyFiles --> APIClient
+ConvertCenter --> APIClient
+PDFStudio --> APIClient
+OpsViews --> APIClient
+Analytics --> APIClient
+Analytics --> Flask
+
+APIClient --> MainAPI : /api/v1/*
+MainAPI --> Auth
+MainAPI --> Files
+MainAPI --> Folders
+MainAPI --> Preview
+MainAPI --> Convert
+MainAPI --> Tasks
+MainAPI --> SystemLogs
+
+Files --> MinioClient
+Folders --> MinioClient
+Preview --> PreviewService
+Convert --> DocumentConverter
+Convert --> TaskService
+Convert --> CapabilityService
+Tasks --> TaskService
+SystemLogs --> HealthService
+SystemLogs --> LogService
+
+MinioClient --> MinIO
+TaskService --> Redis
+LogService --> Redis
+HealthService --> Redis
+PreviewService --> MinIO
+PreviewService --> Gotenberg
+DocumentConverter --> Gotenberg
+DocumentConverter --> MinIO
+
+Spark --> RawData
+Spark --> SparkOutput
+Flask --> AnalyticsService
+AnalyticsService --> SparkOutput
+
+PM2 ..> App
+PM2 ..> Flask
+Compose ..> MainAPI
+Compose ..> MinIO
+Compose ..> Redis
+Compose ..> Gotenberg
+
+@enduml

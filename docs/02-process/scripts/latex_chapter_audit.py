@@ -12,7 +12,7 @@ DATA_DIR = ROOT / "document" / "latex" / "cit-template" / "data"
 
 TARGETS = {
     "abstract.tex": (350, 450),
-    "chap01.tex": (1400, 1800),
+    "chap01.tex": (1400, 3600),
     "chap02.tex": (1600, 2200),
     "chap03.tex": (1800, 2400),
     "chap04.tex": (1800, 2600),

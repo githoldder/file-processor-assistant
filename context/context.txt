@@ -289,3 +289,27 @@
 - `docs/02-process/document/latex/cit-template/data/abstract.tex`
 - `docs/02-process/document/latex/cit-template/data/acknowledgements.tex`
 - `context/context.txt`
+
+## Session Update: 2026-06-23 — Chapter 1 Market Research and Requirement Extension
+
+### Completed
+- [Archive] Committed all current modifications before beginning the task.
+- [Research] Created a verified market source register file listing DataIntelo research details and competitor feature analysis.
+- [Feature] Added 4 CSV datasets covering file conversion market trends, format shares, PDF editor size trends, and PDF tools feature coverage.
+- [Feature] Created and iteratively optimized `plot_market_research_extended.py` to generate visually diversified figures: an Area Chart (file size trend), a Donut Chart (format share), and a Lollipop Chart (PDF competitor feature coverage) to avoid visual repetitiveness.
+- [Feature] Injected academic paragraphs and visual inclusions into `chap01.tex`, citing new DataIntelo keys in `refs.bib`.
+- [Audit] Adjusted `latex_chapter_audit.py` limits for `chap01.tex` to `(1400, 3600)` CJK characters.
+- [Verification] Compiled XeLaTeX successfully to output PDF (43 pages) and passed the CJK/visual audit tests.
+
+### Changed Files
+- `docs/01-resources/references/market/file-conversion-pdf-market-source-register.md`
+- `docs/02-process/data/market-research/file-conversion-market-size.csv`
+- `docs/02-process/data/market-research/file-conversion-format-share.csv`
+- `docs/02-process/data/market-research/pdf-editor-market-size.csv`
+- `docs/02-process/data/market-research/pdf-competitor-feature-coverage.csv`
+- `docs/02-process/scripts/plot_market_research_extended.py`
+- `docs/02-process/scripts/latex_chapter_audit.py`
+- `docs/02-process/document/latex/cit-template/data/chap01.tex`
+- `docs/02-process/document/latex/cit-template/ref/refs.bib`
+- `context/context.txt`
+

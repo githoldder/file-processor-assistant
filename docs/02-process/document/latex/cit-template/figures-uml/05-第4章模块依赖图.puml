@@ -1,0 +1,108 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+title CulCloud 第4章 前后端模块依赖图
+
+package "Frontend file-cloud-frontend/src" #E8F5E9 {
+  [App.tsx] as FEApp
+  [context/useDashboard.tsx] as DashboardCtx
+  [services/api.ts] as ApiTs
+  [views/Dashboard.tsx] as VDashboard
+  [views/MyFiles.tsx] as VFiles
+  [views/ConvertCenter.tsx] as VConvert
+  [views/PDFStudio.tsx] as VPDF
+  [views/Analytics.tsx] as VAnalytics
+  [views/TaskMonitor.tsx] as VTask
+  [views/SystemStatus.tsx] as VSystem
+}
+
+package "Backend backend/app" #E3F2FD {
+  [main.py] as BMain
+  [routers/auth.py] as RAuth
+  [routers/files.py] as RFiles
+  [routers/folders.py] as RFolders
+  [routers/preview.py] as RPreview
+  [routers/convert.py] as RConvert
+  [routers/tasks.py] as RTasks
+  [routers/system.py] as RSystem
+  [routers/logs.py] as RLogs
+  [services/minio_client.py] as SMinio
+  [services/preview.py] as SPreview
+  [services/converter.py] as SConverter
+  [services/task_queue.py] as SQueue
+  [services/task_tracker.py] as STracker
+  [services/log_collector.py] as SLogs
+  [services/health_checker.py] as SHealth
+  [services/conversion_capabilities.py] as SCapabilities
+}
+
+package "Analytics flask-analytics" #F3E5F5 {
+  [app.py] as FlaskApp
+  [services/analytics.py] as AnalyticsSvc
+}
+
+FEApp --> DashboardCtx
+FEApp --> VDashboard
+FEApp --> VFiles
+FEApp --> VConvert
+FEApp --> VPDF
+FEApp --> VAnalytics
+VDashboard --> ApiTs
+VFiles --> ApiTs
+VConvert --> ApiTs
+VPDF --> ApiTs
+VTask --> ApiTs
+VSystem --> ApiTs
+VAnalytics --> ApiTs
+VAnalytics --> FlaskApp : VITE_ANALYTICS_API
+
+ApiTs --> RAuth : /auth/*
+ApiTs --> RFiles : /files/*
+ApiTs --> RFolders : /folders/*
+ApiTs --> RPreview : /preview/*
+ApiTs --> RConvert : /convert/*
+ApiTs --> RTasks : /tasks/*
+ApiTs --> RSystem : /system/*
+ApiTs --> RLogs : /logs/*
+
+BMain --> RAuth
+BMain --> RFiles
+BMain --> RFolders
+BMain --> RPreview
+BMain --> RConvert
+BMain --> RTasks
+BMain --> RSystem
+BMain --> RLogs
+
+RFiles --> SMinio
+RFiles --> SLogs
+RFolders --> SMinio
+RFolders --> SLogs
+RPreview --> SPreview
+RPreview --> SLogs
+RConvert --> SConverter
+RConvert --> SQueue
+RConvert --> SLogs
+RConvert --> SCapabilities
+RTasks --> SQueue
+RTasks --> STracker
+RSystem --> SHealth
+RLogs --> SLogs
+SQueue --> STracker : 同步 tasks:index
+SPreview --> SMinio
+SPreview --> SConverter
+FlaskApp --> AnalyticsSvc
+
+note right of SQueue
+Redis key:
+task:{task_id}
+tasks:index
+tasks:timeline
+tasks:queued/processing/completed/failed
+tasks:recent_failures
+end note
+
+@enduml

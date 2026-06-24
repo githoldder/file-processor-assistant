@@ -1,0 +1,55 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam shadowing false
+
+title CulCloud 第3章 非功能与安全需求约束图
+
+rectangle "非功能需求" #E3F2FD {
+  [可用性\n加载/成功/失败/空状态] as Availability
+  [可维护性\n前后端模块化路由与服务] as Maintainability
+  [演示稳定性\nPM2 + Docker Compose] as DemoStable
+  [可观察性\n任务/日志/健康/分析] as Observability
+}
+
+rectangle "数据安全与合规边界" #FCE4EC {
+  [最小必要采集\n文件名/对象路径/大小/类型/状态] as Minimal
+  [路径安全\n_sanitize_path 拒绝 ..] as PathSafe
+  [内容隔离\n预览与转换产物独立前缀] as Isolation
+  [日志留痕边界\n不记录文件正文] as LogBoundary
+  [演示角色隔离\nuser/admin 入口分离] as RoleBoundary
+}
+
+rectangle "代码落点" #FFF3E0 {
+  [files.py/folders.py\n对象路径校验与 copy/delete] as FileCode
+  [preview.py\npreviews/ 缓存与内容流] as PreviewCode
+  [convert.py\nP0_WHITELIST + BackgroundTasks] as ConvertCode
+  [task_queue.py/task_tracker.py\nRedis 任务状态] as TaskCode
+  [log_collector.py\nlogs:recent + logs:timeline] as LogCode
+  [health_checker.py\nhealth:current + health:history] as HealthCode
+  [useDashboard.tsx\n角色与视图约束] as RoleCode
+}
+
+Availability --> ConvertCode
+Availability --> TaskCode
+Maintainability --> FileCode
+Maintainability --> PreviewCode
+DemoStable --> HealthCode
+Observability --> TaskCode
+Observability --> LogCode
+Observability --> HealthCode
+
+Minimal --> LogCode
+PathSafe --> FileCode
+PathSafe --> PreviewCode
+Isolation --> PreviewCode
+Isolation --> ConvertCode
+LogBoundary --> LogCode
+RoleBoundary --> RoleCode
+
+note bottom
+Redis 不可用时，任务状态、日志和健康历史存在降级或丢失风险；
+MinIO 持久卷负责保存用户原文件、预览缓存和转换产物。
+end note
+
+@enduml
