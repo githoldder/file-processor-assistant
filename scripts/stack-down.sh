@@ -13,7 +13,7 @@ pm2 stop culcloud-frontend-dev culcloud-frontend-preview flask-analytics 2>&1
 
 echo ""
 echo "▸ Stopping Docker infrastructure..."
-docker compose -f docker-compose.demo.yml -p culcloud-demo stop 2>&1
+docker compose stop 2>&1
 
 echo ""
 echo "✓ Stack stopped"

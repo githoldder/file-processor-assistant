@@ -188,9 +188,9 @@ export function buildTopologyGraphic(processedRows: number, successRate: string)
     { type: 'circle', left: 'center', top: 'middle', shape: { r: 124 }, style: { fill: 'rgba(99,102,241,0.025)', stroke: 'rgba(129,140,248,0.14)', lineWidth: 1 }, silent: true },
     { type: 'circle', left: 'center', top: 'middle', shape: { r: 78 }, style: { fill: 'rgba(45,212,191,0.035)', stroke: 'rgba(45,212,191,0.12)', lineWidth: 1 }, silent: true },
     { type: 'circle', left: 'center', top: 'middle', shape: { r: 42 }, style: { fill: 'rgba(34,211,238,0.06)', stroke: 'rgba(34,211,238,0.18)', lineWidth: 1 }, silent: true },
-    { type: 'text', left: 'center', top: 'middle', style: { text: 'CULCLOUD\nOBSERVABILITY MESH', fill: 'rgba(226,232,240,0.52)', font: '700 12px Inter', align: 'center', lineHeight: 17 }, silent: true },
-    { type: 'text', left: '5%', top: 16, style: { text: 'OPEN TELEMETRY FABRIC', fill: 'rgba(56,189,248,0.55)', font: '800 10px Inter', letterSpacing: 1.5 }, silent: true },
-    { type: 'text', right: '5%', top: 16, style: { text: `${processedRows.toLocaleString()} EVENTS  |  ${successRate} SLO`, fill: 'rgba(148,163,184,0.62)', font: '700 10px Inter', align: 'right' }, silent: true },
+    { type: 'text', left: 'center', top: 'middle', style: { text: 'CULCLOUD\nRUNTIME MESH', fill: 'rgba(226,232,240,0.52)', font: '700 12px Inter', align: 'center', lineHeight: 17 }, silent: true },
+    { type: 'text', left: '5%', top: 16, style: { text: 'FASTAPI RUNTIME FABRIC', fill: 'rgba(56,189,248,0.55)', font: '800 10px Inter', letterSpacing: 1.5 }, silent: true },
+    { type: 'text', right: '5%', top: 16, style: { text: `${processedRows.toLocaleString()} EVENTS  |  ${successRate} TASK OK`, fill: 'rgba(148,163,184,0.62)', font: '700 10px Inter', align: 'right' }, silent: true },
   ];
 }
 
@@ -227,56 +227,85 @@ function LoggerConsole({ logs }: { logs: any[] }) {
 // ==================== Slide 1: 全局态势(重塑)====================
 
 export function SlideOverview({ data, loading, worldChart, onTopologyReady }: any) {
-  const cockpit = data?.cockpit || {};
   const logs = data?.logs || [];
-  const scale = cockpit.scale || {};
-  const processedRows = scale.processed_rows ?? 100000;
-  const cockpitRate = typeof scale.conversion_rate === 'number' ? `${scale.conversion_rate}%` : '94.96%';
-  const trafficTrend = Array.isArray(cockpit.traffic_trend) ? cockpit.traffic_trend : [];
+  const files = data?.files || [];
+  const folders = data?.folders || [];
+  const taskStats = data?.stats || {};
+  const logStats = data?.logStats || {};
+  const byType = logStats.by_type || {};
+  const runtimeEvents = Number(logStats.total ?? logs.length ?? 0);
+  const totalTasks = Number(taskStats.total || 0);
+  const completedTasks = Number(taskStats.completed || 0);
+  const failedTasks = Number(taskStats.failed || 0);
+  const queuedTasks = Number(taskStats.queued || 0);
+  const taskSuccessRate = totalTasks > 0 ? `${((completedTasks / totalTasks) * 100).toFixed(1)}%` : '0.0%';
 
-  const actionDist = data?.actionDist || [];
-  const formatDist = data?.formatDist || [];
-  const actions = actionDist.length > 0
-    ? actionDist.map((a: any) => ({ name: a.action, value: a.count }))
-    : [
-      { name: 'upload', value: 30303 }, { name: 'convert', value: 24846 },
-      { name: 'download', value: 20011 }, { name: 'preview', value: 14952 }, { name: 'delete', value: 9888 },
-    ];
+  const actionLabelMap: Record<string, string> = {
+    file_uploaded: '上传',
+    file_downloaded: '下载',
+    file_deleted: '删除',
+    file_renamed: '重命名',
+    file_moved: '移动',
+    folder_created: '建目录',
+    conversion_started: '转换开始',
+    conversion_completed: '转换完成',
+    conversion_failed: '转换失败',
+    pdf_reorder_started: 'PDF处理',
+    pdf_reorder_completed: 'PDF导出',
+  };
+  const actions = Object.entries(byType)
+    .map(([name, value]) => ({ name: actionLabelMap[name] || name, value: Number(value || 0) }))
+    .filter((item) => item.value > 0)
+    .sort((a, b) => b.value - a.value);
 
-  const formatMix = Array.isArray(cockpit.format_mix) && cockpit.format_mix.length > 0
-    ? cockpit.format_mix.map((item: any) => [item.name, item.value])
-    : formatDist.map((f: any) => [f.file_type.toUpperCase(), f.count]);
+  const hourly = new Map<string, number>();
+  logs.forEach((log: any) => {
+    const hour = log.timestamp ? new Date(log.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : 'LOG';
+    hourly.set(hour, (hourly.get(hour) || 0) + 1);
+  });
+  const trafficTrend = Array.from(hourly.entries()).reverse().slice(-24).map(([time, throughput]) => ({ time, throughput }));
 
+  const formatCounts = new Map<string, number>();
+  files.forEach((file: any) => {
+    const rawName = String(file.filename || file.object_name || '');
+    const ext = rawName.includes('.') ? rawName.split('.').pop()?.toUpperCase() || 'OTHER' : 'OTHER';
+    formatCounts.set(ext, (formatCounts.get(ext) || 0) + 1);
+  });
+  const formatMix = Array.from(formatCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 6);
+
+  const emptyChart = (text: string) => ({
+    graphic: { type: 'text', left: 'center', top: 'middle', style: { text, fill: '#64748b', fontSize: 11, fontWeight: 700 } },
+  });
   const trendOpt = trafficTrend.length > 0 ? {
     tooltip: { trigger: 'axis' },
     grid: { top: 8, bottom: 8, left: 4, right: 4 },
     xAxis: { type: 'category', show: false, data: trafficTrend.map((t: any) => t.time) },
-    yAxis: { type: 'value', show: false },
+    yAxis: { type: 'value', show: false, minInterval: 1 },
     series: [{
       type: 'line', smooth: true, showSymbol: false,
       areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(56,189,248,0.5)' }, { offset: 1, color: 'rgba(56,189,248,0)' }] } },
       lineStyle: { color: '#38bdf8', width: 1.5 },
       data: trafficTrend.map((t: any) => t.throughput),
     }],
-  } : {};
+  } : emptyChart('暂无 24 小时事件');
 
   const colors = ['#38bdf8', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
-  const donutOpt = {
+  const donutOpt = actions.length > 0 ? {
     tooltip: { trigger: 'item', formatter: '{b}: {c}' },
     series: [{
       type: 'pie', radius: ['35%', '60%'], center: ['50%', '55%'],
       data: actions.map((a: any, i: number) => ({ ...a, itemStyle: { color: colors[i % 5] } })),
       label: { show: true, fontSize: 7, color: '#94a3b8', formatter: '{b}\n{d}%' },
     }],
-  };
+  } : emptyChart('暂无操作事件');
 
   return (
     <div className="h-full flex flex-col gap-2 p-3">
       <div className="grid grid-cols-4 gap-2 shrink-0">
-        <StatCard icon={HardDrive} label="遥测日志" value={Number(processedRows).toLocaleString()} color="bg-blue-600" sub="CulCloud 文件处理" />
-        <StatCard icon={CheckCircle2} label="业务成功率" value={cockpitRate} color="bg-emerald-600" sub="Spark 聚合" />
-        <StatCard icon={XCircle} label="失败/异常" value={Number(scale.quality_nulls ?? 5037).toLocaleString()} color="bg-rose-600" sub={scale.duplicates ? `重复 ${Number(scale.duplicates)} 条` : ''} />
-        <StatCard icon={RadioTower} label="全球节点" value={String(worldChart._nodes?.length ?? 9)} color="bg-purple-600" sub="CulCloud 集群" />
+        <StatCard icon={HardDrive} label="文件对象" value={Number(data?.fileTotal ?? files.length).toLocaleString()} color="bg-blue-600" sub={`${folders.length} folders`} />
+        <StatCard icon={CheckCircle2} label="任务成功率" value={taskSuccessRate} color="bg-emerald-600" sub={`${completedTasks}/${totalTasks} completed`} />
+        <StatCard icon={XCircle} label="失败任务" value={failedTasks.toLocaleString()} color="bg-rose-600" sub={`${queuedTasks} queued`} />
+        <StatCard icon={RadioTower} label="24H 事件" value={runtimeEvents.toLocaleString()} color="bg-purple-600" sub="FastAPI + Redis" />
       </div>
 
       <div className="flex-1 min-h-0 flex gap-2">
@@ -286,7 +315,7 @@ export function SlideOverview({ data, loading, worldChart, onTopologyReady }: an
           <div className="flex justify-between items-center border-b border-[#1e293b] pb-1 px-2.5 pt-1.5 shrink-0">
             <span className="text-[8px] font-black text-slate-500 tracking-widest flex items-center gap-1">
               <Globe2 className="w-3 h-3 text-primary" />
-              GLOBAL TOPOLOGY
+              RUNTIME TOPOLOGY
             </span>
             <span className="text-[7px] bg-primary/20 text-primary px-1.5 py-0.5 rounded font-black">LIVE</span>
           </div>
@@ -296,7 +325,7 @@ export function SlideOverview({ data, loading, worldChart, onTopologyReady }: an
           <div className="absolute left-3 bottom-3 flex items-center gap-2 pointer-events-none">
             {[
               ['Gateway', '#60a5fa'],
-              ['Compute', '#a78bfa'],
+              ['Convert', '#f59e0b'],
               ['Storage', '#2dd4bf'],
               ['Cache', '#34d399'],
             ].map(([label, color]) => (
@@ -308,19 +337,21 @@ export function SlideOverview({ data, loading, worldChart, onTopologyReady }: an
           </div>
           <div className="absolute right-3 bottom-3 flex items-center gap-1.5 pointer-events-none">
             <span className="rounded border border-cyan-500/20 bg-cyan-950/30 px-2 py-1 text-[7px] font-black text-cyan-300">TRACE FLOW</span>
-            <span className="rounded border border-emerald-500/20 bg-emerald-950/30 px-2 py-1 text-[7px] font-black text-emerald-300">SLO OK</span>
+            <span className="rounded border border-emerald-500/20 bg-emerald-950/30 px-2 py-1 text-[7px] font-black text-emerald-300">TASK OK</span>
           </div>
         </div>
 
         {/* 右: 补图面板 */}
         <div className="flex-[2] flex flex-col gap-2 min-h-0">
-          <MiniChartCard title="实时吞吐" chart={trendOpt} loading={loading} className="flex-[2]" />
+          <MiniChartCard title="24H 事件趋势" chart={trendOpt} loading={loading} className="flex-[2]" />
           <div className="flex-[3] flex gap-2 min-h-0">
-            <MiniChartCard title="操作分布" chart={donutOpt} loading={loading} className="flex-1" />
+            <MiniChartCard title="实时操作分布" chart={donutOpt} loading={loading} className="flex-1" />
             <div className="flex-1 bg-[#0d1222]/80 border border-[#1e293b] rounded-lg p-2.5 flex flex-col">
-              <div className="text-[9px] font-black tracking-wider text-slate-400 uppercase shrink-0">格式占比</div>
+              <div className="text-[9px] font-black tracking-wider text-slate-400 uppercase shrink-0">当前文件格式</div>
               <div className="flex-1 min-h-0 flex flex-col justify-center gap-1">
-                {formatMix.slice(0, 6).map(([name, val]: [string, number], i: number) => (
+                {formatMix.length === 0 ? (
+                  <div className="text-center text-[10px] font-bold text-slate-600">暂无文件对象</div>
+                ) : formatMix.slice(0, 6).map(([name, val]: [string, number], i: number) => (
                   <div key={name} className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[i % 5] }} />
                     <span className="text-[8px] text-slate-400 flex-1 truncate">{name}</span>
@@ -467,19 +498,19 @@ export function SlideProcessing({ data, loading }: any) {
   return (
     <div className="h-full flex flex-col gap-2 p-3">
       <div className="grid grid-cols-4 gap-2 shrink-0">
-        <MetricPill label="文件样本" value={nf.format(totalFiles)} sub="Spark 聚合" color="#38bdf8" />
-        <MetricPill label="转换任务" value={nf.format(conversionTotal)} sub={pct(conversionRate)} color="#10b981" />
-        <MetricPill label="平均转换" value={`${(avgConvertMs / 1000).toFixed(1)}s`} sub="加权均值" color="#f59e0b" />
-        <MetricPill label="存储吞吐" value={`${nf.format(storageMb)} MB`} sub={`${nf.format(failedCount)} 异常`} color="#8b5cf6" />
+        <MetricPill label="历史文件样本" value={nf.format(totalFiles)} sub="Spark 离线聚合" color="#38bdf8" />
+        <MetricPill label="历史转换任务" value={nf.format(conversionTotal)} sub={pct(conversionRate)} color="#10b981" />
+        <MetricPill label="历史平均转换" value={`${(avgConvertMs / 1000).toFixed(1)}s`} sub="离线加权均值" color="#f59e0b" />
+        <MetricPill label="历史存储吞吐" value={`${nf.format(storageMb)} MB`} sub={`${nf.format(failedCount)} 异常样本`} color="#8b5cf6" />
       </div>
       <div className="grid grid-cols-2 gap-2 flex-[2] min-h-0">
-        <MiniChartCard title="文件类型分布" chart={barOpt} loading={loading} />
-        <MiniChartCard title="操作分布" chart={actionOpt} loading={loading} />
+        <MiniChartCard title="历史文件类型分布" chart={barOpt} loading={loading} />
+        <MiniChartCard title="历史操作分布" chart={actionOpt} loading={loading} />
       </div>
       <div className="grid grid-cols-3 gap-2 flex-[3] min-h-0">
-        <MiniChartCard title="转换桑基图" chart={sankeyOpt} loading={loading} />
-        <MiniChartCard title="耗时 vs 大小" chart={scatterOpt} loading={loading} />
-        <MiniChartCard title="错误原因排行" chart={errorRankOpt} loading={loading} />
+        <MiniChartCard title="历史转换桑基图" chart={sankeyOpt} loading={loading} />
+        <MiniChartCard title="历史耗时 vs 大小" chart={scatterOpt} loading={loading} />
+        <MiniChartCard title="历史错误原因排行" chart={errorRankOpt} loading={loading} />
       </div>
     </div>
   );
@@ -714,14 +745,14 @@ export function SlideQuality({ data, loading }: any) {
   return (
     <div className="h-full flex flex-col gap-2 p-3">
       <div className="grid grid-cols-4 gap-2 shrink-0">
-        <MetricPill label="有效遥测" value={nf.format(cleanRows)} sub={`${pct(qualityPct)} quality`} color="#10b981" />
-        <MetricPill label="异常样本" value={nf.format(invalidRows)} sub={`${nf.format(errTotal)} failed`} color="#f43f5e" />
+        <MetricPill label="历史有效遥测" value={nf.format(cleanRows)} sub={`${pct(qualityPct)} quality`} color="#10b981" />
+        <MetricPill label="历史异常样本" value={nf.format(invalidRows)} sub={`${nf.format(errTotal)} failed`} color="#f43f5e" />
         <MetricPill label="平均延迟" value={`${avgLatency.toFixed(1)} ms`} sub={`${svcEntries.length || 6} services`} color="#38bdf8" />
         <MetricPill label="存储水位" value={`${pct((storageMb / storageMax) * 100)}`} sub={`${nf.format(storageMb)} MB`} color="#8b5cf6" />
       </div>
       <div className="flex gap-2 flex-[3] min-h-0">
         <ServiceHealthPanel services={svcEntries} />
-        <PanelShell title="数据质量" meta={`${nf.format(rawRows)} raw rows`} className="flex-[1]">
+        <PanelShell title="历史数据质量" meta={`${nf.format(rawRows)} raw rows`} className="flex-[1]">
           <div className="grid h-full min-h-0 grid-cols-[1fr_130px] gap-2">
             <EChartsWrapper option={dataQualityOpt} loading={loading} theme="dark" />
             <div className="flex min-w-0 flex-col justify-center gap-2">
@@ -733,9 +764,9 @@ export function SlideQuality({ data, loading }: any) {
         </PanelShell>
       </div>
       <div className="grid grid-cols-3 gap-2 flex-[2] min-h-0">
-        <MiniChartCard title="存储水位" chart={liquidOpt} loading={loading} />
-        <MiniChartCard title="质量雷达" chart={radarOpt} loading={loading} />
-        <MiniChartCard title="7×24 错误热力图" chart={heatmapOpt} loading={loading} />
+        <MiniChartCard title="历史存储水位" chart={liquidOpt} loading={loading} />
+        <MiniChartCard title="历史质量雷达" chart={radarOpt} loading={loading} />
+        <MiniChartCard title="历史 7×24 错误热力图" chart={heatmapOpt} loading={loading} />
       </div>
     </div>
   );

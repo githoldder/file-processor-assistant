@@ -47,6 +47,6 @@ test.describe('E2E PDF Layout Stability', () => {
     await expect(page.getByText(/12.*worker|分布式网格就绪|Grid Active/i)).not.toBeVisible();
 
     // 2. Verified product text should be present
-    await expect(page.getByText(/PDF 页面整理|PDF Organizer/i)).toBeVisible();
+    await expect(page.getByText(/PDF 工作台|页面整理|PDF Organizer/i).first()).toBeVisible();
   });
 });

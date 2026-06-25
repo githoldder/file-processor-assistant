@@ -26,5 +26,5 @@ When preparing or modifying parts of the course design report, lab reports, or f
    `make -C docs/02-process/document/latex/cit-template/scripts clean compile`
 10. Verify output PDF renders correctly, especially pages containing figures, tables, formulas and chapter openings.
 11. Check latex log for fatal errors, undefined references/citations, overfull/underfull boxes and warnings.
-12. Run static scans for Markdown residue, local absolute paths, vertical-rule tables, `\hline`, and inline drawing environments.
+12. Run static scans for Markdown residue, local absolute paths, vertical-rule tables, `\hline`, inline drawing environments, and informal process/submission terms reported by `latex_chapter_audit.py`.
 13. Update `context/context.txt` with modifications when that context file is in use.

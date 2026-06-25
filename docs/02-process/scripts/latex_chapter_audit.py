@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit LaTeX chapter length and visual density for the course report."""
+"""Audit LaTeX chapter length, visual density, and formal terminology."""
 
 from __future__ import annotations
 
@@ -10,14 +10,24 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "document" / "latex" / "cit-template" / "data"
 
+FORBIDDEN_FORMAL_TERMS = {
+    "截图": "use 图像记录、界面结果图、运行结果图, or simply 图",
+    "大作业": "use 本系统、本文、课程实践项目, or the formal course name",
+    "课程设计报告": "use 本文、说明书, or 系统设计文档",
+    "演示": "use 验证、运行、展示, or 可复现验证",
+    "答辩": "use 评审、验收, or 课程考核",
+    "截图证据": "use 图像记录 or 运行结果",
+    "证据截图": "use 图像记录 or 运行结果",
+}
+
 TARGETS = {
     "abstract.tex": (350, 450),
     "chap01.tex": (1400, 3600),
     "chap02.tex": (1600, 2200),
-    "chap03.tex": (1800, 2400),
-    "chap04.tex": (1800, 2600),
-    "chap05.tex": (2600, 3600),
-    "chap06.tex": (1800, 2600),
+    "chap03.tex": (2800, 4600),
+    "chap04.tex": (3200, 5600),
+    "chap05.tex": (3000, 4600),
+    "chap06.tex": (2600, 4200),
     "chap07.tex": (900, 1300),
     "acknowledgements.tex": (180, 300),
 }
@@ -51,6 +61,13 @@ def audit_file(path: Path) -> dict[str, object]:
         status = "OK"
     if visuals and cjk // visuals < 250:
         status += " / VISUAL_TEXT_LOW"
+    forbidden_hits = []
+    for lineno, line in enumerate(text.splitlines(), start=1):
+        for term in FORBIDDEN_FORMAL_TERMS:
+            if term in line:
+                forbidden_hits.append(f"{lineno}:{term}")
+    if forbidden_hits:
+        status += " / FORBIDDEN_TERMS"
     return {
         "file": path.name,
         "cjk": cjk,
@@ -63,6 +80,7 @@ def audit_file(path: Path) -> dict[str, object]:
         "target": f"{minimum}-{maximum}" if minimum else "-",
         "status": status,
         "headings": " | ".join(headings),
+        "forbidden_hits": forbidden_hits,
     }
 
 
@@ -81,6 +99,16 @@ def main() -> None:
     print("Headings")
     for row in rows:
         print(f"- {row['file']}: {row['headings'] or '-'}")
+    print()
+    print("Forbidden formal terms")
+    any_forbidden = False
+    for row in rows:
+        hits = row["forbidden_hits"]
+        if hits:
+            any_forbidden = True
+            print(f"- {row['file']}: {', '.join(hits)}")
+    if not any_forbidden:
+        print("- none")
 
 
 if __name__ == "__main__":

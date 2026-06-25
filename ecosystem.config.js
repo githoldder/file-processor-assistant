@@ -25,7 +25,7 @@
  *    Flask → spark-output/: 离线分析结果
  *
  *  启动顺序:
- *    1. docker compose -f docker-compose.demo.yml up -d
+ *    1. docker compose up -d redis minio gotenberg api
  *    2. pm2 start ecosystem.config.js
  *    3. pm2 logs
  *

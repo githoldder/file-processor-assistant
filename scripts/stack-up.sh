@@ -25,7 +25,7 @@ for env_file in .env.demo .env.hadoop; do
   fi
 done
 
-COMPOSE=(docker compose -f docker-compose.demo.yml -p culcloud-demo)
+COMPOSE=(docker compose)
 
 # 构建并启动核心服务
 "${COMPOSE[@]}" up -d --build redis minio gotenberg api

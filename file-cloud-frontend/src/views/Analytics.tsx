@@ -18,10 +18,13 @@ const SLIDE_COUNT = 3;
 
 interface BizData {
   files: any[];
+  folders: any[];
+  fileTotal: number;
   stats: any;
   queueLen: number;
   health: any;
   logs: any[];
+  logStats: any;
   pipeline: any;
   quality: any;
   cockpit: any;
@@ -41,12 +44,13 @@ function useBizData() {
     setLoading(true);
     setError(null);
     try {
-      const [fileRes, statsRes, queueRes, healthRes, logRes, pipeRes, qualRes, cockpitRes, convRes, errRes, actRes, fmtRes, heatRes] = await Promise.all([
-        fetch(`${API_BASE}/api/v1/files`).then(r => r.json()).catch(() => ({ files: [] })),
+      const [fileRes, statsRes, queueRes, healthRes, logRes, logStatsRes, pipeRes, qualRes, cockpitRes, convRes, errRes, actRes, fmtRes, heatRes] = await Promise.all([
+        fetch(`${API_BASE}/api/v1/files?recursive=true&limit=200`).then(r => r.json()).catch(() => ({ files: [], folders: [], total: 0 })),
         fetch(`${API_BASE}/api/v1/tasks/stats`).then(r => r.json()).catch(() => ({})),
         fetch(`${API_BASE}/api/v1/tasks/queue-length`).then(r => r.json()).catch(() => ({ queue_length: 0 })),
         fetch(`${API_BASE}/api/v1/system/health`).then(r => r.json()).catch(() => ({ services: {} })),
-        fetch(`${API_BASE}/api/v1/logs/timeline?hours=24&limit=15`).then(r => r.json()).catch(() => ({ events: [] })),
+        fetch(`${API_BASE}/api/v1/logs/timeline?hours=24&limit=200`).then(r => r.json()).catch(() => ({ events: [] })),
+        fetch(`${API_BASE}/api/v1/logs/stats?hours=24`).then(r => r.json()).catch(() => ({ total: 0, by_type: {} })),
         fetch(`${FLASK_API}/api/analytics/pipeline-info`).then(r => r.json()).catch(() => ({ ok: false })),
         fetch(`${FLASK_API}/api/analytics/telemetry/quality-report`).then(r => r.json()).catch(() => ({ ok: false })),
         fetch(`${FLASK_API}/api/analytics/cockpit`).then(r => r.json()).catch(() => ({ ok: false })),
@@ -59,10 +63,13 @@ function useBizData() {
 
       setData({
         files: fileRes.files || [],
+        folders: fileRes.folders || [],
+        fileTotal: fileRes.total ?? (fileRes.files || []).length,
         stats: statsRes,
         queueLen: queueRes.queue_length ?? 0,
         health: healthRes,
         logs: logRes.events || [],
+        logStats: logStatsRes,
         pipeline: pipeRes.ok ? (pipeRes.data?.pipeline || null) : null,
         quality: qualRes.ok ? qualRes.data : null,
         cockpit: cockpitRes.ok ? cockpitRes.data : null,
@@ -128,36 +135,36 @@ export default function Analytics() {
 
   const health = data?.health;
   const logs = data?.logs || [];
-  const cockpit = data?.cockpit || {};
-  const cockpitScale = cockpit.scale || {};
-  const processedRows = Number(cockpitScale.processed_rows ?? 100000);
-  const topologySlo = typeof cockpitScale.conversion_rate === 'number' ? `${cockpitScale.conversion_rate}%` : '95%';
+  const taskStats = data?.stats || {};
+  const logStats = data?.logStats || {};
+  const runtimeEvents = Number(logStats.total ?? logs.length ?? 0);
+  const totalTasks = Number(taskStats.total || 0);
+  const completedTasks = Number(taskStats.completed || 0);
+  const taskSuccessRate = totalTasks > 0 ? `${Math.round((completedTasks / totalTasks) * 1000) / 10}%` : '0%';
+  const services = Array.isArray(health?.services)
+    ? health.services
+    : health?.services && typeof health.services === 'object'
+      ? Object.entries(health.services).map(([name, svc]: [string, any]) => ({ name, ...(svc || {}) }))
+      : [];
+  const serviceStatus = (name: string) => {
+    const svc = services.find((item: any) => item.name?.toLowerCase().includes(name));
+    return svc?.status || 'healthy';
+  };
 
-  const rawCockpitNodes = Array.isArray(cockpit.nodes) && cockpit.nodes.length > 0 ? cockpit.nodes : [
-    { id: 'web', name: 'Web Console', coord: [470, 176], status: 'healthy', metric: '15K req/s', city: 'Shanghai' },
-    { id: 'api', name: 'API Gateway', coord: [430, 246], status: 'healthy', metric: 'REST API', city: 'Singapore' },
-    { id: 'hdfs', name: 'MinIO/HDFS', coord: [455, 142], status: 'healthy', metric: '2.4 PB', city: 'Beijing' },
-    { id: 'spark', name: 'Spark', coord: [545, 166], status: 'healthy', metric: '128 vCores', city: 'Tokyo' },
-    { id: 'gotenberg', name: 'Gotenberg', coord: [82, 172], status: 'healthy', metric: '8K render/min', city: 'San Francisco' },
-    { id: 'redis', name: 'Redis', coord: [255, 246], status: 'healthy', metric: '99% hit', city: 'Frankfurt' },
-    { id: 'nordic', name: 'CDN Edge', coord: [455, 76], status: 'healthy', metric: '5ms latency', city: 'Oslo' },
-    { id: 'mumbai', name: 'AI Proxy', coord: [580, 276], status: 'healthy', metric: '1.2K infer/s', city: 'Mumbai' },
-    { id: 'sydney', name: 'DR Replica', coord: [620, 120], status: 'healthy', metric: 'sync 0.5s', city: 'Sydney' },
+  const rawCockpitNodes = [
+    { id: 'web', name: 'Web Console', coord: [470, 176], status: 'healthy', metric: `${runtimeEvents} events`, city: 'Browser' },
+    { id: 'api', name: 'FastAPI Gateway', coord: [430, 246], status: serviceStatus('api'), metric: `${totalTasks} tasks`, city: ':8000' },
+    { id: 'hdfs', name: 'MinIO Bucket', coord: [455, 142], status: serviceStatus('minio'), metric: `${data?.fileTotal || 0} files`, city: 'Object Store' },
+    { id: 'gotenberg', name: 'Gotenberg', coord: [82, 172], status: serviceStatus('gotenberg'), metric: 'Office/PDF', city: ':3000' },
+    { id: 'redis', name: 'Redis Cache', coord: [255, 246], status: serviceStatus('redis'), metric: `${data?.queueLen || 0} queued`, city: 'Tasks/Logs' },
   ];
   const cockpitNodes = decorateTopologyNodes(rawCockpitNodes);
-  const cockpitLinks = Array.isArray(cockpit.links) ? cockpit.links : [
-    { source: 'Web Console', target: 'API Gateway' },
-    { source: 'API Gateway', target: 'MinIO/HDFS' },
-    { source: 'API Gateway', target: 'Gotenberg' },
-    { source: 'API Gateway', target: 'Redis' },
-    { source: 'API Gateway', target: 'AI Proxy' },
-    { source: 'MinIO/HDFS', target: 'Spark' },
-    { source: 'Spark', target: 'API Gateway' },
-    { source: 'Redis', target: 'CDN Edge' },
-    { source: 'CDN Edge', target: 'DR Replica' },
-    { source: 'Gotenberg', target: 'Web Console' },
-    { source: 'API Gateway', target: 'CDN Edge' },
-    { source: 'Spark', target: 'AI Proxy' },
+  const cockpitLinks = [
+    { source: 'Web Console', target: 'FastAPI Gateway' },
+    { source: 'FastAPI Gateway', target: 'MinIO Bucket' },
+    { source: 'FastAPI Gateway', target: 'Gotenberg' },
+    { source: 'FastAPI Gateway', target: 'Redis Cache' },
+    { source: 'Redis Cache', target: 'Web Console' },
   ];
   const nodeByName = new Map(cockpitNodes.map((n: any) => [n.name, n]));
   const topologyLinkData = cockpitLinks.map((link: any, index: number) => {
@@ -188,14 +195,14 @@ export default function Analytics() {
         textStyle: { color: '#cbd5e1', fontSize: 11 },
         formatter: (p: any) => {
           const d = p.data;
-          if (p.seriesType === 'lines') return '服务链路<br/>实时遥测流';
+          if (p.seriesType === 'lines') return '服务链路<br/>当前运行口径';
           return `<b>${d.name || ''}</b><br/>${d.role || d.city || ''}<br/>${d.metric || d.status || ''}`;
         },
       },
       grid: { left: 18, right: 18, top: 10, bottom: 8 },
       xAxis: { show: false, min: 0, max: 740 },
       yAxis: { show: false, min: 0, max: 380, inverse: true },
-      graphic: buildTopologyGraphic(processedRows, topologySlo),
+      graphic: buildTopologyGraphic(runtimeEvents, taskSuccessRate),
       series: [
         {
           type: 'lines', coordinateSystem: 'cartesian2d', zlevel: 0,

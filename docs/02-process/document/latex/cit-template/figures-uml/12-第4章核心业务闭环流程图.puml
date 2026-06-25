@@ -1,0 +1,65 @@
+@startuml
+' Core business closed-loop activity diagram.
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 10
+skinparam defaultFontName "SimSun"
+skinparam ArrowThickness 1.2
+skinparam ArrowColor #475569
+
+title CulCloud 核心业务闭环流程图
+
+start
+
+partition "用户端" #FAF5FF {
+  :上传或选择文件;
+  :发起预览、转换或 PDF 页面处理;
+}
+
+partition "FastAPI 业务接口" #FFF7ED {
+  :校验路径、格式与参数;
+  if (上传或预览?) then (是)
+    :调用文件与预览接口;
+  elseif (格式转换?) then (是)
+    :创建转换任务;
+  else (PDF 页面处理)
+    :创建 PDF 处理任务;
+  endif
+}
+
+partition "MinIO 对象存储" #F0FDFA {
+  :保存原始文件;
+  :保存预览缓存;
+  :保存转换或导出产物;
+}
+
+partition "Redis 运行状态" #EFF6FF {
+  :写入任务状态;
+  :写入操作事件;
+  :更新任务统计与近期日志;
+}
+
+partition "管理端" #FFF7ED {
+  :读取 files / tasks / logs / system;
+  :刷新实时运行指标;
+  :展示事件、任务与健康状态;
+}
+
+partition "用户端" #FAF5FF {
+  :轮询任务结果;
+  if (处理成功?) then (是)
+    :显示预览或下载入口;
+  else (否)
+    :显示失败原因;
+  endif
+}
+
+stop
+
+legend bottom
+  本图表达用户端业务动作到管理端可观察数据的闭环
+  第一屏管理指标来自 FastAPI 实时接口，不混用 Spark 历史样本
+endlegend
+
+@enduml

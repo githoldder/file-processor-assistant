@@ -1,19 +1,52 @@
-version: '3.8'
+name: culcloud-demo
 
 services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - culcloud_net
+    volumes:
+      - redis_data:/data
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: admin123
+    ports:
+      - "9010:9000"
+      - "9011:9001"
+    networks:
+      - culcloud_net
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  gotenberg:
+    image: gotenberg/gotenberg:7
+    command: ["gotenberg"]
+    networks:
+      - culcloud_net
+
   api:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: culcloud-api
+    image: culcloud-demo-api:local
     ports:
       - "8000:8000"
     environment:
-      - REDIS_URL=redis://redis:6379/0
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=admin
-      - MINIO_SECRET_KEY=admin123
-      - GOTENBERG_URL=http://gotenberg:3000
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: admin
+      MINIO_SECRET_KEY: admin123
+      GOTENBERG_URL: http://gotenberg:3000
     depends_on:
       - redis
       - minio
@@ -23,39 +56,51 @@ services:
     volumes:
       - ./backend:/app
 
-  redis:
-    image: redis:7-alpine
-    container_name: culcloud-redis
-    ports:
-      - "6379:6379"
-    networks:
-      - culcloud_net
-    volumes:
-      - redis_data:/data
-
-  minio:
-    image: minio/minio:latest
-    container_name: culcloud-minio
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+  postgres:
+    image: postgres:15-alpine
     environment:
-      - MINIO_ROOT_USER=admin
-      - MINIO_ROOT_PASSWORD=admin123
-    command: server /data --console-address ":9001"
+      POSTGRES_DB: file_processor
+      POSTGRES_USER: fileuser
+      POSTGRES_PASSWORD: filepass123
     networks:
       - culcloud_net
     volumes:
-      - minio_data:/data
+      - postgres_data:/var/lib/postgresql/data
+    profiles:
+      - full
 
-
-  gotenberg:
-    image: gotenberg/gotenberg:7
-    container_name: culcloud-gotenberg
+  hadoop:
+    image: ${HADOOP_IMAGE:-myubuntu:hadoop-mapreduce-lab-topn}
+    command: ["bash", "-lc", "service ssh start || true; /usr/local/hadoop/sbin/start-yarn.sh || true; tail -f /dev/null"]
+    environment:
+      HADOOP_HOME: /usr/local/hadoop
+    ports:
+      - "8088:8088"
+      - "9870:9870"
     networks:
       - culcloud_net
-    command:
-      - "gotenberg"
+    volumes:
+      - hadoop_data:/hadoop/data
+      - hadoop_logs:/usr/local/hadoop/logs
+    profiles:
+      - hadoop
+
+  spark-analytics:
+    image: python:3.8-slim
+    working_dir: /app
+    command: ["bash", "-c", "pip install -q pyspark && python scripts/spark/file_stats.py --input /app/data/raw/objects.csv --output /app/data/spark-output && echo 'Spark done. Sleeping...' && tail -f /dev/null"]
+    environment:
+      SPARK_LOCAL_IP: 127.0.0.1
+    networks:
+      - culcloud_net
+    volumes:
+      - ./scripts/spark:/app/scripts/spark
+      - ./data:/app/data
+    profiles:
+      - analytics
+    depends_on:
+      - redis
+      - minio
 
 networks:
   culcloud_net:
@@ -64,3 +109,6 @@ networks:
 volumes:
   redis_data:
   minio_data:
+  postgres_data:
+  hadoop_data:
+  hadoop_logs:

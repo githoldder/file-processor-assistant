@@ -39,15 +39,14 @@ This repository uses `Agent.md` as the Agent spec. Start there, then read `conte
 ├── scripts/                  # Demo, Spark, Docker, maintenance scripts
 ├── tests/                    # Backend, blackbox, E2E tests
 ├── ecosystem.config.js       # PM2 process manager config
-├── docker-compose.yml        # Main compose stack
-├── docker-compose.demo.yml   # Demo compose stack
+├── docker-compose.yml        # Main Docker Compose stack
 └── 99-archive/               # Archived legacy reference project
 ```
 
 ## Quick Start
 
 ```bash
-docker compose -f docker-compose.demo.yml up -d
+docker compose up -d redis minio gotenberg api
 pm2 start ecosystem.config.js
 ```
 

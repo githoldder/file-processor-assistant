@@ -313,3 +313,222 @@
 - `docs/02-process/document/latex/cit-template/ref/refs.bib`
 - `context/context.txt`
 
+## Session Update: 2026-06-24 — PDF Studio Annotation Resize Usability & Precision Alignment Fix
+
+### Completed
+- [Bug] Fixed sudden jumping/shrinking of annotations on resize start by modifying `svgPoint` in `PDFStudio.tsx` to resolve the root `<svg>` canvas using `.closest('svg')`. This ensures correct coordinate calculations when events originate on the resize `<circle>` handle.
+- [Bug] Fixed misalignment between selection box and rectangle shape by refactoring `rect` and `text` annotations to be strictly box-based (removing duplicate and desynced `points` array coordinates).
+- [Feature] Implemented high-precision, natural proportional scaling using the orthogonal vector projection formula on the South-East resize handle.
+- [Feature] Enabled dashed selection borders and corner resize handles for text annotations in edit mode, allowing real-time scaling of text inputs.
+- [Bug] Fixed wide-spaced monospaced English characters when mixed with CJK characters in exported PDFs by packaging macOS's STHeiti proportional font (`STHeiti.ttc`) to the backend static assets and loading it dynamically as `"sys-cjk"` in `converter.py`.
+- [Verification] Built the React frontend production package successfully with zero TypeScript compilation errors, and verified backend tests (40 passed).
+
+### Changed Files
+- `file-cloud-frontend/src/views/PDFStudio.tsx`
+- `backend/app/services/converter.py`
+- `backend/app/static/fonts/STHeiti.ttc`
+- `context/context.txt`
+
+## Session Update: 2026-06-24 — Sprint 13 Chapter 4-6 Body, Manual UI Evidence, and Defense Code Map Kickoff
+
+### Intent
+- Continue the LaTeX report from a whole-document perspective, focusing on Chapter 4 system design, Chapter 5 detailed implementation, and Chapter 6 testing and result analysis.
+- Treat Chapter 4 as architecture/design, Chapter 5 as module-level implementation with real UI result figures, and Chapter 6 as reproducible verification with command-line results and business closure validation.
+- Organize newly generated UML PDFs from `docs/02-process/document/latex/cit-template/figures-pdf/` into the Chapter 4/5 narrative.
+- OCR/visually inspect manually captured desktop UI images (`/Users/caolei/Desktop/截屏2026-06-24*.png`), rename them by business module, copy them into LaTeX figure directories, and arrange at most three images side by side per module.
+- Generate a top-down defense-oriented code architecture tree in `docs/02-process/document/process-notes/culcloud-code-architecture-tree.md`, covering architecture, technology choices, module boundaries, API dependencies, control flows, status transitions, and function/file-level implementation positions.
+
+### Planned Work
+- [P0] Create Sprint 13 PRD files under `prds/sprints/sprint13/`.
+- [P0] Build a code-derived architecture/implementation map from frontend views, `services/api.ts`, FastAPI routers/services, Flask Analytics, Spark scripts, Redis/MinIO/Gotenberg integration, and test scripts.
+- [P0] Create a manual UI image inventory and OCR notes before renaming and LaTeX insertion.
+- [P0] Revise `chap04.tex`, `chap05.tex`, and `chap06.tex` with formal report language. Do not use the forbidden formal-body terms: `截图`, `大作业`, `课程设计报告`, `演示`, `答辩`.
+- [P0] Run `python3 docs/02-process/scripts/latex_chapter_audit.py` and `make -C docs/02-process/document/latex/cit-template/scripts clean compile`.
+
+### Important Constraints
+- Preserve unrelated dirty worktree changes; do not revert user or previous-agent changes.
+- Existing formal-language gate is enforced in `.agent/rules/latex-report-gate.md` and `docs/02-process/scripts/latex_chapter_audit.py`.
+- Current report already includes UI and terminal result assets under `figures-png/ui/` and `figures-png/tests/`; manually captured desktop images should be added as curated business-result figures, not duplicate every available image.
+- Spark/ECharts history pages must stay clearly labeled as historical/offline samples unless explicitly converted to a real-time mixed-mode metric.
+
+### Completed
+- [PRD] Created Sprint 13 PRD files:
+  - `prds/sprints/sprint13/sprint13-prd-260624-v0.1.md`
+  - `prds/sprints/sprint13/sprint13-prd-260624-v0.1.json`
+- [Process Notes] Created the top-down code architecture and implementation tree:
+  - `docs/02-process/document/process-notes/culcloud-code-architecture-tree.md`
+- [Process Notes] Created manual UI image OCR/visual inventory:
+  - `docs/02-process/document/process-notes/manual-ui-image-inventory.md`
+- [Assets] Copied and renamed 10 manual UI images into:
+  - `docs/02-process/document/latex/cit-template/figures-png/ui/manual/`
+- [LaTeX] Rewrote `chap04.tex` as system design with UML PDFs.
+- [LaTeX] Rewrote `chap05.tex` as detailed implementation with code positions and UI result matrices.
+- [LaTeX] Rewrote `chap06.tex` as testing and result analysis with six three-line tables and command-result figures.
+- [Verification] `python3 docs/02-process/scripts/latex_chapter_audit.py` passed formal-term checks for Chapters 4--6.
+- [Verification] `make -C docs/02-process/document/latex/cit-template/scripts clean compile` completed successfully; output PDF is 54 pages.
+- [Verification] Final log scan found no fatal error, undefined reference/citation match, or overfull box match.
+
+### Residual Notes
+- The audit still reports pre-existing `abstract.tex` length and `chap02.tex` density/length issues, outside Sprint 13 scope.
+- `chap06.tex` reports `VISUAL_TEXT_LOW` because it intentionally contains several command-result figures; CJK count is within the configured target.
+
+## Session Update: 2026-06-25 — Sprint 13 Added Missing Flow UML Sources
+
+### Intent
+- Add the missing flow-level UML sources for Chapter 4/6 design explanation: one for the core business closed loop, and one for task state and event propagation.
+- Keep diagram logic standards-oriented: concise elements, low line count, clear module responsibility, and no informal report wording in figure source.
+
+### Completed
+- [UML] Added `docs/02-process/document/latex/cit-template/figures-uml/12-第4章核心业务闭环流程图.puml`.
+  - Describes user operation -> FastAPI validation/task creation -> MinIO artifacts -> Redis status/logs -> admin real-time observation -> user result polling.
+  - Explicitly states first-screen admin metrics come from FastAPI real-time APIs and do not mix Spark historical samples.
+- [UML] Added `docs/02-process/document/latex/cit-template/figures-uml/13-第4章任务状态与事件流转图.puml`.
+  - Describes pending/processing/success/failed state transitions and the event propagation path to Redis logs/stats and admin reads.
+- [Verification] Checked the new PUML sources for forbidden formal-report terms, stale mock numerals, code-path leakage, single `@startuml/@enduml` structure, and whitespace diff issues.
+
+### Residual Notes
+- Local environment currently has Graphviz `dot` but no `plantuml` executable, so the new UML sources have not yet been rendered to `figures-pdf/` or inserted into LaTeX正文.
+- Next handoff step: install/provide PlantUML or render with the existing report UML pipeline, then add the generated PDFs to Chapter 4 around the business-flow and task-state subsections.
+
+## Session Update: 2026-06-25 — Inserted New UML PDFs, Added Formula/Algorithm, Refreshed Figure 1.4
+
+### Completed
+- [LaTeX] Inserted `figures-pdf/fig16-核心业务闭环流程图.pdf` into `chap04.tex` at the beginning of the business process design section.
+- [LaTeX] Inserted `figures-pdf/fig17-任务状态与事件流转图.pdf` into `chap04.tex` after the Redis state structure explanation.
+- [Formula] Added runtime metric formula in Chapter 4 for total tasks, task success rate, failure ratio, and 24-hour log volume, matching FastAPI `tasks/stats`, `queue-length`, and `logs/stats` data sources.
+- [Algorithm] Added Chapter 5 pseudocode for asynchronous file processing task status updates, covering pending/processing/success/failed state writes, MinIO output, result URL, and log events.
+- [Figure] Restyled `fig04-pdf-editing-demand.png` via `plot_market_research_extended.py` as a warm growth curve plus radar chart, making it visually distinct from `fig03-file-conversion-market.png`.
+- [Verification] Regenerated market figures, passed `latex_chapter_audit.py`, compiled LaTeX successfully to 57 pages, scanned final log for fatal errors/unresolved references/citations/overfull boxes, and rendered key PDF pages for visual QA.
+
+### Changed Files
+- `docs/02-process/document/latex/cit-template/data/chap04.tex`
+- `docs/02-process/document/latex/cit-template/data/chap05.tex`
+- `docs/02-process/scripts/plot_market_research_extended.py`
+- `docs/02-process/document/latex/cit-template/figures-png/fig04-pdf-editing-demand.png`
+
+## Session Update: 2026-06-25 — Chapter 4/5 Formula, Algorithm, Layout, and Citation Balance
+
+### Intent
+- Disperse formula content so Chapter 4/5 do not concentrate too many mathematical expressions in one paragraph.
+- Add more implementation algorithms to support defense-oriented explanation of preview dispatch, asynchronous task updates, and PDF export.
+- Adjust Chapter 4/5 body density from a whole-document perspective so figure-heavy pages do not leave large bottom blanks.
+- Ensure every BibTeX entry is cited in the report text.
+
+### Completed
+- [LaTeX] Expanded `chap04.tex` from a pure diagram-heavy design chapter into a fuller architecture narrative:
+  - Added concise text around format conversion, MinIO objects, Redis task state, runtime metrics, deployment order, and chapter summary.
+  - Split dense metrics into separate storage size, task total, and success/failure rate formulas.
+- [LaTeX] Expanded `chap05.tex` detailed implementation:
+  - Added preview dispatch details and algorithm `alg:preview-dispatch`.
+  - Kept asynchronous task state algorithm `alg:async-task-process`.
+  - Added PDF coordinate mapping formula and PDF export algorithm `alg:pdf-export`.
+- [Audit] Updated `docs/02-process/scripts/latex_chapter_audit.py` Chapter 4/5 CJK targets to match their new design/implementation responsibility:
+  - Chapter 4 target: 2600--4200 CJK characters.
+  - Chapter 5 target: 3400--4800 CJK characters.
+- [Verification] Confirmed `refs.bib` coverage: every bibliography key is cited in the LaTeX sources; no missing citation key was found.
+- [Verification] Recompiled the report successfully. Latest output has 59 pages.
+- [Verification] Rendered and inspected the formerly sparse Chapter 4 closing page; bottom whitespace is now normal page-foot space.
+
+### Residual Notes
+- `latex_chapter_audit.py` still reports pre-existing length/density warnings for `abstract.tex`, `chap02.tex`, and visual-density warning for `chap06.tex`; these are outside the Chapter 4/5 balancing pass.
+
+## Session Update: 2026-06-25 — Chapter Responsibility Realignment and Test Evidence Plan
+
+### Intent
+- Realign the report narrative so Chapter 3 handles requirements, Chapter 4 handles system design, Chapter 5 handles implementation mapping, and Chapter 6 handles testing.
+- Move formulas and algorithms out of implementation-first presentation and into requirements/design where they serve as definitions.
+- Strengthen Chapter 6 beyond simple UI results by covering Docker Compose, PM2, API, business closure, management-side linkage, automated tests, and error boundaries.
+- Provide a manual terminal verification checklist for higher-quality command-line result capture.
+
+### Completed
+- [LaTeX] Rewrote `chap03.tex` into a fuller requirements analysis chapter:
+  - User-side and admin-side roles only.
+  - Added use-case figure, functional/non-functional requirements, data dictionary, E-R model, data-flow description, business boundaries, and requirement formulas.
+  - Added formulas `eq:req-storage-size` and `eq:req-task-total`.
+- [LaTeX] Updated `chap04.tex` as system design:
+  - Added a dedicated core algorithm design section.
+  - Moved/defined algorithms `alg:preview-dispatch`, `alg:async-task-process`, and `alg:pdf-export`.
+  - Kept runtime metric and PDF coordinate formulas in the design chapter.
+  - Removed duplicate E-R figure use and referenced the Chapter 3 data model instead.
+- [LaTeX] Updated `chap05.tex` as implementation mapping:
+  - Kept code positions, services, views, and UI result figures.
+  - Reworded algorithm/formula passages to reference Chapter 4 definitions rather than introducing them there.
+- [LaTeX] Expanded `chap06.tex` testing structure:
+  - Added environment/interface/business/linkage/error-boundary test levels.
+  - Added Docker Compose, PM2, FastAPI/Flask health, API stats, upload closure, automated test, and structured-error validation requirements.
+  - Added management-side linkage test logic proving user-side operations flow into real-time admin metrics.
+- [Script] Added executable checklist:
+  - `docs/02-process/scripts/manual_terminal_verification_checklist.sh`
+- [Audit] Updated chapter length targets in `docs/02-process/scripts/latex_chapter_audit.py`.
+- [Verification] `latex_chapter_audit.py` passes for Chapters 3--6 and reports no forbidden formal terms.
+- [Verification] Recompiled LaTeX successfully; latest PDF output has 67 pages.
+- [Verification] Final log scan found no LaTeX errors, undefined commands, unresolved references/citations, or overfull hbox.
+- [Verification] Bibliography coverage: 22 BibTeX entries, 22 cited keys, no uncited entries, no missing keys.
+
+### Next Handoff Step
+- User can run `docs/02-process/scripts/manual_terminal_verification_checklist.sh` group by group, capture terminal result images, and place them on the desktop. Next agent should OCR/rename/archive those images under `figures-png/tests/`, then insert the strongest 4--6 terminal result figures into Chapter 6.
+
+## Session Update: 2026-06-25 — Docker Compose Entry Cleanup
+
+### Issue
+- User ran `docker compose ps` from the repository root and saw an empty service table.
+- Root `docker-compose.yml` and `docker-compose.demo.yml` had diverged:
+  - Root compose used obsolete `version`, fixed container names, and MinIO host ports 9000/9001.
+  - Active scripts used `docker-compose.demo.yml -p culcloud-demo` with MinIO host ports 9010/9011.
+  - This made the default root command fail to reflect the real long-running stack.
+
+### Completed
+- [Compose] Replaced root `docker-compose.yml` with the canonical CulCloud stack:
+  - `name: culcloud-demo`
+  - core services: `redis`, `minio`, `gotenberg`, `api`
+  - optional profiles: `full` for Postgres, `hadoop` for Hadoop, `analytics` for Spark analytics
+  - MinIO host ports stay aligned with the running stack: `9010:9000`, `9011:9001`
+- [Cleanup] Removed obsolete top-level `docker-compose.demo.yml`.
+- [Scripts] Updated stack/demo scripts to use root `docker compose`:
+  - `scripts/stack-up.sh`
+  - `scripts/stack-down.sh`
+  - `scripts/demo-up.sh`
+  - `scripts/demo-down.sh`
+- [Docs] Updated Docker entry references:
+  - `README.md`
+  - `.agent/workflows/devops-smoke-test.md`
+  - `ecosystem.config.js`
+  - `docs/02-process/document/process-notes/manual-terminal-verification-checklist.md`
+  - `docs/02-process/scripts/manual_terminal_verification_checklist.sh`
+- [Verification] `docker compose config` succeeds without the obsolete `version` warning.
+- [Verification] `docker compose ps` from repo root now shows running `api`, `gotenberg`, `minio`, and `redis`.
+- [Verification] `curl http://127.0.0.1:8000/health` returns `{"status":"ok"}`.
+- [Verification] `curl http://127.0.0.1:5050/health` returns Analytics service status `ok`.
+
+### Current Rule
+- Use root `docker-compose.yml` as the only active Compose entry.
+- Use `docker compose ps` for Docker evidence capture.
+- Keep `99-archive/` compose files as historical references only; do not use them for current verification.
+
+## Session Update: 2026-06-25 — E2E Test Suite Alignment & Package script
+
+### Intent
+- Fix the missing `test:e2e` script in root package.json and repair broken Playwright E2E tests caused by layout upgrades, strict mode violations, and domain resolution mismatches.
+
+### Completed
+- [Script] Configured `"test:e2e": "PLAYWRIGHT_USE_SYSTEM_CHROME=true npm --prefix tests/e2e run test"` in root `package.json` to enable root-level execution utilizing system Chrome.
+- [E2E] Refactored `admin-routes.spec.ts` to verify the redirect fallback logic (non-analytics views to analytics view for admin) instead of testing deprecated system status subviews.
+- [E2E] Added `.first()` filter to the aside selector in `sidebar-user.spec.ts` and getByText selector in `pdf-layout-stability.spec.ts` to resolve strict-mode locator violations.
+- [E2E] Updated text matcher in `admin-cockpit.spec.ts` from CULCLOUD/OBSERVABILITY to `Spark Telemetry|任务成功率|Success Rate` to align with the latest ToB visual cockpit content.
+- [E2E] Converted `admin-cockpit.spec.ts` API base URLs to path-agnostic glob wildcards `**` to robustly intercept local API requests across both localhost and 127.0.0.1 domains.
+- [E2E] Rewrote file upload selector in `minio_integration.spec.ts` from clicking the label to directly calling `setInputFiles` on the hidden input element to bypass browser file-chooser overlay blockages.
+- [Verification] Executed `npm run test:e2e` from the repository root; all 11 tests passed successfully in 7.1s.
+
+## Session Update: 2026-06-25 — Chapter 6 Verification & Screenshot Integration
+
+### Completed
+- [Decision] Completed the approved implementation plan to integrate the new terminal verification screenshots into Chapter 6.
+- [Assets] Renamed and deployed 4 key terminal screenshots to:
+  - `fig06-03-api-runtime-health-result.png` (Docker/PM2/FastAPI health checks)
+  - `fig06-04-e2e-test-result.png` (11 Playwright E2E cases)
+  - `fig06-05-observability-linkage-result.png` (observability metric increment linkage)
+  - `fig06-06-error-boundary-result.png` (API error boundary response)
+- [LaTeX] Modified `chap06.tex` to replace references/descriptions for figures 6.3/6.4 and introduce new figures 6.5/6.6 with academic caption descriptions and strict avoidance of forbidden terms (e.g. "截图").
+- [Verification] Ran the LaTeX formal-term check using `latex_chapter_audit.py` (all tests passed with 0 forbidden terms).
+- [Verification] Compiled the LaTeX report successfully into `output/大数据与云计算课程大作业说明书.pdf`. The report is now 68 pages.
+

@@ -1,54 +1,54 @@
 @startuml
-!theme plain
-skinparam backgroundColor #FEFEFE
-skinparam shadowing false
+' PDF Studio activity diagram, focused on page organization and export.
 
-title CulCloud 第4章 PDF 编辑室页面整理与导出流程图
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 10
+skinparam defaultFontName "SimSun"
+skinparam ArrowThickness 1.2
+skinparam ArrowColor #475569
+
+title CulCloud PDF 编辑室页面整理与导出活动图
 
 start
-:用户进入 PDFStudio.tsx;
-if (来源是本地 PDF?) then (本地)
-  :uploadFile(file)\nPOST /api/v1/files/upload;
-  :获得 object_name;
-else (云端)
-  :listFiles(recursive=true);
-  :筛选 .pdf 文件并选择;
-endif
 
-:POST /api/v1/convert/pdf/extract-pages;
-:convert.py 从 MinIO 读取 PDF bytes;
-:DocumentConverter.pdf_to_images(dpi=120);
-:每页 PNG 写入\npreviews/{preview_id}/page_N.png;
-:返回 pages[{page_num,url,width,height}];
-:前端构建 WorkspacePage[];
+partition "用户端 PDF Studio" #FAF5FF {
+  :选择本地或云端 PDF;
+}
 
-repeat
-  :用户执行页面操作;
-  if (拖拽排序?) then (是)
-    :更新 pages 数组顺序;
-  endif
-  if (旋转/删除?) then (是)
-    :更新 page.rotation 或移除页面;
-  endif
-  if (批注?) then (是)
-    :在页面图层上记录 Annotation\npen/rect/arrow/line/text;
-  endif
-repeat while (继续编辑?) is (是)
+partition "后端 PDF 接口" #FFF7ED {
+  :提取页面预览图;
+}
 
-:用户点击导出 PDF;
-:buildProcessPayload(includeAnnotations=true);
-:POST /api/v1/convert/pdf/process;
-:set_task_status(pending)\nBackgroundTasks 启动 async_pdf_process_task;
-:DocumentConverter.process_pdf_pages\n按 source_object_name + page_num 重组;
-:批注坐标按 canvas_width/canvas_height\n映射到 PDF 页面;
-:写入 MinIO conversions/{task_id}_{filename}.pdf;
-:set_task_status(success, result_url);
-:前端轮询 getTaskStatus(taskId);
-if (success?) then (是)
-  :展示下载链接;
-else (failed)
-  :展示错误原因;
-endif
+partition "MinIO" #F0FDFA {
+  :保存页面预览缓存;
+}
+
+partition "用户端 PDF Studio" #FAF5FF {
+  :加载页面缩略图;
+  repeat
+    :排序 / 旋转 / 删除 / 批注;
+  repeat while (继续编辑?) is (是)
+  :提交导出配置;
+}
+
+partition "后端 PDF 接口" #FFF7ED {
+  :校验页面配置;
+  :重组 PDF 页面;
+  if (包含批注?) then (是)
+    :映射坐标并写入批注;
+  endif
+}
+
+partition "MinIO 与任务状态" #F0FDFA {
+  :保存导出 PDF;
+  :更新任务完成状态;
+}
+
+partition "用户端 PDF Studio" #FAF5FF {
+  :显示下载入口;
+}
+
 stop
 
 @enduml

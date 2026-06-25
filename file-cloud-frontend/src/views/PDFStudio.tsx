@@ -85,6 +85,13 @@ export default function PDFStudio() {
   const [draftAnnotation, setDraftAnnotation] = useState<Annotation | null>(null);
   const [selectedAnnotationId, setSelectedAnnotationId] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState<{ id: string; x: number; y: number; original: Annotation } | null>(null);
+  const [resizeStart, setResizeStart] = useState<{
+    id: string;
+    x: number;
+    y: number;
+    original: Annotation;
+    bounds: { x: number; y: number; width: number; height: number };
+  } | null>(null);
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -245,8 +252,10 @@ export default function PDFStudio() {
     setSelectedAnnotationId(null);
   };
 
-  const svgPoint = (event: React.PointerEvent<SVGSVGElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
+  const svgPoint = (event: React.PointerEvent<SVGElement>) => {
+    const svg = event.currentTarget.closest('svg');
+    if (!svg) return { x: 0, y: 0 };
+    const rect = svg.getBoundingClientRect();
     return {
       x: ((event.clientX - rect.left) / rect.width) * (selectedPage?.width || 1000),
       y: ((event.clientY - rect.top) / rect.height) * (selectedPage?.height || 1400),
@@ -309,7 +318,7 @@ export default function PDFStudio() {
       id: `ann_${Date.now()}`,
       pageId: selectedPage.id,
       tool,
-      points: [point],
+      points: tool === 'pen' || tool === 'line' || tool === 'arrow' ? [point] : undefined,
       x: point.x,
       y: point.y,
       width: 0,
@@ -328,12 +337,43 @@ export default function PDFStudio() {
     points: annotation.points?.map(point => ({ x: point.x + dx, y: point.y + dy })),
   });
 
+  const scaleAnnotation = (
+    annotation: Annotation,
+    s: number,
+    bounds: { x: number; y: number }
+  ): Annotation => {
+    return {
+      ...annotation,
+      points: annotation.points?.map(p => ({
+        x: bounds.x + (p.x - bounds.x) * s,
+        y: bounds.y + (p.y - bounds.y) * s,
+      })),
+      x: annotation.x !== undefined ? bounds.x + (annotation.x - bounds.x) * s : annotation.x,
+      y: annotation.y !== undefined ? bounds.y + (annotation.y - bounds.y) * s : annotation.y,
+      width: annotation.width !== undefined ? annotation.width * s : annotation.width,
+      height: annotation.height !== undefined ? annotation.height * s : annotation.height,
+      size: annotation.tool === 'text' ? Math.max(12, Math.round(annotation.size * s)) : annotation.size,
+    };
+  };
+
   const updateAnnotationText = (id: string, text: string) => {
     setAnnotations(prev => prev.map(item => item.id === id ? { ...item, text } : item));
   };
 
   const updateAnnotation = (event: React.PointerEvent<SVGSVGElement>) => {
     const point = svgPoint(event);
+    if (resizeStart) {
+      const dx = point.x - resizeStart.x;
+      const dy = point.y - resizeStart.y;
+      const w = resizeStart.bounds.width;
+      const h = resizeStart.bounds.height;
+      const denominator = w * w + h * h;
+      if (denominator > 0.01) {
+        const s = Math.max(0.15, ((w + dx) * w + (h + dy) * h) / denominator);
+        setAnnotations(prev => prev.map(item => item.id === resizeStart.id ? scaleAnnotation(resizeStart.original, s, resizeStart.bounds) : item));
+      }
+      return;
+    }
     if (dragStart) {
       const dx = point.x - dragStart.x;
       const dy = point.y - dragStart.y;
@@ -346,11 +386,18 @@ export default function PDFStudio() {
       if (prev.tool === 'pen') {
         return { ...prev, points: [...(prev.points || []), point] };
       }
+      if (prev.tool === 'line' || prev.tool === 'arrow') {
+        return {
+          ...prev,
+          width: point.x - (prev.x || 0),
+          height: point.y - (prev.y || 0),
+          points: [prev.points?.[0] || point, point],
+        };
+      }
       return {
         ...prev,
         width: point.x - (prev.x || 0),
         height: point.y - (prev.y || 0),
-        points: [prev.points?.[0] || point, point],
       };
     });
   };
@@ -358,6 +405,10 @@ export default function PDFStudio() {
   const commitAnnotation = (event: React.PointerEvent<SVGSVGElement>) => {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    if (resizeStart) {
+      setResizeStart(null);
+      return;
     }
     if (dragStart) {
       setDragStart(null);
@@ -628,6 +679,24 @@ export default function PDFStudio() {
                           annotation={annotation}
                           selected={annotation.id === selectedAnnotationId}
                           onTextChange={updateAnnotationText}
+                          onResizeStart={(e, id) => {
+                            e.stopPropagation();
+                            const point = svgPoint(e as React.PointerEvent<SVGSVGElement>);
+                            const original = annotations.find(item => item.id === id);
+                            if (original) {
+                              setResizeStart({
+                                id,
+                                x: point.x,
+                                y: point.y,
+                                original,
+                                bounds: annotationBounds(original, 0),
+                              });
+                              const svg = e.currentTarget.closest('svg');
+                              if (svg) {
+                                svg.setPointerCapture(e.pointerId);
+                              }
+                            }
+                          }}
                         />
                       ))}
                     </svg>
@@ -1065,28 +1134,47 @@ function pointsToPath(points: Array<{ x: number; y: number }> = []) {
 }
 
 function annotationBounds(annotation: Annotation, padding = 10) {
-  const points = annotation.points || [];
-  if (points.length) {
-    const xs = points.map(point => point.x);
-    const ys = points.map(point => point.y);
-    return {
-      x: Math.min(...xs) - padding,
-      y: Math.min(...ys) - padding,
-      width: Math.max(...xs) - Math.min(...xs) + padding * 2,
-      height: Math.max(...ys) - Math.min(...ys) + padding * 2,
-    };
+  if (annotation.tool === 'pen' || annotation.tool === 'line' || annotation.tool === 'arrow') {
+    const points = annotation.points || [];
+    if (points.length) {
+      const xs = points.map(point => point.x);
+      const ys = points.map(point => point.y);
+      return {
+        x: Math.min(...xs) - padding,
+        y: Math.min(...ys) - padding,
+        width: Math.max(...xs) - Math.min(...xs) + padding * 2,
+        height: Math.max(...ys) - Math.min(...ys) + padding * 2,
+      };
+    }
   }
+
   const x = annotation.x || 0;
   const y = annotation.y || 0;
   const width = annotation.width || 0;
   const height = annotation.height || 0;
+
+  if (annotation.tool === 'text') {
+    const size = annotation.size || 16;
+    const w = Math.abs(width || 260);
+    const h = Math.abs(height || 56);
+    return {
+      x: x - padding,
+      y: y - size - padding,
+      width: w + padding * 2,
+      height: h + padding * 2,
+    };
+  }
+
+  // For 'rect'
   const x1 = Math.min(x, x + width);
   const y1 = Math.min(y, y + height);
+  const w = Math.abs(width);
+  const h = Math.abs(height);
   return {
     x: x1 - padding,
     y: y1 - padding,
-    width: Math.max(Math.abs(width || 180), 40) + padding * 2,
-    height: Math.max(Math.abs(height || annotation.size || 40), 30) + padding * 2,
+    width: w + padding * 2,
+    height: h + padding * 2,
   };
 }
 
@@ -1094,7 +1182,8 @@ const AnnotationShape: React.FC<{
   annotation: Annotation;
   selected: boolean;
   onTextChange: (id: string, text: string) => void;
-}> = ({ annotation, selected, onTextChange }) => {
+  onResizeStart?: (event: React.PointerEvent<SVGElement>, id: string) => void;
+}> = ({ annotation, selected, onTextChange, onResizeStart }) => {
   const x = annotation.x || 0;
   const y = annotation.y || 0;
   const width = annotation.width || 0;
@@ -1106,18 +1195,36 @@ const AnnotationShape: React.FC<{
   const end = annotation.points?.[annotation.points.length - 1];
   const start = annotation.points?.[0];
 
+  const bounds = annotationBounds(annotation, 0);
+
   const selection = selected ? (
-    <rect
-      x={annotationBounds(annotation).x}
-      y={annotationBounds(annotation).y}
-      width={annotationBounds(annotation).width}
-      height={annotationBounds(annotation).height}
-      fill="none"
-      stroke="#0b5cff"
-      strokeWidth={2}
-      strokeDasharray="8 6"
-      pointerEvents="none"
-    />
+    <g>
+      <rect
+        x={bounds.x}
+        y={bounds.y}
+        width={bounds.width}
+        height={bounds.height}
+        fill="none"
+        stroke="#0b5cff"
+        strokeWidth={2}
+        strokeDasharray="8 6"
+        pointerEvents="none"
+      />
+      <circle
+        cx={bounds.x + bounds.width}
+        cy={bounds.y + bounds.height}
+        r={6}
+        fill="#ffffff"
+        stroke="#0b5cff"
+        strokeWidth={2.5}
+        style={{ cursor: 'se-resize' }}
+        onPointerDown={(e) => {
+          if (onResizeStart) {
+            onResizeStart(e, annotation.id);
+          }
+        }}
+      />
+    </g>
   ) : null;
 
   if (annotation.tool === 'pen') {
@@ -1219,6 +1326,7 @@ const AnnotationShape: React.FC<{
               }}
             />
           </foreignObject>
+          {selection}
         </g>
       );
     }

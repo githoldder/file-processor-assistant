@@ -18,7 +18,7 @@ if [[ -z "${HADOOP_IMAGE:-}" && -n "${REMOTE_IMAGE:-}" && -n "${REMOTE_TAG:-}" ]
 fi
 
 PROFILES="${1:-core}"
-COMPOSE=(docker compose -f docker-compose.demo.yml -p culcloud-demo)
+COMPOSE=(docker compose)
 
 require_hadoop_image() {
   if [[ -n "${HADOOP_IMAGE:-}" ]]; then

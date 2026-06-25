@@ -4,7 +4,8 @@
     "pm2:restart": "pm2 restart ecosystem.config.js --update-env",
     "pm2:stop": "pm2 stop culcloud-frontend-dev culcloud-frontend-preview",
     "pm2:build": "pm2 start ecosystem.config.js --only culcloud-frontend-build",
-    "pm2:logs": "pm2 logs culcloud-frontend-dev --lines 80"
+    "pm2:logs": "pm2 logs culcloud-frontend-dev --lines 80",
+    "test:e2e": "PLAYWRIGHT_USE_SYSTEM_CHROME=true npm --prefix tests/e2e run test"
   },
   "dependencies": {
     "playwright": "^1.59.1"

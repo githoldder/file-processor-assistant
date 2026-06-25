@@ -1,108 +1,66 @@
 @startuml
-!theme plain
-skinparam backgroundColor #FEFEFE
-skinparam componentStyle rectangle
+' Module dependency diagram, simplified for report rendering.
+
+skinparam backgroundColor #FFFFFF
 skinparam shadowing false
+skinparam roundcorner 10
+skinparam componentStyle rectangle
+skinparam defaultFontName "SimSun"
+skinparam linetype ortho
+skinparam ArrowThickness 1.3
+skinparam ArrowColor #475569
+left to right direction
 
-title CulCloud 第4章 前后端模块依赖图
+title CulCloud 前后端核心模块依赖图
 
-package "Frontend file-cloud-frontend/src" #E8F5E9 {
-  [App.tsx] as FEApp
-  [context/useDashboard.tsx] as DashboardCtx
-  [services/api.ts] as ApiTs
-  [views/Dashboard.tsx] as VDashboard
-  [views/MyFiles.tsx] as VFiles
-  [views/ConvertCenter.tsx] as VConvert
-  [views/PDFStudio.tsx] as VPDF
-  [views/Analytics.tsx] as VAnalytics
-  [views/TaskMonitor.tsx] as VTask
-  [views/SystemStatus.tsx] as VSystem
+package "前端模块" #FAF5FF {
+  [用户工作台\nDashboard / MyFiles] as UserViews
+  [文件处理界面\nConvertCenter / PDFStudio] as WorkViews
+  [管理端界面\nAnalytics / SystemStatus] as AdminViews
+  [统一请求封装\nAPI Client] as ApiClient
 }
 
-package "Backend backend/app" #E3F2FD {
-  [main.py] as BMain
-  [routers/auth.py] as RAuth
-  [routers/files.py] as RFiles
-  [routers/folders.py] as RFolders
-  [routers/preview.py] as RPreview
-  [routers/convert.py] as RConvert
-  [routers/tasks.py] as RTasks
-  [routers/system.py] as RSystem
-  [routers/logs.py] as RLogs
-  [services/minio_client.py] as SMinio
-  [services/preview.py] as SPreview
-  [services/converter.py] as SConverter
-  [services/task_queue.py] as SQueue
-  [services/task_tracker.py] as STracker
-  [services/log_collector.py] as SLogs
-  [services/health_checker.py] as SHealth
-  [services/conversion_capabilities.py] as SCapabilities
+package "FastAPI 接口模块" #FFF7ED {
+  [文件与目录接口\nfiles / folders] as FileRoutes
+  [预览与转换接口\npreview / convert] as ConvertRoutes
+  [任务与运行接口\ntasks / logs / system] as OpsRoutes
 }
 
-package "Analytics flask-analytics" #F3E5F5 {
-  [app.py] as FlaskApp
-  [services/analytics.py] as AnalyticsSvc
+package "领域服务模块" #FFF1F2 {
+  [对象存储服务\nMinIO Client] as ObjectService
+  [转换处理服务\nDocumentConverter] as ConvertService
+  [任务日志服务\nTask Tracker / Log Collector] as RuntimeService
 }
 
-FEApp --> DashboardCtx
-FEApp --> VDashboard
-FEApp --> VFiles
-FEApp --> VConvert
-FEApp --> VPDF
-FEApp --> VAnalytics
-VDashboard --> ApiTs
-VFiles --> ApiTs
-VConvert --> ApiTs
-VPDF --> ApiTs
-VTask --> ApiTs
-VSystem --> ApiTs
-VAnalytics --> ApiTs
-VAnalytics --> FlaskApp : VITE_ANALYTICS_API
+package "外部运行依赖" #F0FDFA {
+  database "MinIO" as MinIO
+  database "Redis" as Redis
+  [Gotenberg] as Gotenberg
+  [Flask Analytics] as Flask
+}
 
-ApiTs --> RAuth : /auth/*
-ApiTs --> RFiles : /files/*
-ApiTs --> RFolders : /folders/*
-ApiTs --> RPreview : /preview/*
-ApiTs --> RConvert : /convert/*
-ApiTs --> RTasks : /tasks/*
-ApiTs --> RSystem : /system/*
-ApiTs --> RLogs : /logs/*
+UserViews --> ApiClient
+WorkViews --> ApiClient
+AdminViews --> ApiClient
 
-BMain --> RAuth
-BMain --> RFiles
-BMain --> RFolders
-BMain --> RPreview
-BMain --> RConvert
-BMain --> RTasks
-BMain --> RSystem
-BMain --> RLogs
+ApiClient --> FileRoutes : 文件/目录
+ApiClient --> ConvertRoutes : 预览/转换
+ApiClient --> OpsRoutes : 任务/日志/健康
+AdminViews --> Flask : 历史分析 API
 
-RFiles --> SMinio
-RFiles --> SLogs
-RFolders --> SMinio
-RFolders --> SLogs
-RPreview --> SPreview
-RPreview --> SLogs
-RConvert --> SConverter
-RConvert --> SQueue
-RConvert --> SLogs
-RConvert --> SCapabilities
-RTasks --> SQueue
-RTasks --> STracker
-RSystem --> SHealth
-RLogs --> SLogs
-SQueue --> STracker : 同步 tasks:index
-SPreview --> SMinio
-SPreview --> SConverter
-FlaskApp --> AnalyticsSvc
+FileRoutes --> ObjectService
+ConvertRoutes --> ConvertService
+ConvertRoutes --> RuntimeService
+OpsRoutes --> RuntimeService
 
-note right of SQueue
-Redis key:
-task:{task_id}
-tasks:index
-tasks:timeline
-tasks:queued/processing/completed/failed
-tasks:recent_failures
-end note
+ObjectService --> MinIO
+ConvertService --> Gotenberg
+ConvertService --> MinIO
+RuntimeService --> Redis
+
+legend bottom
+  依赖方向：调用方 --> 被调用方
+  本图只表达模块级依赖，不展开文件级代码清单
+endlegend
 
 @enduml

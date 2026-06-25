@@ -795,7 +795,34 @@ class DocumentConverter:
                     x + max(ann_width, scalar_x(page, 180, config)),
                     y + max(ann_height, font_size * 1.8),
                 )
-                page.insert_textbox(rect, text, fontsize=font_size, color=color, fontname="helv")
+                has_cjk = any(ord(char) > 127 for char in text)
+                font = "helv"
+                if has_cjk:
+                    static_font_path = "/app/app/static/fonts/STHeiti.ttc"
+                    if os.path.exists(static_font_path):
+                        font_name = "sys-cjk"
+                        try:
+                            page.insert_font(fontname=font_name, fontfile=static_font_path)
+                            font = font_name
+                        except Exception:
+                            font = "china-ss"
+                    else:
+                        fallback_paths = [
+                            "/System/Library/Fonts/STHeiti Light.ttc",
+                            "/System/Library/Fonts/STHeiti Medium.ttc",
+                            "/System/Library/Fonts/Supplemental/Songti.ttc",
+                        ]
+                        font_file = next((p for p in fallback_paths if os.path.exists(p)), None)
+                        if font_file:
+                            font_name = "sys-cjk"
+                            try:
+                                page.insert_font(fontname=font_name, fontfile=font_file)
+                                font = font_name
+                            except Exception:
+                                font = "china-ss"
+                        else:
+                            font = "china-ss"
+                page.insert_textbox(rect, text, fontsize=font_size, color=color, fontname=font)
         
         try:
             for config in page_configs:

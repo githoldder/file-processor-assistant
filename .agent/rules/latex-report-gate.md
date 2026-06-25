@@ -18,13 +18,24 @@ This rule applies whenever the course report under `docs/02-process/document/lat
 - Do not add screenshots, tables, or formulas without nearby explanatory text and an in-text reference.
 - Follow `.agent/rules/latex-research-layout-gate.md` for research traceability, table overflow control, paragraph-first prose, and figure/text layout coherence.
 
+## Formal Terminology Gate
+
+- Formal chapters must not use process/submission wording such as `截图`, `大作业`, `课程设计报告`, `演示`, or `答辩`.
+- Use academic or engineering wording instead:
+  - `截图` -> `图像记录`, `界面结果图`, `运行结果图`, or simply `图`;
+  - `大作业` -> `本系统`, `本文`, `课程实践项目`, or the formal course name;
+  - `课程设计报告` -> `本文`, `说明书`, or `系统设计文档`;
+  - `演示` -> `验证`, `运行`, `展示`, or `可复现验证`;
+  - `答辩` -> `评审`, `验收`, or `课程考核`.
+- The terminology check is part of `python3 docs/02-process/scripts/latex_chapter_audit.py`; any `FORBIDDEN_TERMS` status must be resolved before formal delivery.
+
 ## Count Gate
 
 - Before and after substantial writing, run:
   `python3 docs/02-process/scripts/latex_chapter_audit.py`
 - Treat the script as the working counter. Do not rely on estimated model output length.
 - If a chapter has tables or figures, keep at least 180--250 Chinese characters of nearby explanation for each visual.
-- If a chapter is screenshot-heavy, keep at least 450 Chinese characters for each screenshot group.
+- If a chapter contains multiple interface or command-result figures, keep at least 450 Chinese characters for each figure group.
 - Tables and code listings do not count as a substitute for body discussion.
 - Do not use one chapter's over-expansion to hide another chapter's empty sections. Whole-report targets and per-chapter targets must both be reviewed.
 

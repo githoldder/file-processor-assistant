@@ -72,7 +72,7 @@ HTML5 Canvas 是系统 PDF Studio 和管理驾驶舱中不可忽略的前端渲�
   \label{fig:chap02-flask-logo}
 \end{figure}
 
-除 FastAPI 文件处理后端外，系统还保留了独立的 Flask 分析服务\cite{flaskdocs}。该服务位于 flask-analytics 目录，主要负责读取 Spark 离线分析产物、服务健康快照和演示数据，并将其整理为管理驾驶舱可直接消费的 JSON 接口。将分析 API 与文件处理 API 分离，可以让 FastAPI 聚焦上传、预览、转换和任务状态，Flask 则聚焦统计指标、趋势数据和可视化面板数据契约。这样的分层也便于在 PM2 中单独重启分析服务，避免数据看板调试影响文件处理主链路。
+除 FastAPI 文件处理后端外，系统还保留了独立的 Flask 分析服务\cite{flaskdocs}。该服务位于 flask-analytics 目录，主要负责读取 Spark 离线分析产物、服务健康快照和验证数据，并将其整理为管理驾驶舱可直接消费的 JSON 接口。将分析 API 与文件处理 API 分离，可以让 FastAPI 聚焦上传、预览、转换和任务状态，Flask 则聚焦统计指标、趋势数据和可视化面板数据契约。这样的分层也便于在 PM2 中单独重启分析服务，避免数据看板调试影响文件处理主链路。
 
 \subsection{Redis 与 Celery 任务队列}
 

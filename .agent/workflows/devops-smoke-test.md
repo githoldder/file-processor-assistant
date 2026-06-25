@@ -5,10 +5,10 @@ When verifying the system after infrastructure changes, before demos, or to vali
 
 ## Required Reading
 1. `ecosystem.config.js` — PM2 process layout
-2. `docker-compose.demo.yml` or `docker-compose.yml` — Docker services
+2. `docker-compose.yml` — Docker services
 
 ## Steps
-1. Check Docker services: `docker compose -f docker-compose.demo.yml ps`.
+1. Check Docker services: `docker compose ps`.
 2. Check PM2 services: `pm2 list`.
 3. Verify endpoints respond:
    - `curl -s http://127.0.0.1:8000/health`

@@ -1,69 +1,64 @@
 @startuml
-!theme plain
-skinparam backgroundColor #FEFEFE
-skinparam componentStyle rectangle
-skinparam shadowing false
+' Management cockpit data pipeline diagram.
 
-title CulCloud 第4章 管理驾驶舱与 Spark 分析管线图
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 10
+skinparam componentStyle rectangle
+skinparam defaultFontName "SimSun"
+skinparam linetype ortho
+skinparam ArrowThickness 1.2
+skinparam ArrowColor #475569
+left to right direction
+
+title CulCloud 管理驾驶舱数据管线图
 
 actor "管理员" as Admin
 
-package "实时业务数据" #E8F5E9 {
-  [文件操作 API] as FileOps
-  [转换任务 API] as TaskOps
-  [系统健康 API] as HealthOps
-  [操作日志 API] as LogOps
+package "实时运行口径" #FAF5FF {
+  [文件统计\n/files] as FilesAPI
+  [任务统计\n/tasks] as TasksAPI
+  [操作日志\n/logs] as LogsAPI
+  [服务健康\n/system] as HealthAPI
 }
 
-package "Redis/MinIO 在线状态" #FFF3E0 {
-  database "MinIO 对象元数据\n文件数/容量/类型" as MinIO
-  database "Redis 任务索引\ntasks:*" as RedisTasks
-  database "Redis 日志\nlogs:*" as RedisLogs
-  database "Redis 健康\nhealth:*" as RedisHealth
+package "在线状态存储" #F0FDFA {
+  database "MinIO\n文件对象" as MinIO
+  database "Redis\n任务/日志/健康" as Redis
 }
 
-package "离线/准实时分析" #F3E5F5 {
-  folder "data/raw/telemetry.csv" as TelemetryCSV
-  [PySpark\nculcloud_analytics.py] as SparkJob
-  folder "data/spark-output/*.json" as SparkOutput
-  [Flask Analytics :5050\napp.py] as FlaskAPI
-  [AnalyticsService\n读取 JSON 聚合结果] as AnalyticsSvc
+package "历史分析样本" #EFF6FF {
+  folder "data/spark-output" as SparkOutput
+  [Flask Analytics] as Flask
 }
 
-package "前端大屏" #E3F2FD {
-  [Analytics.tsx] as AnalyticsView
-  [AnalyticsSlides.tsx\n拓扑/处理/质量三屏] as Slides
-  [EChartsWrapper.tsx] as ECharts
+package "前端管理驾驶舱" #FFF7ED {
+  [实时运行视图\n第一屏] as RuntimeView
+  [历史分析视图\n第二/三屏] as HistoryView
+  [图表组件] as Chart
 }
 
-Admin --> AnalyticsView
-AnalyticsView --> FileOps : /api/v1/files
-AnalyticsView --> TaskOps : /api/v1/tasks/stats\n/api/v1/tasks/queue-length
-AnalyticsView --> HealthOps : /api/v1/system/health
-AnalyticsView --> LogOps : /api/v1/logs/timeline
-AnalyticsView --> FlaskAPI : /api/analytics/*
-AnalyticsView --> Slides
-Slides --> ECharts
+Admin --> RuntimeView
+Admin --> HistoryView
 
-FileOps --> MinIO
-TaskOps --> RedisTasks
-HealthOps --> RedisHealth
-LogOps --> RedisLogs
+RuntimeView --> FilesAPI
+RuntimeView --> TasksAPI
+RuntimeView --> LogsAPI
+RuntimeView --> HealthAPI
+RuntimeView --> Chart
 
-TelemetryCSV --> SparkJob
-SparkJob --> SparkOutput
-FlaskAPI --> AnalyticsSvc
-AnalyticsSvc --> SparkOutput
+FilesAPI --> MinIO
+TasksAPI --> Redis
+LogsAPI --> Redis
+HealthAPI --> Redis
 
-note right of SparkJob
-输出包括:
-telemetry_overview
-format_distribution
-conversion_stats
-traffic_trend
-quality_report
-error_heatmap
-conversion_matrix
-end note
+HistoryView --> Flask
+Flask --> SparkOutput
+HistoryView --> Chart
+
+legend bottom
+  第一屏使用 FastAPI 实时接口，随业务操作增量变化
+  第二/三屏使用 Spark 输出的历史分析样本，不与实时数值混用
+endlegend
 
 @enduml

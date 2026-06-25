@@ -1,116 +1,74 @@
 @startuml
-!theme plain
-skinparam backgroundColor #FEFEFE
+' Conceptual data model for MinIO and Redis.
+
+skinparam backgroundColor #FFFFFF
 skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName "SimSun"
+skinparam linetype ortho
+skinparam ArrowThickness 1.1
+skinparam ArrowColor #475569
 hide circle
 
-title CulCloud 第4章 Redis 与 MinIO 数据结构 ER 图
+title CulCloud MinIO 与 Redis 概念数据模型图
 
-entity "MinIO Object\nculcloud-bucket" as Object {
-  * object_name : string <<PK>>
+entity "文件对象\nMinIO Object" as FileObject {
+  * object_name
   --
-  bucket : string
-  filename : string
-  size : int
-  content_type : string
-  last_modified : datetime
-  etag : string
+  filename
+  size
+  content_type
+  last_modified
 }
 
-entity "Folder Marker\n*.keep" as Folder {
-  * path/.keep : string <<PK>>
+entity "目录标记\nFolder Marker" as FolderMarker {
+  * prefix/.keep
   --
-  path_prefix : string
-  size : 0
+  path_prefix
 }
 
-entity "Preview Object\npreviews/*" as PreviewObj {
-  * preview_object_name : string <<PK>>
+entity "预览缓存\nPreview Object" as PreviewObject {
+  * preview_path
   --
-  source_hash : md5/uuid
-  preview_type : pdf/html/txt/png
-  cached : boolean
+  source_object
+  preview_type
 }
 
-entity "Conversion Object\nconversions/*" as ConversionObj {
-  * conversion_object_name : string <<PK>>
+entity "转换产物\nConversion Object" as ConversionObject {
+  * result_path
   --
-  task_id : uuid
-  output_ext : string
-  result_url : string
+  task_id
+  output_type
 }
 
-entity "Redis Task\n task:{task_id}" as TaskShort {
-  * task_id : uuid <<PK>>
+entity "任务记录\nRedis Task" as TaskRecord {
+  * task_id
   --
-  status : pending/processing/success/failed
-  result_url : string
-  error : string
-  ttl : 86400s
+  kind
+  status
+  result_url
+  error
 }
 
-entity "Redis Task Index\n tasks:index" as TaskIndex {
-  * task_id : uuid <<PK>>
+entity "操作日志\nRedis Event" as EventLog {
+  * event_time
   --
-  kind : conversion/pdf_reorder/spark_analysis
-  status : queued/processing/completed/failed
-  params : json
-  result : json
-  created_at : datetime
-  updated_at : datetime
-  started_at : datetime
-  completed_at : datetime
+  type
+  action
+  file_name
+  task_id
 }
 
-entity "Redis Task ZSETs" as TaskZsets {
-  * tasks:timeline : zset
-  --
-  tasks:queued : zset
-  tasks:processing : zset
-  tasks:completed : zset
-  tasks:failed : zset
-  tasks:recent_failures : list
-}
+FolderMarker ||--o{ FileObject : 组织
+FileObject ||--o{ PreviewObject : 生成
+FileObject ||--o{ ConversionObject : 转换
+TaskRecord ||--o| ConversionObject : 输出
+TaskRecord ||--o{ EventLog : 记录
+FileObject ||--o{ EventLog : 触发
 
-entity "Redis Event Log" as Logs {
-  * logs:recent : list
-  * logs:timeline : zset
-  --
-  type : string
-  category : file/folder/conversion/pdf/system
-  action : string
-  severity : info/success/error
-  timestamp : datetime
-  user_id : string
-  file_name : string
-  file_size : int
-  task_id : uuid
-  metadata : json
-}
-
-entity "Redis Health Snapshot" as Health {
-  * health:current : hash
-  * health:history:{service} : zset
-  --
-  service : redis/minio/gotenberg/api/flask-analytics/frontend
-  status : healthy/degraded/down
-  latency_ms : float
-  checked_at : datetime
-}
-
-Folder ||--o{ Object : "path prefix contains"
-Object ||--o{ PreviewObj : "may generate"
-Object ||--o{ ConversionObj : "source converted to"
-TaskShort ||--|| TaskIndex : "same task_id synced"
-TaskIndex ||--o{ ConversionObj : "result.result_url points to"
-TaskIndex ||--o{ TaskZsets : "indexed by status/time"
-TaskIndex ||--o{ Logs : "task_id reference"
-Object ||--o{ Logs : "file operations"
-Health }o..o{ Logs : "system observation"
-
-note bottom
-目录不是数据库表，而是 MinIO 对象名前缀与 .keep 空对象的组合。
-Redis 中任务存在短状态 task:{id} 与管理端任务索引 tasks:index 两套视图。
-end note
+legend bottom
+  本图为概念模型，不展开 Redis 具体 key 与索引集合
+  MinIO 目录由对象名前缀和 .keep 空对象共同表达
+endlegend
 
 @enduml

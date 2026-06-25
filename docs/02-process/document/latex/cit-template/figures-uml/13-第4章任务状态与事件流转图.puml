@@ -1,0 +1,53 @@
+@startuml
+' Task state and event transition diagram.
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 10
+skinparam defaultFontName "SimSun"
+skinparam ArrowThickness 1.2
+skinparam ArrowColor #475569
+
+title CulCloud 任务状态与事件流转图
+
+state "pending" as Pending
+state "processing" as Processing
+state "success" as Success
+state "failed" as Failed
+
+[*] --> Pending : 提交任务\nset_task_status
+Pending --> Processing : 后台任务启动\nstarted event
+Processing --> Success : 产物写入 MinIO\n记录 result_url
+Processing --> Failed : 捕获异常\n记录 error
+
+Success --> [*] : 状态保留
+Failed --> [*] : 状态保留
+
+state "Redis 事件日志" as EventLog {
+  [*] --> Recent
+  Recent --> Timeline : 写入 logs:timeline
+  Timeline --> Stats : 聚合 logs/stats
+  Stats --> [*]
+}
+
+Pending ..> Recent : TASK_CREATED
+Processing ..> Recent : TASK_STARTED
+Success ..> Recent : TASK_COMPLETED
+Failed ..> Recent : TASK_FAILED
+
+state "管理端读取" as AdminRead {
+  [*] --> TaskStats
+  TaskStats --> LogStats
+  LogStats --> Health
+  Health --> [*]
+}
+
+Stats ..> AdminRead : tasks / logs / system
+
+legend bottom
+  实线：任务状态迁移
+  虚线：状态变化触发事件与管理端读取
+  终态任务仍保留在 Redis 索引中，供历史记录与管理端查询
+endlegend
+
+@enduml

@@ -1,0 +1,160 @@
+{
+  "sprint": "13",
+  "version": "0.1",
+  "status": "Completed",
+  "lastUpdated": "2026-06-25 00:00",
+  "objective": "推进 CulCloud LaTeX 报告第四至六章正文，整理手动界面图像，嵌入 UML/运行结果图，并生成面向现场说明的真实代码认知树。",
+  "scope": {
+    "in": [
+      "chap04.tex 系统设计正文",
+      "chap05.tex 详细设计与实现正文",
+      "chap06.tex 测试正文",
+      "figures-pdf UML 图嵌入",
+      "桌面手动界面图 OCR/视觉识别、重命名和矩阵排版",
+      "真实命令行运行结果图说明",
+      "top-down 代码认知树",
+      "核心业务闭环与任务状态事件流转 UML 源文件",
+      "LaTeX 审计与编译"
+    ],
+    "out": [
+      "重写第一至三章主体结构",
+      "伪造测试结果或业务数据",
+      "引入未验证外部市场数据",
+      "在正式正文中使用截图/大作业/课程设计报告/演示/答辩等非专业口径"
+    ]
+  },
+  "directories": {
+    "latexData": "docs/02-process/document/latex/cit-template/data/",
+    "figuresUml": "docs/02-process/document/latex/cit-template/figures-uml/",
+    "umlPdf": "docs/02-process/document/latex/cit-template/figures-pdf/",
+    "uiFigures": "docs/02-process/document/latex/cit-template/figures-png/ui/",
+    "manualUiFigures": "docs/02-process/document/latex/cit-template/figures-png/ui/manual/",
+    "testFigures": "docs/02-process/document/latex/cit-template/figures-png/tests/",
+    "processNotes": "docs/02-process/document/process-notes/",
+    "desktopManualImages": "/Users/caolei/Desktop/截屏2026-06-24*.png"
+  },
+  "tasks": [
+    {
+      "id": "S13-T01",
+      "priority": "P0",
+      "status": "Completed",
+      "topic": "同步 context 与 PRD",
+      "ownedFiles": [
+        "context/context.txt",
+        "prds/sprints/sprint13/sprint13-prd-260624-v0.1.md",
+        "prds/sprints/sprint13/sprint13-prd-260624-v0.1.json"
+      ],
+      "acceptance": [
+        "后续 agent 可从 context 和 PRD 了解当前任务目标、约束、文件目录和验收命令"
+      ]
+    },
+    {
+      "id": "S13-T02",
+      "priority": "P0",
+      "status": "Completed",
+      "topic": "生成 top-down 代码认知树",
+      "ownedFiles": [
+        "docs/02-process/document/process-notes/culcloud-code-architecture-tree.md"
+      ],
+      "acceptance": [
+        "覆盖顶层架构、技术选型、模块边界、API 依赖、控制流程、状态流转、代码位置和业务边界"
+      ]
+    },
+    {
+      "id": "S13-T03",
+      "priority": "P0",
+      "status": "Completed",
+      "topic": "手动界面图 OCR/视觉识别与重命名整理",
+      "ownedDirs": [
+        "docs/02-process/document/latex/cit-template/figures-png/ui/manual/"
+      ],
+      "acceptance": [
+        "桌面图像完成归类",
+        "文件名表达业务含义",
+        "生成图像清单和 LaTeX 引用建议",
+        "每个模块最多三张图并排"
+      ]
+    },
+    {
+      "id": "S13-T04",
+      "priority": "P0",
+      "status": "Completed",
+      "topic": "改写第 4 章并嵌入 UML PDF",
+      "ownedFiles": [
+        "docs/02-process/document/latex/cit-template/data/chap04.tex"
+      ],
+      "acceptance": [
+        "系统设计包括架构、模块、业务流程、数据结构和部署结构",
+        "UML 图引用准确",
+        "不出现正式正文禁用词"
+      ]
+    },
+    {
+      "id": "S13-T05",
+      "priority": "P0",
+      "status": "Completed",
+      "topic": "改写第 5 章并补齐实现说明与矩阵界面图",
+      "ownedFiles": [
+        "docs/02-process/document/latex/cit-template/data/chap05.tex"
+      ],
+      "acceptance": [
+        "每个核心模块说明真实代码位置、API 和状态流",
+        "使用界面结果图矩阵，避免孤立堆图",
+        "不出现正式正文禁用词"
+      ]
+    },
+    {
+      "id": "S13-T06",
+      "priority": "P0",
+      "status": "Completed",
+      "topic": "改写第 6 章并补齐测试表与命令结果说明",
+      "ownedFiles": [
+        "docs/02-process/document/latex/cit-template/data/chap06.tex"
+      ],
+      "acceptance": [
+        "测试命令、运行结果和业务闭环结论相互对应",
+        "三线表数量充足",
+        "不出现正式正文禁用词"
+      ]
+    },
+    {
+      "id": "S13-T07",
+      "priority": "P0",
+      "status": "Completed",
+      "topic": "执行审计与 LaTeX 编译",
+      "acceptance": [
+        "latex_chapter_audit.py 通过正式正文口径检查",
+        "LaTeX 编译通过",
+        "记录无法执行或残余风险"
+      ]
+    },
+    {
+      "id": "S13-T08",
+      "priority": "P1",
+      "status": "Completed",
+      "topic": "补充核心业务闭环与任务状态事件流转 UML 源文件",
+      "ownedFiles": [
+        "docs/02-process/document/latex/cit-template/figures-uml/12-第4章核心业务闭环流程图.puml",
+        "docs/02-process/document/latex/cit-template/figures-uml/13-第4章任务状态与事件流转图.puml"
+      ],
+      "acceptance": [
+        "图内元素和连线保持克制",
+        "表达用户端、FastAPI、MinIO、Redis、管理端之间的业务闭环",
+        "表达 pending/processing/success/failed 状态与事件日志传播关系",
+        "不出现正式正文禁用词"
+      ]
+    }
+  ],
+  "formalLanguageForbidden": [
+    "截图",
+    "大作业",
+    "课程设计报告",
+    "演示",
+    "答辩"
+  ],
+  "verification": [
+    "python3 docs/02-process/scripts/latex_chapter_audit.py",
+    "make -C docs/02-process/document/latex/cit-template/scripts clean compile",
+    "rg -n '截图|大作业|课程设计报告|演示|答辩' docs/02-process/document/latex/cit-template/data/chap04.tex docs/02-process/document/latex/cit-template/data/chap05.tex docs/02-process/document/latex/cit-template/data/chap06.tex"
+  ]
+}

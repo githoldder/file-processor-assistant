@@ -1,107 +1,266 @@
 \chapter{系统测试}
 
-本章对 CulCloud 平台进行测试，重点验证云盘文件夹、文件预览、转换链路、PDF 编辑室、日志历史和管理驾驶舱是否满足办公与教学资料管理场景的使用要求。
+本章围绕 CulCloud 的核心业务链路进行测试，重点验证文件上传、目录整理、文件预览、格式转换、PDF 页面导出、任务状态、日志记录和管理端观察是否能够形成可复现闭环。测试结果既包括浏览器端界面结果，也包括后端自动化测试、前端类型检查、运行接口探测和端到端角色路由验证。
 
 \section{测试环境}
 
 \subsection{软硬件环境}
 
-为保障系统在负载下的执行稳定性，本测试重点考察客户端渲染、服务端API响应以及对象存储之间的链路连通性。表 \ref{tab:test-env} 梳理了测试所用的环境配置。
+测试环境采用本地开发机、FastAPI 服务、MinIO、Redis、Gotenberg、React 前端和 Flask/Spark 分析服务组成。表 \ref{tab:test-env} 给出了主要配置。该环境能够覆盖用户端、管理端、对象存储、任务状态、日志和历史分析服务之间的真实交互。
 
-\begin{table}[htbp]
+\begin{table}[H]
   \centering
   \caption{测试环境配置}
   \label{tab:test-env}
-  \begin{tabular}{ll}
+  \begin{tabularx}{\textwidth}{llX}
     \toprule
-    项目 & 配置 \\
+    类别 & 技术组成 & 测试关注点 \\
     \midrule
-    前端 & React + TypeScript + Vite \\
-    后端 & FastAPI + MinIO + Redis/Celery \\
-    数据分析 & Spark / CSV / JSON 遥测数据 \\
-    PDF 处理 & Gotenberg / PyMuPDF 页面提取与重组 \\
-    验证方式 & TypeScript 编译、接口联调、浏览器截图 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-本配置环境的部署能真实反映页面与后台之间的交互逻辑。所有容器在局域网网桥内互通，从而消除带宽波动干扰，保障了响应指标测试的准确性。
-
-\subsection{测试数据准备}
-
-测试数据覆盖 PDF、PNG、TXT、Markdown、CSV、DOC、DOCX、XLSX、PPTX、MP3 和 MP4 等类型。不同文件类型用于验证上传、分类、预览和转换边界。为了对各类边界条件进行压力验证，测试团队构建了异构数据集。具体包括用于高页数 PDF 渲染测试的 10MB 多页系统说明书，以及用于验证中文编码渲染兼容性的 GBK 格式中文数据表，以覆盖系统在数据校验与编码自适应识别等场景下的承受能力。
-
-\section{功能测试}
-
-\subsection{云盘功能测试}
-
-云盘功能测试主要验证用户在文件管理中的核心操作行为，重点测试对象存储键路径的深度解析以及目录树的嵌套呈现。表 \ref{tab:file-tests} 归纳了针对核心功能设计的测试用例。
-
-\begin{table}[htbp]
-  \centering
-  \caption{云盘核心功能测试用例}
-  \label{tab:file-tests}
-  \begin{tabularx}{\textwidth}{lllX}
-    \toprule
-    编号 & 模块 & 操作 & 预期结果 \\
-    \midrule
-    T01 & 我的文件 & 拖拽上传文件 & 文件写入当前目录并进入对应分类块 \\
-    T02 & 我的文件 & 新建文件夹 & 文件夹出现在当前路径下并显示路径元数据 \\
-    T03 & 我的文件 & 拖动文件到文件夹 & 文件移动到目标文件夹，列表刷新后路径正确 \\
-    T04 & 我的文件 & 点击移动到根目录 & 文件回到根目录，不产生重复对象 \\
-    T05 & 我的文件 & 进入文件夹 & 不显示嵌套自己的同名文件夹 \\
+    前端 & React、TypeScript、Vite & 页面渲染、路由隔离、API 调用、状态刷新 \\
+    后端 & FastAPI、Pydantic & 路由参数、白名单校验、任务状态返回 \\
+    存储 & MinIO & 文件对象、目录前缀、预览缓存、转换产物 \\
+    状态 & Redis & 任务状态、任务索引、事件日志、健康快照 \\
+    转换 & Gotenberg、PyMuPDF、本地库 & Office/PDF/图片/Markdown/CSV 转换与 PDF 页面处理 \\
+    分析 & Spark、Flask、ECharts & 历史分析样本读取与图表展示 \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
-测试结论表明，系统在解析多层嵌套的深度路径时，能够准确在前端面包屑导航与后端键路径之间建立映射。执行拖拽时，拖动文件至指定文件夹会触发路径前缀的校验与重命名，列表刷新后元数据更新正确。特别是在边界测试条件下，用户将文件移动到根目录、或者在已有关联路径下创建同名占位对象等操作，系统皆能通过状态拦截器进行无害化处理，防止产生重复的幽灵对象，确保了目录层级操作的安全性。
+\subsection{测试数据准备}
 
-\subsection{预览功能测试}
+测试数据覆盖 PDF、Markdown、CSV、图片、Office 文档和 PDF 编辑样例。PDF 用于验证浏览器预览、页面提取和导出；Markdown 用于验证文本转 PDF；CSV 用于验证表格化预览；图片和 Office 文件用于验证预览类型识别与转换边界。测试还准备了包含中文文本和批注框的 PDF 文件，用于检验导出后文字、边框和页面位置是否保持一致。
 
-预览测试覆盖 PDF、图片、TXT、Markdown、CSV、Office、音频和视频。PDF 与图片应在大视口展示；TXT、Markdown 和 CSV 应完成可读渲染；Office 文件应给出转换预览策略；音视频文件应使用浏览器原生控件播放。
+\section{测试层次与边界}
+
+系统测试按环境层、接口层、业务层、联动层和异常层展开。环境层验证 Docker Compose 与 PM2 管理的服务是否在线；接口层验证 FastAPI、Flask Analytics 和健康检查是否返回结构化结果；业务层验证上传、预览、转换和 PDF 导出是否形成产物；联动层验证用户端操作是否进入任务统计、日志统计和管理端实时视图；异常层验证不存在的资源、非白名单格式和依赖异常能否被解释。表 \ref{tab:chap06-test-levels} 给出了测试层次。
+
+\begin{table}[H]
+  \centering
+  \caption{系统测试层次划分}
+  \label{tab:chap06-test-levels}
+  \begin{tabularx}{\textwidth}{llXX}
+    \toprule
+    层次 & 验证对象 & 关键边界 & 判定标准 \\
+    \midrule
+    环境层 & Docker Compose、PM2 & 容器依赖与本地进程边界 & 服务列表中关键组件处于运行状态 \\
+    接口层 & FastAPI、Flask Analytics & HTTP API 与分析服务边界 & 健康、统计、列表接口返回 JSON \\
+    业务层 & 文件与 PDF 处理 & 用户操作与后端任务边界 & 任务进入终态并生成可访问产物 \\
+    联动层 & 用户端与管理端 & 业务增量与实时图表边界 & 任务、日志和指标随操作刷新 \\
+    异常层 & 非法资源与格式 & 错误输入与结构化响应边界 & 返回错误原因而非页面崩溃 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+从系统边界看，单纯打开页面不能证明服务链路完整，因此测试需要同时保留命令行结果和浏览器端结果。命令行结果用于证明服务进程、容器依赖、接口返回和自动化用例可重复；浏览器端结果用于证明用户能够完成实际操作。两类证据共同覆盖“系统是否运行”和“业务是否闭环”两个问题。
+
+环境层测试的重点是确认基础依赖和应用进程处于同一可用窗口内。Docker Compose 负责 Redis、MinIO、Gotenberg 等基础服务，如果这些容器未启动，即使前端页面能够打开，也无法完成任务状态写入、对象保存和文档转换。PM2 负责守护前端、后端或分析服务，若进程状态异常，接口调用和图表刷新也会失效。因此环境层测试先于功能测试执行，只有依赖和进程正常，后续接口层和业务层结果才具有解释意义。
+
+接口层测试的重点是确认系统之间的边界是否真实连通。健康接口用于判断服务是否可访问，文件接口用于判断对象存储链路是否可读，任务统计接口用于判断 Redis 任务集合是否可读，日志统计接口用于判断事件留痕是否可读，分析接口用于判断历史样本是否能被 Flask 服务读取。若这些接口返回结构化 JSON，就说明系统内部边界已经具备可观测性；若只依赖页面结果，则很难定位故障发生在前端、后端还是基础依赖。
+
+联动层测试是本章最重要的验证点。用户端完成上传、转换或 PDF 导出后，系统应产生对象、任务和日志三类变化；管理端第一屏应通过实时接口读取这些变化，而不是通过静态样本显示固定数值。该测试能够证明用户端业务数据与管理端运行观察之间存在真实通路，也能证明历史分析页与实时运行页的口径已经分离。
+
+\section{功能测试}
+
+\subsection{云盘与预览测试}
+
+云盘测试重点验证文件对象是否能正确进入 MinIO，并在用户端列表中以目录和类型分类形式呈现。预览测试重点验证后端能否根据扩展名返回正确预览类型，前端能否使用对应渲染组件展示内容。表 \ref{tab:chap06-file-preview-tests} 给出了主要用例。
+
+\begin{table}[H]
+  \centering
+  \caption{云盘与预览功能测试用例}
+  \label{tab:chap06-file-preview-tests}
+  \begin{tabularx}{\textwidth}{lXXXX}
+    \toprule
+    编号 & 模块 & 输入 & 操作 & 预期结果 \\
+    \midrule
+    T01 & 我的文件 & PDF/MD/CSV 文件 & 上传至根目录 & 文件对象写入 MinIO，列表显示名称、大小和类型 \\
+    T02 & 我的文件 & 文件夹名称 & 新建文件夹 & 生成 \texttt{.keep} 目录标记并显示文件夹项 \\
+    T03 & 我的文件 & 已上传文件 & 移动到目标目录 & 对象名前缀更新，刷新后路径正确 \\
+    T04 & 文件预览 & PDF 文件 & 打开预览页 & 浏览器内嵌 PDF 内容正常显示 \\
+    T05 & 文件预览 & Markdown 文件 & 打开预览页 & 后端返回 HTML，前端展示标题与正文 \\
+    T06 & 文件预览 & CSV 文件 & 打开预览页 & 表格字段和数据行按表格展示 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+测试结果表明，文件上传后能够进入对象列表，预览页能够按类型渲染 PDF、Markdown 和 CSV。对于 Office 等需转换的文件，系统采用预览缓存方式避免重复转换；对于暂不支持预览的格式，接口返回明确状态，前端展示可理解提示。
+
+\subsection{转换链路测试}
+
+转换链路测试以当前 P0 白名单为准，覆盖 Word 到 PDF、DOC 到 PDF、Excel 到 PDF、CSV 到 PDF、PPTX 到 PDF、Markdown 到 PDF、Markdown 到 HTML、SVG 到图片/PDF、图片到 PDF、图片到 ICO、PDF 到图片等链路。测试重点不只是接口能否返回任务标识，还要验证任务是否经历排队、处理中、成功或失败状态，并最终生成可下载产物。表 \ref{tab:chap06-conversion-tests} 给出了转换链路测试项。
+
+\begin{table}[H]
+  \centering
+  \caption{格式转换链路测试用例}
+  \label{tab:chap06-conversion-tests}
+  \begin{tabularx}{\textwidth}{llllX}
+    \toprule
+    编号 & 输入类型 & 目标格式 & 关键接口 & 验证点 \\
+    \midrule
+    C01 & Markdown & PDF & \texttt{/convert/existing} & 任务完成后生成 PDF 下载地址 \\
+    C02 & CSV & PDF & \texttt{/convert/existing} & 表格内容进入转换产物 \\
+    C03 & DOC/DOCX & PDF & \texttt{/convert} & Gotenberg 转换服务可用 \\
+    C04 & PPTX & PDF & \texttt{/convert} & PPT 文件可转换为 PDF \\
+    C05 & PNG/JPG & PDF & \texttt{/convert} & 图片文件生成 PDF 页面 \\
+    C06 & 非白名单格式 & 任意目标 & \texttt{/convert} & 后端拒绝并返回错误原因 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
 
 \subsection{PDF 编辑测试}
 
-PDF 编辑测试覆盖页面加载、缩略图切换、画笔、高亮、矩形、箭头、文本、橡皮擦、页面旋转、页面删除、页面排序和导出。测试重点是批注层是否与当前页面绑定，导出入口是否能产生可查看结果。
+PDF 编辑测试覆盖页面提取、缩略图切换、页面旋转、页面删除、页面排序、文本批注、矩形批注和导出。该模块的重点是验证前端工作区状态能否被后端准确解释，并输出新 PDF。表 \ref{tab:chap06-pdf-tests} 给出了主要测试项。
 
-\section{转换链路测试}
+\begin{table}[H]
+  \centering
+  \caption{PDF 编辑室测试用例}
+  \label{tab:chap06-pdf-tests}
+  \begin{tabularx}{\textwidth}{llllX}
+    \toprule
+    编号 & 操作 & 前端状态 & 后端处理 & 预期结果 \\
+    \midrule
+    P01 & 提取页面 & 页面数组 & \texttt{pdf\_to\_images} & 返回每页图片地址和页面尺寸 \\
+    P02 & 页面排序 & 页码顺序变化 & 页面配置数组 & 导出文件页序与前端一致 \\
+    P03 & 添加文本 & 文本批注对象 & 坐标映射写入 PDF & 导出文件保留文本内容 \\
+    P04 & 添加矩形 & 矩形批注对象 & 坐标映射写入 PDF & 导出文件保留边框形状 \\
+    P05 & 导出文件 & 输出文件名 & 写入 \texttt{conversions/} & 返回下载入口并可打开查看 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
 
-\subsection{P0 转换矩阵}
+\section{系统边界验证}
 
-转换链路测试以用户界面暴露的 P0 白名单为准，覆盖 Word 到 PDF、DOC 到 PDF、Excel 到 PDF、CSV 到 PDF、Markdown 到 PDF、文本到 PDF、图片到 PDF、PDF 到图片和 PDF 合并等链路。在测试中，项目对这 14 种白名单格式的转换进行了分层验证。第一层级是已通过单元测试验证的本地转换链路，包括使用 python 脚本实现的 \texttt{pdf\_to\_txt}、\texttt{txt\_to\_pdf}、\texttt{image\_to\_pdf} 以及 \texttt{pdf\_to\_images} 任务；第二层级是已通过 FastAPI 联调与 Gotenberg 容器验证的链路，包括 \texttt{doc\_to\_pdf}、\texttt{docx\_to\_pdf}、\texttt{xls\_to\_pdf}、\texttt{xlsx\_to\_pdf}、\texttt{ppt\_to\_pdf}、\texttt{pptx\_to\_pdf} 以及 \texttt{csv\_to\_pdf} 转换为 PDF 的任务，测试验证了接口超时与容器调度的稳定性；第三层级为系统设计支持但目前待端到端完整跑通的前端边缘格式，例如 \texttt{pdf\_to\_html}，仍需在后续版本中做进一步联调。
+为保证测试结果可复现，系统补充了命令行验证。表 \ref{tab:chap06-command-results} 列出了命令、覆盖对象和结果含义。完整命令清单整理在 \texttt{docs/02-process/scripts/manual\_terminal\_verification\_checklist.sh} 中，便于按同一顺序重复执行。
 
-\subsection{任务状态测试}
+命令行验证与浏览器端结果互为补充。浏览器端可以证明用户是否能够完成操作，命令行结果则能证明后端用例、类型系统、接口返回和角色路由是否处于可重复验证状态。二者结合后，可以避免只看页面效果而忽略后端状态，也能避免只看接口返回而无法说明业务闭环。
 
-任务状态需要覆盖处理中、成功、失败和历史记录展示。为验证异步队列的鲁棒性，系统进行了任务状态的持久性测试。当后端服务重启或 Redis 重连后，已注册的任务历史数据仍能正常从 Redis 的列表和有序集合中恢复读取。同时，前端组件执行的短轮询测试表明，在长达数小时的高频轮询下，系统并未发生内存泄漏，状态机在完成、成功与失败之间切换时未出现状态错乱或界面死锁，保证了异步转换过程的最终一致性。
+\begin{table}[H]
+  \centering
+  \caption{系统边界命令与验证对象}
+  \label{tab:chap06-command-results}
+  \begin{tabularx}{\textwidth}{llXX}
+    \toprule
+    编号 & 验证对象 & 典型命令 & 验证含义 \\
+    \midrule
+    R01 & 容器依赖 & \texttt{docker compose ps} & Redis、MinIO、Gotenberg 等依赖处于运行状态 \\
+    R02 & 本地进程 & \texttt{pm2 status} & 前端、后端和分析服务由进程管理器守护 \\
+    R03 & 健康接口 & \texttt{curl /health} & FastAPI 与分析服务可访问 \\
+    R04 & 业务接口 & \texttt{curl /files}、\texttt{/tasks/stats}、\texttt{/logs/stats} & 文件、任务和日志数据可被实时读取 \\
+    R05 & 自动化用例 & \texttt{pytest}、\texttt{npm run lint}、\texttt{playwright} & 后端、前端类型和端到端流程可重复验证 \\
+    R06 & 异常边界 & \texttt{curl} 访问不存在资源 & 系统返回结构化错误信息 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
 
-\subsection{失败处理测试}
+图 \ref{fig:chap06-backend-pytest} 展示了后端自动化测试运行结果。该组用例覆盖角色接口、白名单策略、PRD 功能矩阵和核心路由集成逻辑，结果为 12 个用例全部通过。图中存在第三方依赖告警，但未影响当前测试结论，后续升级依赖时仍需关注兼容性变化。
 
-对于不支持的文件类型、损坏文件、转换服务不可用和网络失败，系统应展示明确错误信息，并将失败任务进入日志或历史记录。
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\textwidth,height=0.45\textheight,keepaspectratio]{figures-png/tests/fig06-01-backend-pytest-result.png}
+  \caption{后端自动化测试运行结果}
+  \label{fig:chap06-backend-pytest}
+\end{figure}
 
-\section{发现问题与解决方法}
+图 \ref{fig:chap06-frontend-typecheck} 展示了前端 TypeScript 静态检查结果。该结果说明当前前端视图、API 类型和状态管理代码不存在阻塞编译的类型错误。
 
-\subsection{文件移动失败}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\textwidth,height=0.45\textheight,keepaspectratio]{figures-png/tests/fig06-02-frontend-typecheck-result.png}
+  \caption{前端 TypeScript 静态检查结果}
+  \label{fig:chap06-frontend-typecheck}
+\end{figure}
 
-文件移动失败通常与目标文件夹识别、根目录路径处理或同路径移动有关。在集成测试中发现，当用户将文件移动至根目录时，若目标前缀是空前缀或未携带斜杠结尾的前缀，MinIO 客户端在执行复制与删除时，会发生键值级联截断失败，导致子节点丢失。解决方法是在 \texttt{folders.py} 后端路由中增加空前缀解析校验，强制为非空前缀补齐斜杠占位符，并在移动至根目录时提供兼容的分支处理，完成了该缺陷的修复闭环。
+图 \ref{fig:chap06-api-health} 展示了服务边界探测与接口健康返回结果。该结果用于确认 Docker Compose 依赖容器、PM2 应用进程以及 FastAPI/Flask 主服务均处于正常运行与可访问状态。
 
-\subsection{CSV 预览失败}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\textwidth,height=0.45\textheight,keepaspectratio]{figures-png/tests/fig06-03-api-runtime-health-result.png}
+  \caption{接口与服务边界探测运行结果}
+  \label{fig:chap06-api-health}
+\end{figure}
 
-CSV 预览失败通常与内容类型识别和渲染长度计算有关。在预览中文 CSV 数据表时，测试表明中文编码（如 GBK 或 UTF-8）引起渲染白屏，原因在于原有的预览接口在读取字节流时仅进行了单一的 utf-8 强制解码。解决方法是使用 python-magic 检测内容编码，在后端接口中先对文件的实际内容编码进行检测并自适应，然后格式化输出为标准的 HTML 表格数据进行渲染，彻底解决了该渲染白屏缺陷。
+图 \ref{fig:chap06-e2e-role-routing} 展示了端到端自动化测试运行结果。该测试套件包含 11 个用例，全方位验证了角色路由隔离、白名单策略、命名记忆、Excel预设参数简化以及 MinIO 上传删除的端到端业务闭环，结果为 11 个用例全部顺利通过。
 
-\subsection{历史记录缺失}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\textwidth,height=0.45\textheight,keepaspectratio]{figures-png/tests/fig06-04-e2e-test-result.png}
+  \caption{端到端自动化测试运行结果}
+  \label{fig:chap06-e2e-role-routing}
+\end{figure}
+图 \ref{fig:chap06-error-boundary} 展示了系统对于非法请求与不存在资源的异常响应边界测试。当请求不存在的任务 ID 和文件 ID 时，后端返回了结构化的 JSON 错误原因而没有引起服务崩溃，证明异常边界响应机制运行正常。
 
-历史记录缺失通常与任务状态字段不一致或日志只存在内存有关。在针对 \texttt{ConvertCenter} 转换中心的集成测试中，由于前后端状态定义不匹配，前端只认状态 \texttt{success} 和 \texttt{failed}，而后端任务接口返回的是 \texttt{completed}。针对该历史缺陷，项目组在前端转换组件及应用状态机中进行了状态映射逻辑重构，使其能够同时兼容并正确处理 \texttt{completed}、\texttt{success} 以及 \texttt{failed} 状态，实现了状态反馈链路的闭环与数据同步。
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\textwidth,height=0.45\textheight,keepaspectratio]{figures-png/tests/fig06-06-error-boundary-result.png}
+  \caption{不存在资源与异常请求的错误响应边界结果}
+  \label{fig:chap06-error-boundary}
+\end{figure}
+
+\section{问题处理与修复验证}
+
+\subsection{文件移动路径边界}
+
+文件移动测试中重点检查根目录、同名目录和子目录移动边界。系统通过 \texttt{folders.py} 对目标前缀进行规范化处理，并拒绝会造成目录循环的操作。合法移动通过 MinIO 复制对象到新前缀，再删除旧对象完成。该处理保证了前端目录视图与后端对象名前缀一致。
+
+\subsection{CSV 与 Markdown 预览边界}
+
+CSV 与 Markdown 预览容易受到编码、行列长度和 HTML 渲染安全影响。系统在后端预览服务中将 CSV 组织为表格化 HTML，将 Markdown 转换为独立 HTML 响应，再由前端预览框展示，避免用户上传内容直接进入主页面 DOM。测试结果表明，结构化表格和 Markdown 文本均能形成可读结果。
+
+\subsection{任务历史状态边界}
+
+早期状态字段可能出现 \texttt{success} 与 \texttt{completed} 混用的问题。当前前端读取任务接口时兼容后端状态，并以任务详情中的 \texttt{result\_url} 和 \texttt{error} 作为结果判断依据。这样即使页面刷新，历史任务仍可从 Redis 状态中恢复，不依赖浏览器临时变量。
+
+\subsection{PDF 导出文字与坐标边界}
+
+PDF 导出测试中重点关注批注框、文本位置和中英文混排。后端转换服务已加入 CJK 字体加载，导出时使用页面尺寸和前端画布尺寸进行坐标映射。导出后的 PDF 能保留文本和矩形框，说明前端批注对象到后端 PDF 坐标之间的映射链路可用。
+
+\subsection{管理端联动边界}
+
+管理端联动测试关注用户端业务增量是否进入实时运行视图。测试方法是在用户端完成上传、转换或 PDF 导出后，立即读取 \texttt{/api/v1/tasks/stats}、\texttt{/api/v1/logs/stats} 和 \texttt{/api/v1/logs/timeline}，再观察管理端第一屏指标与近期事件是否刷新。该测试能够区分实时运行数据和历史分析样本：实时指标来自 FastAPI 聚合接口，会随业务操作变化；历史分析页来自 Spark 输出，只用于较长时间窗口的样本分析。
+
+该边界测试的判定标准不是图表数值越大越好，而是数值来源是否可信、变化是否可解释。若用户上传一个文件，文件列表和日志时间线应出现对应记录；若提交一次转换，任务统计中等待、处理中或成功数量应发生变化；若 PDF 导出成功，结果产物应进入对象存储并形成完成事件。只有这些变化能够被 API 和管理端同时观察到，才能说明系统完成了从用户操作到运行观察的闭环。
+
+图 \ref{fig:chap06-observability-linkage} 展示了用户端业务操作后的管理端指标与日志联动结果。当在用户端上传新文件后，日志统计中的 \texttt{file\_uploaded} 事件次数及任务事件总数实时增加，证明了联动闭环的可用性。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\textwidth,height=0.45\textheight,keepaspectratio]{figures-png/tests/fig06-05-observability-linkage-result.png}
+  \caption{用户端业务操作与管理端指标联动验证结果}
+  \label{fig:chap06-observability-linkage}
+\end{figure}
 
 \section{测试结果分析}
 
-\subsection{功能完整性分析}
+\subsection{核心业务闭环}
 
-测试结果表明，CulCloud 已经从静态展示型界面转向真实文件处理平台。首页指标能够反映后端数据状态，云盘默认界面更符合主流云盘产品的信息架构，PDF Studio 具备基础办公批注能力。
+表 \ref{tab:chap06-closed-loop} 汇总了本次测试覆盖的核心闭环。每个闭环都要求有明确输入、系统处理、可观察输出和结论，而不是只检查页面是否打开。
 
-\subsection{稳定性分析}
+\begin{table}[H]
+  \centering
+  \caption{核心业务闭环验证结论}
+  \label{tab:chap06-closed-loop}
+  \small
+  \begin{tabularx}{\textwidth}{llXX}
+    \toprule
+    闭环 & 输入 & 处理与输出 & 结论 \\
+    \midrule
+    上传与预览 & 本地文件 & MinIO 写入对象，预览接口识别类型并返回内容地址 & 对象路径、大小和类型进入用户端视图 \\
+    格式转换 & Markdown/CSV 等文件 & Redis 记录任务状态，转换服务生成 MinIO 产物 & 当前任务和历史任务均能显示完成状态 \\
+    PDF 编辑 & 页面配置与批注 & 后端重组页面、映射坐标并写入新 PDF & 导出结果可打开并保留批注内容 \\
+    管理观察 & 用户端操作 & Redis 日志、任务统计和健康接口进入管理端图表 & 用户行为能够进入管理端观察链路 \\
+    角色隔离 & 不同角色访问路径 & 前端路由结合角色接口控制入口 & 普通用户受限，管理员可访问后台页面 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
 
-系统仍需要在最终演示前进行端到端验证，重点检查 Docker Compose 挂载卷、Redis 日志、MinIO 对象存储 and PM2 进程重启后的数据保留情况。
+\subsection{稳定性与后续改进}
+
+当前测试表明系统已具备文件管理、文件预览、格式转换、PDF 编辑和管理端观察的核心能力。仍需在后续版本中加强的部分包括大文件分片上传、多用户权限隔离、高并发转换任务、容器重启后的恢复策略以及 Spark 分析链路的持续增量更新。上述内容属于生产级强化方向，不影响当前系统作为课程场景下云端资料处理平台的核心功能验收。
+
+因此，本轮测试结论采用“已满足核心流程、保留生产强化空间”的判定方式，既确认当前功能可用，也明确后续优化边界。
+
+从测试覆盖角度看，当前测试已经覆盖了前端类型、后端路由、角色访问、接口健康和核心业务链路，但仍需要在后续补充更长时间窗口的运行稳定性测试。例如连续上传多个大文件、并发提交多个转换任务、重启 Redis 后检查任务历史恢复能力、重启 MinIO 后检查对象列表恢复能力、关闭 Gotenberg 后检查转换失败提示。上述测试能够进一步验证系统从可运行原型向长期运行平台演进时的可靠性。
 
 \section{本章小结}
 
-本章从测试环境、功能测试、转换链路测试、问题处理和结果分析几个方面验证了系统。后续扩写时需要补充截图、接口返回样例和测试结果表，使测试结论更加充分。
+本章从测试环境、功能测试、命令行验证、问题处理和结果分析几个方面验证了 CulCloud。测试结果说明，系统能够完成上传、预览、转换、PDF 页面导出、状态记录、角色隔离和管理端观察等关键流程，达到了系统设计目标。

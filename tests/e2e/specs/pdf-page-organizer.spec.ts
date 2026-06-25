@@ -61,7 +61,7 @@ test.describe('E2E PDF Page Organizer basic workflow', () => {
 
     // Rotate page 1
     const rotateButton = page.locator('button[title="Rotate 90°"]').first();
-    await rotateButton.click();
+    await rotateButton.click({ force: true });
 
     // Trigger export
     await page.locator('button', { hasText: /导出/i }).first().click();

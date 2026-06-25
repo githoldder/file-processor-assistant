@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-const apiBase = 'http://localhost:8000';
-const flaskBase = 'http://localhost:5050';
+const apiBase = '**';
+const flaskBase = '**';
 
 const cockpit = {
   scale: {
@@ -124,7 +124,7 @@ test.describe('Admin analytics cockpit', () => {
 
   test('renders non-empty cockpit charts with traceable analytics data', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText(/CULCLOUD|OBSERVABILITY|业务成功率/i).first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Spark Telemetry|任务成功率|Success Rate/i).first()).toBeVisible({ timeout: 15000 });
 
     const canvases = page.locator('canvas');
     await expect(canvases.first()).toBeVisible({ timeout: 15000 });

@@ -1,94 +1,67 @@
 @startuml
-!theme plain
-skinparam backgroundColor #FEFEFE
-skinparam componentStyle rectangle
+' Detailed design component diagram, simplified to four feature groups.
+
+skinparam backgroundColor #FFFFFF
 skinparam shadowing false
+skinparam roundcorner 10
+skinparam componentStyle rectangle
+skinparam defaultFontName "SimSun"
+skinparam linetype ortho
+skinparam ArrowThickness 1.2
+skinparam ArrowColor #475569
+left to right direction
 
-title CulCloud 第5章 详细设计核心组件图
+title CulCloud 第5章核心功能详细设计组件图
 
-package "我的文件详细实现" #E8F5E9 {
-  [MyFiles.tsx\ncurrentPrefix/typeFilter/previewMeta] as MyFiles
-  [PreviewFrame\nimage/audio/video/text/html/pdf] as PreviewFrame
-  [files.py\nupload/list/search/download/stat/rename/share/delete] as FilesRouter
-  [folders.py\ncreate/browse/delete/rename/move] as FoldersRouter
+package "文件管理" #FAF5FF {
+  [MyFiles] as MyFiles
+  [文件/目录接口] as FileFolderAPI
 }
 
-package "转换中心详细实现" #E3F2FD {
-  [ConvertCenter.tsx\nselectedFile/targetFormat/status/taskId] as ConvertCenter
-  [P0_WHITELIST\n前端过滤] as FEWhitelist
-  [convert.py\nP0_WHITELIST 后端拒绝] as ConvertRouter
-  [conversion_capabilities.py\n能力矩阵] as Capabilities
-  [DocumentConverter\n格式转换实现] as Converter
+package "预览与转换" #FFF7ED {
+  [PreviewFrame] as PreviewFrame
+  [ConvertCenter] as ConvertCenter
+  [预览/转换接口] as ConvertAPI
+  [DocumentConverter] as Converter
 }
 
-package "PDF Studio 详细实现" #F3E5F5 {
-  [PDFStudio.tsx\nWorkspacePage + Annotation] as PDFStudio
-  [extractPdfPages\n/convert/pdf/extract-pages] as ExtractPages
-  [processPdf\n/convert/pdf/process] as ProcessPdf
-  [process_pdf_pages\n页面重组/旋转/批注写入] as ProcessPages
+package "PDF 编辑室" #EFF6FF {
+  [PDFStudio] as PDFStudio
+  [页面提取与导出接口] as PdfAPI
 }
 
-package "可观察性详细实现" #FFF3E0 {
-  [Dashboard.tsx\n真实指标] as Dashboard
-  [TaskMonitor.tsx\n任务列表/失败] as TaskMonitor
-  [SystemStatus.tsx\n健康与日志] as SystemStatus
-  [Analytics.tsx\n数据驾驶舱] as Analytics
-  [task_queue.py + task_tracker.py] as TaskServices
-  [log_collector.py] as LogCollector
-  [health_checker.py] as HealthChecker
-  [flask-analytics/services/analytics.py] as FlaskAnalytics
+package "可观察性" #F8FAFC {
+  [Dashboard / TaskMonitor] as UserObserve
+  [Analytics / SystemStatus] as AdminObserve
+  [任务与日志服务] as RuntimeService
 }
 
-database "MinIO\nfiles/previews/conversions" as MinIO
-database "Redis\ntask/log/health indexes" as Redis
-[Gotenberg] as Gotenberg
-folder "data/spark-output" as SparkOutput
+database "MinIO\n文件/预览/产物" as MinIO #F0FDFA
+database "Redis\n任务/日志/健康" as Redis #F0FDFA
+[Gotenberg\nOffice/PDF 转换] as Gotenberg #F0FDFA
 
-MyFiles --> FilesRouter
-MyFiles --> FoldersRouter
+MyFiles --> FileFolderAPI
 MyFiles --> PreviewFrame
-PreviewFrame --> FilesRouter : /files/content/*
-FilesRouter --> MinIO
-FoldersRouter --> MinIO
-FilesRouter --> LogCollector
-FoldersRouter --> LogCollector
+FileFolderAPI --> MinIO
 
-ConvertCenter --> FEWhitelist
-ConvertCenter --> Capabilities
-ConvertCenter --> ConvertRouter
-FEWhitelist .. ConvertRouter : 必须保持一致
-ConvertRouter --> Converter
-ConvertRouter --> TaskServices
-ConvertRouter --> LogCollector
+PreviewFrame --> ConvertAPI : 读取预览
+ConvertCenter --> ConvertAPI : 提交转换
+ConvertAPI --> Converter
 Converter --> Gotenberg
 Converter --> MinIO
-TaskServices --> Redis
-LogCollector --> Redis
+ConvertAPI --> RuntimeService
 
-PDFStudio --> ExtractPages
-PDFStudio --> ProcessPdf
-ExtractPages --> Converter
-ExtractPages --> MinIO : previews/{preview_id}/page_N.png
-ProcessPdf --> ProcessPages
-ProcessPages --> MinIO : conversions/{task_id}_*.pdf
-ProcessPdf --> TaskServices
-ProcessPdf --> LogCollector
+PDFStudio --> PdfAPI
+PdfAPI --> Converter
+PdfAPI --> RuntimeService
 
-Dashboard --> FilesRouter
-Dashboard --> TaskServices
-TaskMonitor --> TaskServices
-SystemStatus --> HealthChecker
-SystemStatus --> LogCollector
-Analytics --> FlaskAnalytics
-Analytics --> TaskServices
-Analytics --> HealthChecker
-FlaskAnalytics --> SparkOutput
-HealthChecker --> Redis
+UserObserve --> RuntimeService
+AdminObserve --> RuntimeService
+RuntimeService --> Redis
 
-note bottom
-本图按当前代码真实实现绘制：
-转换和 PDF 导出由 FastAPI BackgroundTasks 后台执行，
-任务可见性由 Redis task:{id}/tasks:index/tasks:* 维护。
-end note
+legend bottom
+  本图表达详细设计中的核心组件协作
+  接口方法、状态字段和异常分支在正文与测试表中说明
+endlegend
 
 @enduml

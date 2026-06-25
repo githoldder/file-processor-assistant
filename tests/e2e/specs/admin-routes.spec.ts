@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('E2E Admin Routes verification', () => {
-  test('should allow admin role to access analytics, system, and tasks views without redirect', async ({ page }) => {
+  test('should redirect admin role to analytics cockpit view when attempting to access user or deprecated views', async ({ page }) => {
     await page.route('**/api/v1/auth/me', route => route.fulfill({
       status: 200, contentType: 'application/json', body: JSON.stringify({ role: 'admin' })
     }));
@@ -28,19 +28,21 @@ test.describe('E2E Admin Routes verification', () => {
     await page.route('**/api/v1/logs/stats*', route => route.fulfill({
       status: 200, contentType: 'application/json', body: JSON.stringify({})
     }));
+    await page.route('http://localhost:5050/api/analytics/*', route => route.fulfill({
+      status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, data: {} })
+    }));
 
     await page.addInitScript(() => {
       localStorage.setItem('culcloud_role', 'admin');
-      localStorage.setItem('culcloud_view', 'system');
+      localStorage.setItem('culcloud_view', 'dashboard');
     });
 
     await page.goto('/');
 
-    // Check if view remains system (no fallback)
-    await expect(page.locator('h1')).toBeVisible();
-    await expect(page.locator('h1')).toContainText(/系统状态|System Status/i);
+    // Check if redirected to analytics cockpit by verifying Spark Telemetry text is visible
+    await expect(page.getByText(/Spark Telemetry/i).first()).toBeVisible({ timeout: 15000 });
 
     const activeView = await page.evaluate(() => localStorage.getItem('culcloud_view'));
-    expect(activeView).toBe('system');
+    expect(activeView).toBe('analytics');
   });
 });

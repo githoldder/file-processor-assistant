@@ -35,10 +35,7 @@ test.describe('MinIO File Operations E2E', () => {
     await page.goto('/');
     
     // Upload file
-    const fileChooserPromise = page.waitForEvent('filechooser');
-    await page.getByText(/Upload|上传/).first().click();
-    const fileChooser = await fileChooserPromise;
-    await fileChooser.setFiles(testFilePath);
+    await page.locator('input[type="file"]').first().setInputFiles(testFilePath);
 
     // Verify upload success (check if file appears in list)
     await expect(page.getByText(testFileName).first()).toBeVisible({ timeout: 10000 });

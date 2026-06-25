@@ -1,111 +1,79 @@
 @startuml
-!theme plain
-skinparam backgroundColor #FEFEFE
-skinparam componentStyle rectangle
+' CulCloud layered architecture diagram.
+' Style target: layer bands, few nodes, few crossing lines, report-friendly colors.
+
+skinparam backgroundColor #FFFFFF
 skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName "SimSun"
+skinparam defaultTextAlignment center
+skinparam ArrowThickness 2
+skinparam ArrowColor #64748B
+skinparam PackageBorderThickness 2
+skinparam ComponentBorderThickness 2
+skinparam ComponentFontSize 13
+skinparam PackageFontSize 16
+skinparam PackageFontStyle bold
+skinparam linetype ortho
+left to right direction
 
-title CulCloud 第4章 系统分层架构图
+title CulCloud 云端资料处理平台系统分层架构图
 
-package "表示层 React + Vite + TypeScript" #E8F5E9 {
-  [App.tsx\n视图懒加载] as App
-  [Dashboard] as Dashboard
-  [MyFiles] as MyFiles
-  [ConvertCenter] as ConvertCenter
-  [PDFStudio] as PDFStudio
-  [Analytics] as Analytics
-  [TaskMonitor/SystemStatus] as OpsViews
-  [services/api.ts\nAPI Client] as APIClient
+rectangle "用户端与管理端\nReact + Vite + TypeScript" as L1 #FAF5FF;line:purple {
+  rectangle "用户端\n上传 / 预览 / 转换 / PDF" as UserUI #FFFFFF;line:purple
+  rectangle "管理端\n任务 / 日志 / ECharts" as AdminUI #FFFFFF;line:purple
+  rectangle "统一请求封装\nAPI Client" as ApiClient #FFFFFF;line:purple
 }
 
-package "业务 API 层 FastAPI :8000" #E3F2FD {
-  [main.py\nrouter 注册/lifespan] as MainAPI
-  [auth router] as Auth
-  [files router] as Files
-  [folders router] as Folders
-  [preview router] as Preview
-  [convert router] as Convert
-  [tasks router] as Tasks
-  [system/logs router] as SystemLogs
+rectangle "流量与业务接口层\nFastAPI :8000" as L2 #FFF7ED;line:orange {
+  rectangle "文件与目录接口\nfiles / folders" as FileAPI #FFFFFF;line:orange
+  rectangle "预览与转换接口\npreview / convert" as ConvertAPI #FFFFFF;line:orange
+  rectangle "任务与系统接口\ntasks / logs / system" as OpsAPI #FFFFFF;line:orange
 }
 
-package "领域服务层 Python Services" #FFF3E0 {
-  [DocumentConverter] as DocumentConverter
-  [MinIO Client] as MinioClient
-  [Task Queue/Tracker] as TaskService
-  [Log Collector] as LogService
-  [Health Checker] as HealthService
-  [Preview Service] as PreviewService
-  [Conversion Capabilities] as CapabilityService
+rectangle "领域服务层\nPython Services" as L3 #FFF1F2;line:red {
+  rectangle "对象存储客户端\nMinIO Client" as MinioSvc #FFFFFF;line:red
+  rectangle "转换与预览服务\nGotenberg / PyMuPDF" as ConvertSvc #FFFFFF;line:red
+  rectangle "任务与日志服务\nRedis Tracker / Collector" as TaskLogSvc #FFFFFF;line:red
 }
 
-package "分析服务层 Flask + Spark" #F3E5F5 {
-  [Flask Analytics :5050] as Flask
-  [AnalyticsService] as AnalyticsService
-  [PySpark Pipeline\nscripts/spark/culcloud_analytics.py] as Spark
+rectangle "基础数据层\nDocker Compose" as L4 #F0FDFA;line:teal {
+  database "MinIO\n文件与转换产物" as MinIO #FFFFFF;line:teal
+  database "Redis\n任务状态与操作日志" as Redis #FFFFFF;line:teal
+  rectangle "Gotenberg\nOffice/PDF 转换" as Gotenberg #FFFFFF;line:teal
 }
 
-package "基础设施层 Docker Compose / PM2" #ECEFF1 {
-  database "MinIO\nculcloud-bucket" as MinIO
-  database "Redis\n任务/日志/健康状态" as Redis
-  [Gotenberg :3000] as Gotenberg
-  folder "data/raw" as RawData
-  folder "data/spark-output" as SparkOutput
-  [PM2\nfrontend + flask] as PM2
-  [Docker Compose\napi + redis + minio + gotenberg] as Compose
+rectangle "离线分析与应用层\nFlask + Spark + ECharts" as L5 #EFF6FF;line:blue {
+  folder "Spark 输出\n data/spark-output" as SparkOutput #FFFFFF;line:blue
+  rectangle "Flask Analytics :5050\n聚合 JSON API" as Flask #FFFFFF;line:blue
+  rectangle "ECharts 看板\n拓扑 / 趋势 / 质量" as ECharts #FFFFFF;line:blue
 }
 
-App --> Dashboard
-App --> MyFiles
-App --> ConvertCenter
-App --> PDFStudio
-App --> Analytics
-App --> OpsViews
-Dashboard --> APIClient
-MyFiles --> APIClient
-ConvertCenter --> APIClient
-PDFStudio --> APIClient
-OpsViews --> APIClient
-Analytics --> APIClient
-Analytics --> Flask
+UserUI --> ApiClient : 用户操作
+AdminUI --> ApiClient : 管理查询
+ApiClient --> FileAPI : /files, /folders
+ApiClient --> ConvertAPI : /preview, /convert
+ApiClient --> OpsAPI : /tasks, /logs, /system
 
-APIClient --> MainAPI : /api/v1/*
-MainAPI --> Auth
-MainAPI --> Files
-MainAPI --> Folders
-MainAPI --> Preview
-MainAPI --> Convert
-MainAPI --> Tasks
-MainAPI --> SystemLogs
+FileAPI --> MinioSvc : 对象元数据
+ConvertAPI --> ConvertSvc : 转换/预览任务
+OpsAPI --> TaskLogSvc : 状态与事件
 
-Files --> MinioClient
-Folders --> MinioClient
-Preview --> PreviewService
-Convert --> DocumentConverter
-Convert --> TaskService
-Convert --> CapabilityService
-Tasks --> TaskService
-SystemLogs --> HealthService
-SystemLogs --> LogService
+MinioSvc --> MinIO : 读写对象
+ConvertSvc --> Gotenberg : 渲染转换
+ConvertSvc --> MinIO : 写入产物
+TaskLogSvc --> Redis : 持久化状态
 
-MinioClient --> MinIO
-TaskService --> Redis
-LogService --> Redis
-HealthService --> Redis
-PreviewService --> MinIO
-PreviewService --> Gotenberg
-DocumentConverter --> Gotenberg
-DocumentConverter --> MinIO
+Redis -[#64748B,dashed]-> AdminUI : 真实近期事件
+SparkOutput --> Flask : 离线聚合读取
+Flask --> ECharts : 统计指标
+ECharts --> AdminUI : 管理驾驶舱
 
-Spark --> RawData
-Spark --> SparkOutput
-Flask --> AnalyticsService
-AnalyticsService --> SparkOutput
-
-PM2 ..> App
-PM2 ..> Flask
-Compose ..> MainAPI
-Compose ..> MinIO
-Compose ..> Redis
-Compose ..> Gotenberg
+legend bottom
+  <b>线型说明</b>
+  实线：业务调用或数据写入
+  虚线：可观察数据回流
+  第一屏读取 FastAPI 实时接口；历史分析读取 Flask/Spark 离线聚合
+endlegend
 
 @enduml

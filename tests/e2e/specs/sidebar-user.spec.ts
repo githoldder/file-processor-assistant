@@ -17,7 +17,7 @@ test.describe('E2E Sidebar User Menu verification', () => {
     await page.goto('/');
 
     // Check sidebar links
-    const sidebar = page.locator('aside');
+    const sidebar = page.locator('aside').first();
     await expect(sidebar).toBeVisible();
 
     const buttons = sidebar.locator('button');
