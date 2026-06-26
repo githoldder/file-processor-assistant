@@ -59,3 +59,14 @@ target/
 *.iml
 .vscode/*  # except settings.json
 !.vscode/settings.json
+
+# ─── Archives, Temps, and Garbage ────────────────────────
+*.zip
+*.tar.gz
+*.rar
+.tmp/
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
