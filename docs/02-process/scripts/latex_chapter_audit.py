@@ -26,7 +26,7 @@ TARGETS = {
     "chap02.tex": (1600, 2200),
     "chap03.tex": (2800, 4600),
     "chap04.tex": (3200, 5600),
-    "chap05.tex": (3000, 4600),
+    "chap05.tex": (3000, 6500),
     "chap06.tex": (2600, 4200),
     "chap07.tex": (900, 1300),
     "acknowledgements.tex": (180, 300),

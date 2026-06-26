@@ -532,3 +532,84 @@
 - [Verification] Ran the LaTeX formal-term check using `latex_chapter_audit.py` (all tests passed with 0 forbidden terms).
 - [Verification] Compiled the LaTeX report successfully into `output/大数据与云计算课程大作业说明书.pdf`. The report is now 68 pages.
 
+## Session Update: 2026-06-25 — Chapter 5 Big Data Dashboard ECharts Refinement
+
+### Completed
+- [Decision] Completed the approved implementation plan to restructure report weight by refining technology descriptions in Chapter 2, condensing background sections in Chapter 1, and expanding Chapter 5 cockpit telemetry explanations.
+- [LaTeX] Condensed background policy and market analyses under `chap01.tex`.
+- [LaTeX] Simplified technology definitions in `chap02.tex` while keeping all 14 logos, resolving the CJK word length target warning.
+- [LaTeX] Redesigned Chapter 5 cockpit section: split the side-by-side grouped subfigures into 3 separate full-size figures (Figures 5.7, 5.8, 5.9) representing real-time topology/events, historical processing, and service health/data quality.
+- [LaTeX] Expanded the text in Chapter 5 with detailed implementations of all 12 ECharts charts, explaining their options (like concentric grid circles, Sankey node prefixing to avoid cycles, linear gradients), data sources (FastAPI, Redis, Spark output), and business management significance (SLAs, bottleneck detection, error temporal patterns).
+- [Verification] Ran the LaTeX formal-term check using `latex_chapter_audit.py` (passed with 0 forbidden terms).
+- [Verification] Compiled the LaTeX report successfully using XeLaTeX. The final report is now 71 pages, saved to `output/大数据与云计算课程大作业说明书.pdf`.
+- [LaTeX] Converted all unordered/ordered lists in Chapter 5's cockpit section into academic flowing paragraph prose, resolving LaTeX math-mode compiler exceptions and saving page space.
+- [Verification] Re-compiled successfully to produce a final 68-page PDF.
+
+## Session Update: 2026-06-25 — Team Division Section & Cockpit Figure Dispersal
+
+### Completed
+- [LaTeX] Added a new section `\section{团队分工与协作机制}` in `chap02.tex` (Chapter 2), outlining roles for Cao Lei (leader/architecture/integration), Chen Jiaming (files UI), Chen Xiaonan (PDF Canvas/coordinates), and Cheng Zhiyang (ConvertCenter/Flask).
+- [LaTeX] Defined highly professional collaboration protocols: Schema-First contract-driven workflows, Git Flow branch branching, and Playwright E2E testing quality gates, creating a robust, defense-proof narrative.
+- [LaTeX] Dispersed Figures 5.7, 5.8, and 5.9 inside `chap05.tex` (Chapter 5) by interleaving them with their respective ECharts description paragraphs, solving the layout congestion issue.
+- [Audit] Fixed forbidden term "答辩" in `chap02.tex` by replacing it with "系统验收", achieving 0 compliance warnings.
+- [Verification] Recompiled XeLaTeX successfully via Makefile, generating a final 69-page PDF report.
+
+### Changed Files
+- `docs/02-process/document/latex/cit-template/data/chap02.tex`
+- `docs/02-process/document/latex/cit-template/data/chap05.tex`
+- `context/context.txt`
+
+## Session Update: 2026-06-25 — Local Compile & Obsidian Sync for Code Division
+
+### Completed
+- [LaTeX] Triggered clean build of LaTeX document incorporating local user modifications, successful outputs built at `output/大数据与云计算课程大作业说明书.pdf` (69 pages).
+- [Docs] Created 4 separate member-specific code division sheets detailed down to functions, methods, and parameters matching team roles in `docs/02-process/document/process-notes/`:
+  - `culcloud-code-division-caolei.md` (FastAPI architecture, lifespans, files/folders logic, task_queue, converter, Spark pipelines, Playwright E2E)
+  - `culcloud-code-division-chenjiaming.md` (Dashboard/MyFiles view rendering, drag-uploads, breadcrumbs, useDashboard integration)
+  - `culcloud-code-division-chenxiaonan.md` (PDFStudio WorkspacePage reorder/rotation states, Canvas annotation overlays, physical coordinate map联调)
+  - `culcloud-code-division-chengzhiyang.md` (ConvertCenter panel capability white-listing, asynchronous setInterval polling, Flask Analytics telemetry endpoints)
+- [Sync] Synced all 5 documentation sheets (code architecture tree + 4 divisions) to Obsidian projects root `/Users/caolei/Desktop/Obsidian_root/00-Projects/011_项目经验/culcloud-platform/`.
+
+### Changed Files
+- `docs/02-process/document/process-notes/culcloud-code-division-caolei.md`
+- `docs/02-process/document/process-notes/culcloud-code-division-chenjiaming.md`
+- `docs/02-process/document/process-notes/culcloud-code-division-chenxiaonan.md`
+- `docs/02-process/document/process-notes/culcloud-code-division-chengzhiyang.md`
+- `context/context.txt`
+
+## Session Update: 2026-06-25 — Cover Spacing and Bolded Division Formatting
+
+### Completed
+- [LaTeX] Set explicit double spaces using `\ \ ` between each character of the cover title "课程大作业说明书" in `thuthesis-example.tex`.
+- [LaTeX] Refactored the team division section in `chap02.tex` (Chapter 2) so each member's workload is detailed in a bold, separate, concise paragraph.
+- [Sync] Synced the newly compiled PDF report `大数据与云计算课程大作业说明书.pdf` to the Obsidian platform repository path.
+- [Verification] Checked compile logs; XeLaTeX output successfully generated at 69 pages.
+
+### Changed Files
+- `docs/02-process/document/latex/cit-template/thuthesis-example.tex`
+- `docs/02-process/document/latex/cit-template/data/chap02.tex`
+- `context/context.txt`
+
+## Session Update: 2026-06-25 — CC-Switch MiMo API Token Configuration
+
+### Completed
+- [Config] Located and updated Xiaomi MiMo provider settings in `~/.cc-switch/cc-switch.db`.
+- [Network] Discovered that Xiaomi MiMo Token Plan API keys (with `tp-` prefix) require the Singapore cluster endpoint (`https://token-plan-sgp.xiaomimimo.com/anthropic`) and the `mimo-v2.5-pro` model. Direct connection to `https://api.xiaomimimo.com` or CJK endpoints fails with 401.
+- [Database] Updated database configurations for MiMo to forward requests to the Singapore cluster using `mimo-v2.5-pro` mapping for all Anthropic model levels (Haiku, Sonnet, Opus).
+- [Process] Restarted `CC Switch.app` to apply database changes and verified the local proxy is listening on `127.0.0.1:15721`.
+- [Verification] Tested the local proxy with curl mimicking a Sonnet 3.5 request from Claude Code; successfully authenticated and received a valid upstream response.
+
+### Changed Files
+- `context/context.txt`
+
+## Session Update: 2026-06-25 — Obsidian Plugin Exit Code 1 Bugfix
+
+### Completed
+- [Plugin] Patched `/Users/caolei/Desktop/Obsidian_root/.obsidian/plugins/realclaudian/main.js`.
+- [Bugfix] Cleaned up parent Electron environment variables (`ELECTRON_RUN_AS_NODE`, `ELECTRON_NO_ASAR`, `ATOM_SHELL_INTERNAL_RUN_AS_NODE`) in spawn environment logic to prevent native dynamic loading crashes under Electron runtimes.
+- [Bugfix] Reinforced `PATH` resolution in spawn options to fallback/append `/usr/local/bin` and `/opt/homebrew/bin` so the underlying Node/Git executable dependencies are fully resolvable within Obsidian.
+- [Telemetry] Refactored exit error tracking so that any stderr output from the sub-process is recorded in `stderrBuffer` and reported alongside the code 1 exit error for precise debugging.
+
+### Changed Files
+- `/Users/caolei/Desktop/Obsidian_root/.obsidian/plugins/realclaudian/main.js`
+- `context/context.txt`

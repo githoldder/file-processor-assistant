@@ -179,40 +179,44 @@ PDF 工作区的设计采用“页面数组 + 批注数组”的状态模型。�
 
 \section{管理驾驶舱模块的实现}
 
-\subsection{实时运行视图}
+管理驾驶舱由前端 \texttt{Analytics.tsx}、\texttt{AnalyticsSlides.tsx} 以及后台接口服务共同构建，旨在实现“实时系统运行状态监控”与“历史大数据遥测分析”的双流治理结构。
 
-管理驾驶舱由 \texttt{Analytics.tsx} 和 \texttt{AnalyticsSlides.tsx} 实现。第一屏通过 \texttt{useBizData} 直接读取 FastAPI 的实时接口，包括 \texttt{/api/v1/files}、\texttt{/api/v1/tasks/stats}、\texttt{/api/v1/tasks/queue-length}、\texttt{/api/v1/logs/timeline}、\texttt{/api/v1/logs/stats} 和 \texttt{/api/v1/system/health}。这些数值会随用户端上传、转换、PDF 导出和日志写入而变化，是系统当前运行状态。
+\subsection{实时运行视图设计与实现}
 
-第一屏的实现目标是反映“现在系统发生了什么”。文件数量来自当前 MinIO 对象，任务成功率来自 Redis 任务统计，近期事件来自日志时间线，服务状态来自健康检查快照。用户端完成一次文件转换后，任务统计和事件列表应随轮询刷新而变化，这也是管理端与用户端互通的关键证据。
+实时运行视图（第一屏）主要向管理人员展示当前系统实例的活跃状态、事件流与微服务拓扑，该页面通过前端组件定时轮询读取后端接口提供数据支撑。在图表设计上，微服务拓扑图作为核心监控组件，采用有向拓扑图描述服务链路，在前端配置固定二维坐标描述各个节点的位置（如网关节点位于 \texttt{[368, 190]}，Gotenberg 转换服务位于 \texttt{[202, 282]}），并基于服务权值动态绑定节点尺寸，结合图形底图绘制四层渐变圆环以达到深色背景下的发光脉冲效果。对各组件探测延迟使用 \texttt{latency\_ms} 进行度量。该图表的数据直接来源于后端的健康探测接口 \texttt{/api/v1/system/health}，该接口由后端定时对 Redis、MinIO 以及 Gotenberg 等下游组件进行 TCP 连通性测试并返回延迟快照，从而能够在系统出现部分断点或通信降级时实时呈现为红色警示，为系统管理员提供直观的分布式连接诊断手段。而对于事件流的监测，系统配置了二十四小时事件趋势折线面积图，为了保持界面在空间紧凑下的极简展示，该图表移除了坐标轴，通过 \texttt{grid: \{top: 8, bottom: 8, left: 4, right: 4\}} 消除边界留白，利用带有垂直渐变色填充的平滑曲线展示流量的波峰与波谷。其数据直接从 Redis 事件数据库接口 \texttt{/api/v1/logs/timeline} 中的时间戳按小时聚合而来，能为后续的容器副本弹伸与资源调整提供定量趋势依据。此外，实时操作分布环形图采用环形饼图展示会话中用户各项业务操作的占比，配置 \texttt{radius: ['35\%', '60\%']} 与 \texttt{center: ['50\%', '55\%']} 参数，其标签格式配置为 \texttt{'\{b\}\textbackslash{}n\{d\}\%'}，其数据来自于 Redis 实时记录的多维度操作统计接口 \texttt{/api/v1/logs/stats}，能帮助运维人员快速辨识当前系统整体的读写与算力吞吐属性。
 
-\subsection{历史分析视图}
-
-第二屏和第三屏读取 Flask Analytics 提供的历史分析接口。Flask 服务从 \texttt{data/spark-output/*.json} 读取 Spark 聚合结果，包含历史文件样本、历史转换任务、历史文件类型分布、历史转换桑基图、历史有效遥测、历史数据质量、历史存储水位和历史错误热力图。该部分用于体现大数据分析链路，不与第一屏实时指标混用。
-
-历史分析视图的价值在于展示离线聚合能力。Spark 脚本对遥测样本执行文件格式分布、转换矩阵、访问趋势、质量报告和错误热力图统计，Flask 只负责把聚合结果转成 API。由于历史样本与实时业务数据不是同一口径，页面标题和正文均明确标注“历史”，避免将样本规模误解为当前运行规模。
+图 \ref{fig:chap05-admin-runtime} 展示了管理驾驶舱的实时运行监控界面。可以看到，系统拓扑网格、近期系统操作日志时间流、当前存活服务运行状况和实时操作分布饼图能够同步更新，完成了平台运行态势的直观呈现。
 
 \begin{figure}[H]
   \centering
-  \begin{subfigure}{0.32\textwidth}
-    \centering
-    \includegraphics[width=\linewidth,height=0.20\textheight,keepaspectratio]{figures-png/ui/manual/fig05-manual-09-admin-runtime-topology-events.png}
-    \caption{实时拓扑与事件}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}{0.32\textwidth}
-    \centering
-    \includegraphics[width=\linewidth,height=0.20\textheight,keepaspectratio]{figures-png/ui/manual/fig05-manual-08-admin-historical-processing.png}
-    \caption{历史转换分析}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}{0.32\textwidth}
-    \centering
-    \includegraphics[width=\linewidth,height=0.20\textheight,keepaspectratio]{figures-png/ui/manual/fig05-manual-07-admin-historical-quality.png}
-    \caption{历史质量分析}
-  \end{subfigure}
-  \caption{管理驾驶舱运行与历史分析结果图}
-  \label{fig:chap05-admin-manual-group}
+  \includegraphics[width=0.92\textwidth]{figures-png/ui/manual/fig05-manual-09-admin-runtime-topology-events.png}
+  \caption{管理驾驶舱实时运行拓扑与操作事件监控界面}
+  \label{fig:chap05-admin-runtime}
 \end{figure}
+
+\subsection{历史分析视图设计与实现}
+
+历史分析视图（第二、三屏）用于展现离线大数据分析管线的聚合计算成果，其数据接口由 Flask 分析服务提供，通过对 Spark 产生的 JSON 规范契约进行离线读取来实现。首先，历史文件类型分布图采用带有垂直渐变色彩的纵向柱状图来展示不同格式文件的绝对体量，其数据来自于对 MinIO 中所有存量文件对象元数据的离线聚合。这能直接指导系统对 Word、PDF 等高频格式进行预缓存优化，从而提升用户的预览打开速度。历史操作分布实心饼图则在侧边配合了等宽字体的操作次数图例清单，并在饼图中心区域通过绝对定位渲染总操作数文字，该图表基于 Spark 对历史遥测记录的分组累加结果，直接体现了平台的累计用户活跃度与功能的真实使用频次。为了清晰表现异构文件格式之间的流转态势，系统引入了转换桑基图，其配置采用三十二次迭代布线算法，并巧妙地通过为源格式与目标格式加上命名空间前缀（如 \texttt{source:docx} 和 \texttt{target:pdf}）来将双向循环转换模型解耦为单向无环的图结构，避免了有向环图导致图表绘制死锁的风险。其数据源自对历史格式转换日志中成功链条的 Spark 分析结果，这有助于管理团队向分析接口 \texttt{/api/v1/analytics/conversion-stats} 查询转换流向瓶颈，为对应的算力调度和格式白名单扩容提供客观支持。图 \ref{fig:chap05-admin-processing} 展示了离线文件处理与转换分析可视化界面，展现了存量文件大小、耗时分布及桑基图等分析成果。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\textwidth]{figures-png/ui/manual/fig05-manual-08-admin-historical-processing.png}
+  \caption{管理驾驶舱离线文件处理与转换分析可视化界面}
+  \label{fig:chap05-admin-processing}
+\end{figure}
+
+而针对转换流程中的效率，历史耗时与文件大小散点图将 X 轴设为文件大小，Y 轴设为平均转换时长，气泡的物理尺寸（\texttt{symbolSize}）正比于并发样本规模，并配置三种色彩标识不同的成功率阈值。该数据直接源于离线遥测的耗时明细日志，有利于快速锁定导致引擎死循环或高负荷卡顿的非典型文件格式。同时，为了直观汇总历史处理中的异常成因，系统使用水平横向条形图展现具体的错误类别排行，并配置了半透明的填充背景，以警示性色彩从高到低呈现格式不支持、超时和溢出等故障的排序，其数据来自于对 Celery 任务失败原文字段的过滤分组，直接指导了白名单机制的策略收紧与转换服务引擎的补丁更新。另外，历史存储水位仪表盘采用单指针指示表，量程对应两百吉字节的总空间，并在表针扫过区域呈现渐变彩条，表盘中心直接显示当前占用百分比与容量数值，数据来自 Spark 统计的 MinIO 物理存储字节累加，能够及时提示管理团队在水位进入 85\% 临界线时进行存储节点的水平扩展。
+
+最后，为了监控分析指标本身的可信度，系统集成了历史数据质量雷达图和数据质量仪表盘，前者基于完整性、一致性、时效性等五个轴向对遥测样本进行评估，后者则直观呈现了有效遥测记录占原始总条数的百分比，其数据源自 Spark 离线清洗管线的输出比对指标，用以量化整个日志采集链路的数据损耗，确保驾驶舱中展示的一切可视化图表结论不受脏数据污染。而为了进一步掌握错误发生的时空规律，系统还集成了七乘二十四小时错误热力图，横轴对应全天的二十四小时段，纵轴为星期，用由深蓝向明红的色彩过渡展现错误计数的密集度，这非常有助于管理员排查如每日凌晨定时备份或其他计算批处理造成的瞬时高错误热点。图 \ref{fig:chap05-admin-quality} 展示了服务监控与遥测数据质量管理分析界面，呈现了错误热力图、服务状态雷达图和多维质量考核结果。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\textwidth]{figures-png/ui/manual/fig05-manual-07-admin-historical-quality.png}
+  \caption{管理驾驶舱服务监控与遥测数据质量管理分析界面}
+  \label{fig:chap05-admin-quality}
+\end{figure}
+
+
 
 \section{本章小结}
 
